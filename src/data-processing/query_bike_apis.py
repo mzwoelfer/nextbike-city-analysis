@@ -17,7 +17,7 @@ def get_nextbike_locations():
         NEXTBIKE = 0
         for bike in r["data"]["bikes"]:
             try:
-                bike_id = int(bike["bike_id"])
+                bike_id = bike["bike_id"]
             except:
                 # single bike have no ID (?!); skip these bikes
                 continue
