@@ -21,7 +21,7 @@ TABLESPACE pg_default;
 -- Table: public.bikeLocations
 CREATE TABLE public."bikeLocations" (
     id SERIAL PRIMARY KEY,
-    "bikeId" INTEGER NOT NULL,
+    "bikeId" TEXT NOT NULL,
     "providerId" INTEGER NOT NULL,
     "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
