@@ -11,25 +11,15 @@ CREATE DATABASE bikes
 
 GRANT ALL PRIVILEGES ON SCHEMA public TO bike_admin;
 
--- Table: public.provider
-CREATE TABLE public.provider (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
-)
-TABLESPACE pg_default;
-
 -- Table: public.bikeLocations
 CREATE TABLE public."bikeLocations" (
     id SERIAL PRIMARY KEY,
     "bikeId" TEXT NOT NULL,
-    "providerId" INTEGER NOT NULL,
     "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    "stationId" TEXT NOT NULL,
+    "vehicleTypeId" TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    CONSTRAINT fk_provider FOREIGN KEY ("providerId")
-        REFERENCES public.provider (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
 )
 TABLESPACE pg_default;
 
@@ -38,6 +28,8 @@ CREATE TABLE public.stations (
     id SERIAL PRIMARY KEY,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
+    "stationId" TEXT NO NULL,
+    "name" TEXT NOT NULL,
     "firstListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     "lastListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL
 )
