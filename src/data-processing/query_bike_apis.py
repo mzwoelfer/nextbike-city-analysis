@@ -24,7 +24,11 @@ def get_nextbike_locations():
 
             lat = bike["lat"]
             lon = bike["lon"]
-            nextbikes.append((bike_id, NEXTBIKE, query_date, lat, lon))
+            station_id = bike["station_id"]
+            vehicle_type_id = bike["vehicle_type_id"]
+            nextbikes.append(
+                (bike_id, query_date, station_id, vehicle_type_id, lat, lon)
+            )
         return nextbikes
     except Exception as e:
         logging.exception("Error fetching nextbike data", exc_info=True)
@@ -43,8 +47,8 @@ if __name__ == "__main__":
     with psycopg.connect(conn_str) as conn:
         with conn.cursor() as cur:
             sql = """
-            INSERT INTO public."bikeLocations" ("bikeId", "providerId", "timestamp", latitude, longitude)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO public."bikeLocations" ("bikeId", "timestamp", "stationID", "vehicleTypeId", latitude, longitude)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING
             """
             cur.executemany(sql, nextbikes)
