@@ -1,70 +1,47 @@
--- Database: bikes
-
--- DROP DATABASE bikes;
-
 CREATE DATABASE bikes
-    WITH 
+    WITH
     OWNER = bike_admin
     ENCODING = 'UTF8'
-    LC_COLLATE = 'C'
-    LC_CTYPE = 'C'
-    TABLESPACE = pg_default
+    LC_COLLATE = 'en_US.UTF-8'  -- Match template database collation
+    LC_CTYPE = 'en_US.UTF-8'    -- Match template database collation
+    TEMPLATE = template0        -- Allow custom settings
     CONNECTION LIMIT = -1;
 
-    -- Table: public."bikeLocations"
+\c bikes
 
--- DROP TABLE public."bikeLocations";
+GRANT ALL PRIVILEGES ON SCHEMA public TO bike_admin;
 
-CREATE TABLE public."bikeLocations"
-(
-    id integer NOT NULL DEFAULT nextval('"bikeLocations_id_seq"'::regclass),
-    "bikeId" integer NOT NULL,
-    "providerId" integer NOT NULL,
-    "timestamp" timestamp without time zone NOT NULL,
-    latitude double precision NOT NULL,
-    longitude double precision NOT NULL,
-    CONSTRAINT "bikeLocations_pkey" PRIMARY KEY (id)
-        INCLUDE("bikeId", "timestamp"),
-    CONSTRAINT "providerId" FOREIGN KEY ("providerId")
-        REFERENCES public.provider (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-)
-WITH (
-    OIDS = FALSE
+-- Table: public.provider
+CREATE TABLE public.provider (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
 )
 TABLESPACE pg_default;
 
-
--- Table: public.provider
-
--- DROP TABLE public.provider;
-
-CREATE TABLE public.provider
-(
-    id integer NOT NULL,
-    name character(10) COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT provider_pkey PRIMARY KEY (id)
-)
-WITH (
-    OIDS = FALSE
+-- Table: public.bikeLocations
+CREATE TABLE public."bikeLocations" (
+    id SERIAL PRIMARY KEY,
+    "bikeId" INTEGER NOT NULL,
+    "providerId" INTEGER NOT NULL,
+    "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_provider FOREIGN KEY ("providerId")
+        REFERENCES public.provider (id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
 )
 TABLESPACE pg_default;
 
 -- Table: public.stations
-
--- DROP TABLE public.stations;
-
-CREATE TABLE public.stations
-(
-    id integer NOT NULL,
-    latitude double precision NOT NULL,
-    longitude double precision NOT NULL,
-    "firstListed" timestamp without time zone NOT NULL,
-    "lastListed" timestamp without time zone NOT NULL,
-    CONSTRAINT stations_pkey PRIMARY KEY (id)
-)
-WITH (
-    OIDS = FALSE
+CREATE TABLE public.stations (
+    id SERIAL PRIMARY KEY,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    "firstListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    "lastListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL
 )
 TABLESPACE pg_default;
+
+-- Grant privileges to bike_admin on all tables in the public schema
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bike_admin;

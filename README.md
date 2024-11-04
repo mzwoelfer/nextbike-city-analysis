@@ -1,5 +1,18 @@
 # bike-sharing
 
+🚧 WORK IN PROGRESS
+
+◎ GOAL:
+Complete project to setup NextBike Data gathering + analysis for your city
+
+## ToDos
+- Remove all non NextBike stuff.
+- Setup scripts to roll out aggregation on your server
+- accessable data (csv/Excel?)
+- Update Docs
+- Update to Python3.12 and higher
+
+
 ## Data Collection
 src/data-preprocessing
 
