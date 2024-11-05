@@ -12,7 +12,7 @@ INSTALL_DIR="/opt/nextbike-city-analysis"
 VENV_DIR="$INSTALL_DIR/Env"
 SCRIPT_DIR="$INSTALL_DIR/src/data-processing"
 CONFIG_FILE="$SCRIPT_DIR/config.py"
-CRON_JOB="* * * * * cd $INSTALL_DIR && source Env/bin/activate && python3 src/data-processing/query_bike_apis.py"
+CRON_JOB="* * * * * cd $INSTALL_DIR && $INSTALL_DIR/Env/bin/python3 src/data-processing/query_bike_apis.py"
 
 # 1. Update system and install dependencies
 echo "Updating and installing system dependencies..."
@@ -54,7 +54,7 @@ echo "Setting up Python virtual environment..."
 cd $INSTALL_DIR
 python3 -m venv Env
 source Env/bin/activate
-pip install -r /opt/nextbike-city-analysis/src/data-processing/requirements.txt
+pip install -r $INSTALL_DIR/src/data-processing/requirements.txt
 
 # Set up PostgreSQL schema
 echo "Setting up PostgreSQL schema..."
@@ -69,10 +69,8 @@ dbuser = '$DB_USER'
 dbpassword = '$DB_PASSWORD'
 CONFIG
 
-# Test the data aggregation script
 echo "Testing data aggregation script..."
-source Env/bin/activate
-python3 src/data-processing/query_bike_apis.py
+python3 $INSTALL_DIR/src/data-processing/query_bike_apis.py
 
 # Set up cron job for automated data collection every minute
 echo "Setting up cron job for data collection..."
