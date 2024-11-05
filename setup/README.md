@@ -24,7 +24,7 @@ Requirements for Debian Server:
 1. Log into the VM: Access your VM via SSH as the root or a sudo-enabled user
 2. Run the Setup Script directly from GitHub
 ```SHELL
-curl -sSL https://raw.githubusercontent.com/zwoefler/nextbike-city-analysis/master/setup/setup_server.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/zwoefler/nextbike-city-analysis/refs/heads/master/setup/setup_aggregation_server.sh | sudo bash
 ```
 
 The script:
