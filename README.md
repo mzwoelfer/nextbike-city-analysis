@@ -23,7 +23,7 @@ src/data-preprocessing
 
 ### Prerequisites
 
-- Python 3.6
+- Python 3.12
 - Libraries: 
     - requests
     - psycopg2
@@ -36,23 +36,23 @@ install packages:
 
 ### Scripts 
 
-**SQL Script [create_bikeDB.sql](https://github.com/technologiestiftung/bike-sharing/blob/master/src/sql-scripts/create_bikeDB.sql) to create the database scheme**
+**SQL Script [create_bikeDB.sql](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/sql-scripts/create_bikeDB.sql) to create the database scheme**
 
 Create a database where the data queried in the script is being stored.
 
-**Script [query_bike_apis.py](https://github.com/technologiestiftung/bike-sharing/blob/master/src/data-processing/query_bike_apis.py) is used to query provider API data**
+**Script [query_bike_apis.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/query_bike_apis.py) is used to query provider API data**
 
 API requests to receive all current locations of bikes from nextbike, lidlbike and mobike in Berlin (inner circle) and store them into a single database.
 
-**Script [query_nextbike_stations.py](https://github.com/technologiestiftung/bike-sharing/blob/master/src/data-processing/query_nextbike_stations.py) is used to query the stations of nextbike**
+**Script [query_nextbike_stations.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/query_nextbike_stations.py) is used to query the stations of nextbike**
 
 **Config File**
-Add config.py file to src/data-preprocessing with API Keys for Deutsche Bahn API (https://developer.deutschebahn.com/store/) and database credentials. (see Example **[config-example.py](https://github.com/technologiestiftung/bike-sharing/blob/master/src/data-processing/config-example.py)**)
+Add config.py file to src/data-preprocessing with database credentials. (see Example **[config-example.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/config-example.py)**)
 
 ## Run script automized
 Set up a cron job that runs the script in regular intervalls. 
 E.g. this setup 
-- runs the *query_bike_apis.py* script every 4 minutes
+- runs the *query_bike_apis.py* script every 1 minutes
 - runs the *query_nextbike_stations.py* script once a day at 8 AM
 - runs a cleaning script on the database (*/src/clean_script.py*) once a day at 11 PM deleting all unnecessary rows in the database.
 
