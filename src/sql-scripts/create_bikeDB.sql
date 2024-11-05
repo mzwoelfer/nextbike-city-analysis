@@ -1,17 +1,21 @@
+-- Drop the existing bikes database if it exists
+-- DROP DATABASE IF EXISTS bikes;
+
 CREATE DATABASE bikes
     WITH
     OWNER = bike_admin
     ENCODING = 'UTF8'
-    LC_COLLATE = 'en_US.UTF-8'  -- Match template database collation
-    LC_CTYPE = 'en_US.UTF-8'    -- Match template database collation
-    TEMPLATE = template0        -- Allow custom settings
+    LC_COLLATE = 'en_US.UTF-8'
+    LC_CTYPE = 'en_US.UTF-8'
+    TEMPLATE = template0
     CONNECTION LIMIT = -1;
 
+-- Connect to bikes database
 \c bikes
 
+-- bike_admin has necessary privileges
 GRANT ALL PRIVILEGES ON SCHEMA public TO bike_admin;
 
--- Table: public.bikeLocations
 CREATE TABLE public."bikeLocations" (
     id SERIAL PRIMARY KEY,
     "bikeId" TEXT NOT NULL,
@@ -19,11 +23,15 @@ CREATE TABLE public."bikeLocations" (
     "stationId" TEXT NOT NULL,
     "vehicleTypeId" TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL
+    longitude DOUBLE PRECISION NOT NULL,
+    "is_reserved" BOOLEAN NOT NULL,
+    "is_disabled" BOOLEAN NOT NULL,
+    "version" TEXT NOT NULL,
+    "last_updated" BIGINT NOT NULL,                            -- UNIX timestamp
+    "ttl" INTEGER NOT NULL
 )
 TABLESPACE pg_default;
 
--- Table: public.stations
 CREATE TABLE public.stations (
     id SERIAL PRIMARY KEY,
     latitude DOUBLE PRECISION NOT NULL,

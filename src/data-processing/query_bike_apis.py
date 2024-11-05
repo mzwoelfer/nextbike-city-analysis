@@ -14,21 +14,43 @@ def get_nextbike_locations():
         r = response.json()
         nextbikes = []
         query_date = datetime.datetime.now()
-        NEXTBIKE = 0
+
+        version = r.get("version", "Unknown")
+        last_updated = r.get("last_updated", 0)
+        ttl = r.get("ttl", 0)
+
+        # Iterate over each bike
         for bike in r["data"]["bikes"]:
             try:
                 bike_id = bike["bike_id"]
-            except:
-                # single bike have no ID (?!); skip these bikes
+            except KeyError:
+                logging.warning("Bike ID missing; skipping this bike entry")
                 continue
 
-            lat = bike["lat"]
-            lon = bike["lon"]
-            station_id = bike["station_id"]
-            vehicle_type_id = bike["vehicle_type_id"]
+            lat = bike.get("lat")
+            lon = bike.get("lon")
+            station_id = bike.get("station_id", "Unknown")
+            vehicle_type_id = bike.get("vehicle_type_id")
+            is_reserved = bike.get("is_reserved", False)
+            is_disabled = bike.get("is_disabled", False)
+
             nextbikes.append(
-                (bike_id, query_date, station_id, vehicle_type_id, lat, lon)
+                (
+                    bike_id,
+                    query_date,
+                    station_id,
+                    vehicle_type_id,
+                    lat,
+                    lon,
+                    is_reserved,
+                    is_disabled,
+                    version,
+                    last_updated,
+                    ttl,
+                )
             )
+
+        logging.info("Fetched nextbike locations")
         return nextbikes
     except Exception as e:
         logging.exception("Error fetching nextbike data", exc_info=True)
@@ -41,14 +63,17 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     nextbikes = get_nextbike_locations()
-
     conn_str = f"host={config.dbhost} dbname={config.dbname} user={config.dbuser} password={config.dbpassword}"
 
     with psycopg.connect(conn_str) as conn:
         with conn.cursor() as cur:
             sql = """
-            INSERT INTO public."bikeLocations" ("bikeId", "timestamp", "stationID", "vehicleTypeId", latitude, longitude)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO public."bikeLocations" (
+                "bikeId", "timestamp", "stationId", "vehicleTypeId",
+                latitude, longitude, "is_reserved", "is_disabled",
+                "version", "last_updated", "ttl"
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING
             """
             cur.executemany(sql, nextbikes)
