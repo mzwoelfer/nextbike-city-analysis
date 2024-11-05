@@ -19,7 +19,7 @@ CREATE TABLE public."bikeLocations" (
     "stationId" TEXT NOT NULL,
     "vehicleTypeId" TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL
 )
 TABLESPACE pg_default;
 
@@ -28,7 +28,7 @@ CREATE TABLE public.stations (
     id SERIAL PRIMARY KEY,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    "stationId" TEXT NO NULL,
+    "stationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "firstListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     "lastListed" TIMESTAMP WITHOUT TIME ZONE NOT NULL
