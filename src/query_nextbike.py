@@ -101,8 +101,6 @@ def main():
                     last_updated,
                 )
             )
-    print(station_entries, bike_entries)
-
     write_to_database(bike_entries, station_entries)
 
 

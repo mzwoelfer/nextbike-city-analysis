@@ -1,4 +1,4 @@
-CREATE DATABASE nextbike_data;
+CREATE DATABASE nextbike_data WITH OWNER bike_admin;
 
 \c nextbike_data;
 
