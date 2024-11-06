@@ -112,27 +112,31 @@ def main():
 
         for bike in place.get("bike_list", []):
             bike_entries.append(
-                timestamp,
-                bike.get("number", ""),
-                place_lat,
-                place_lng,
-                bike.get("active", None),
-                bike.get("state", ""),
-                bike.get("bike_type", ""),
-                timestamp,
+                (
+                    timestamp,
+                    bike.get("number", ""),
+                    place_lat,
+                    place_lng,
+                    bike.get("active", None),
+                    bike.get("state", ""),
+                    bike.get("bike_type", ""),
+                    timestamp,
+                )
             )
 
         if place_is_bike is False:
             station_entries.append(
-                place_uid,
-                place_lat,
-                place_lng,
-                place_name,
-                place_spot,
-                place_number,
-                place_maintenance,
-                place_terminal_type,
-                timestamp,
+                (
+                    place_uid,
+                    place_lat,
+                    place_lng,
+                    place_name,
+                    place_spot,
+                    place_number,
+                    place_maintenance,
+                    place_terminal_type,
+                    timestamp,
+                )
             )
     print(station_entries, bike_entries)
 
