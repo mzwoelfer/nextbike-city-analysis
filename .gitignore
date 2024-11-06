@@ -1,5 +1,4 @@
 old/
-data/
 .DS_Store
 .vscode/
 node_modules
@@ -97,6 +96,7 @@ celerybeat-schedule
 env/
 venv/
 ENV/
+Env/
 env.bak/
 venv.bak/
 

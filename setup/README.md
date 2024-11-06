@@ -81,7 +81,7 @@ sudo usermod -aG postgres bike_admin
 
 4. Switch to user `bike_admin`:
 ```SHELL
-su - bike_admin
+sudo -i -u bike_admin
 ```
 
 5. Configure the System to Prefer IPv4 (to avoid IPv6-only issues):
@@ -103,12 +103,13 @@ sudo -u postgres psql -c "ALTER ROLE bike_admin CREATEDB SUPERUSER;"
 
 # Download Git repo:
 git clone https://github.com/zwoefler/nextbike-city-analysis.git /opt/nextbike-city-analysis
+sudo chown -R bike_admin:bike_admin /opt/nextbike-city-analysis
 
 # Create the Database
-psql -U bike_admin -d postgres -f /opt/nextbike-city-analysis/src/sql-scripts/create_bikeDB.sql
+psql -U bike_admin -d postgres -f /opt/nextbike-city-analysis/src/create_bikeDB.sql
 ```
 
-7. Configure Data Automation: Fill out `/opt/nextbike-city-analysis/src/data-processing/config.py`:
+7. Configure Data Automation: Fill out `/opt/nextbike-city-analysis/src/config.py`:
 ```Python
 dbhost = "localhost"
 dbname = "bikes"
@@ -122,9 +123,9 @@ cd /opt/nextbike-city-analysis
 python3 -m venv Env
 source Env/bin/activate
 
-cd src/data-preprocessing
 pip install -r requirements.txt
 
+cd src/
 python3 query_bike_apis.py
 ```
 
@@ -134,7 +135,7 @@ python3 query_bike_apis.py
 crontab -e
 
 # And type the following
-* * * * * cd /opt/nextbike-city-analysis && /opt/nextbike-city-analysis/Env/bin/python3 src/data-processing/query_bike_apis.py
+* * * * * cd /opt/nextbike-city-analysis && /opt/nextbike-city-analysis/Env/bin/python3 src/query_bike_apis.py
 ```
 
 

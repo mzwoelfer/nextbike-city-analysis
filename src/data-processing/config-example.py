@@ -1,4 +1,0 @@
-dbhost = ""
-dbname = ""
-dbuser = ""
-dbpassword = ""

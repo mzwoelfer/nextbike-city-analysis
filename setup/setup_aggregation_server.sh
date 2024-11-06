@@ -7,12 +7,11 @@ set -e
 GITHUB_REPO="https://github.com/zwoefler/nextbike-city-analysis.git"
 DB_USER="bike_admin"
 DB_PASSWORD="mybike"
-DB_NAME="bikes"
+DB_NAME="nextbike_data"
 INSTALL_DIR="/opt/nextbike-city-analysis"
 VENV_DIR="$INSTALL_DIR/Env"
-SCRIPT_DIR="$INSTALL_DIR/src/data-processing"
-CONFIG_FILE="$SCRIPT_DIR/config.py"
-CRON_JOB="* * * * * cd $INSTALL_DIR && $INSTALL_DIR/Env/bin/python3 src/data-processing/query_bike_apis.py"
+CONFIG_FILE="$INSTALL_DIR/src/config.py"
+CRON_JOB="* * * * * cd $INSTALL_DIR && $INSTALL_DIR/Env/bin/python3 src/query_nextbike.py"
 
 # 1. Update system and install dependencies
 echo "Updating and installing system dependencies..."
@@ -34,31 +33,27 @@ sudo chown -R $DB_USER:$DB_USER /home/$DB_USER/.ssh
 sudo chmod 700 /home/$DB_USER/.ssh
 sudo chmod 600 /home/$DB_USER/.ssh/authorized_keys
 
-# 4. Configure PostgreSQL and create database and user
-echo "Configuring PostgreSQL..."
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
-sudo -u postgres psql -c "ALTER ROLE $DB_USER CREATEDB SUPERUSER;"
-sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-
-# 5. Clone the repository to /opt and set permissions
+# 4. Clone the repository to /opt and set permissions
 echo "Cloning GitHub repository to /opt..."
 sudo git clone $GITHUB_REPO $INSTALL_DIR
 sudo chown -R $DB_USER:$DB_USER $INSTALL_DIR
+
+# 5. Configure PostgreSQL and create database and user
+echo "Configuring PostgreSQL..."
+sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -c "ALTER ROLE $DB_USER CREATEDB SUPERUSER;"
+sudo -u postgres psql -f $INSTALL_DIR/src/create_bike_and_stations_db.sql
 
 # 6. Switch to bike_admin to finish setup
 echo "Switching to $DB_USER for application setup..."
 sudo -i -u $DB_USER bash <<EOF
 
 # Set up Python virtual environment and install requirements
-echo "Setting up Python virtual environment..."
+echo "Setup Python virtual environment..."
 cd $INSTALL_DIR
 python3 -m venv Env
 source Env/bin/activate
-pip install -r $INSTALL_DIR/src/data-processing/requirements.txt
-
-# Set up PostgreSQL schema
-echo "Setting up PostgreSQL schema..."
-psql -U $DB_USER -d $DB_NAME -f $INSTALL_DIR/src/sql-scripts/create_bikeDB.sql
+pip install -r $INSTALL_DIR/requirements.txt
 
 # Configure config.py with database credentials
 echo "Creating config.py with database credentials..."
@@ -70,7 +65,7 @@ dbpassword = '$DB_PASSWORD'
 CONFIG
 
 echo "Testing data aggregation script..."
-python3 $INSTALL_DIR/src/data-processing/query_bike_apis.py
+python3 $INSTALL_DIR/src/query_nextbike.py
 
 # Set up cron job for automated data collection every minute
 echo "Setting up cron job for data collection..."
