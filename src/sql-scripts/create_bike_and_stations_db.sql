@@ -4,7 +4,6 @@ CREATE DATABASE nextbike_data;
 
 GRANT ALL PRIVILEGES ON SCHEMA public TO bike_admin;
 
-
 CREATE TABLE public.bikes (
     id SERIAL PRIMARY KEY,
     bike_number TEXT NOT NULL,
@@ -14,7 +13,7 @@ CREATE TABLE public.bikes (
     state TEXT,
     bike_type TEXT,
     last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
-)
+);
 
 CREATE TABLE public.stations (
     id SERIAL PRIMARY KEY,
@@ -27,6 +26,6 @@ CREATE TABLE public.stations (
     maintenance BOOLEAN,
     terminal_type TEXT,
     last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
-)
+);
 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO bike_admin;
