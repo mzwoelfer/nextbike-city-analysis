@@ -113,7 +113,6 @@ def main():
         for bike in place.get("bike_list", []):
             bike_entries.append(
                 (
-                    timestamp,
                     bike.get("number", ""),
                     place_lat,
                     place_lng,
@@ -140,7 +139,7 @@ def main():
             )
     print(station_entries, bike_entries)
 
-    # write_to_database(bike_entries, station_entries)
+    write_to_database(bike_entries, station_entries)
 
 
 if __name__ == "__main__":
