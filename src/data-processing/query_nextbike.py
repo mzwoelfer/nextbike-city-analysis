@@ -14,7 +14,7 @@ def fetch_data():
     return response.json()
 
 
-def get_bike_entries(bike_list, timestamp):
+def get_bike_entries(bike_list, last_updated):
     bike_entries = []
     for bike in bike_list:
         bike_entries.append(
@@ -23,7 +23,7 @@ def get_bike_entries(bike_list, timestamp):
                 bike.get("bike_type"),
                 bike.get("lat"),
                 bike.get("lng"),
-                timestamp,
+                last_updated,
                 bike.get("active"),
                 bike.get("state"),
                 bike.get("last_updated"),
@@ -32,7 +32,7 @@ def get_bike_entries(bike_list, timestamp):
     return bike_entries
 
 
-def get_station_entries(places, timestamp):
+def get_station_entries(places, last_updated):
     station_entries = []
     for place in places:
         station_entries.append(
@@ -40,7 +40,7 @@ def get_station_entries(places, timestamp):
                 place.get("uid"),
                 place.get("lat"),
                 place.get("lng"),
-                timestamp,
+                last_updated,
                 place.get("name"),
                 place.get("spot"),
                 place.get("number"),
@@ -69,19 +69,19 @@ def write_to_database(bike_entries, station_entries):
         with conn.cursor() as cur:
             bike_sql = """
             INSERT INTO public.bikes (
-                bike_number, latitude, longitude, active, state, bike_type, timestamp
+                bike_number, latitude, longitude, active, state, bike_type, last_updated
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (bike_number, timestamp) DO NOTHING;
+            ON CONFLICT (bike_number, last_updated) DO NOTHING;
             """
             cur.executemany(bike_sql, bike_entries)
 
             station_sql = """
             INSERT INTO public.stations (
-                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, timestamp
+                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (uid, timestamp) DO NOTHING;
+            ON CONFLICT (uid, last_updated) DO NOTHING;
             """
             cur.executemany(station_sql, station_entries)
 
@@ -93,7 +93,7 @@ def write_to_database(bike_entries, station_entries):
 def main():
 
     data = fetch_data()
-    timestamp = datetime.datetime.now()
+    last_updated = datetime.datetime.now()
 
     bike_entries = []
     station_entries = []
@@ -119,7 +119,7 @@ def main():
                     bike.get("active", None),
                     bike.get("state", ""),
                     bike.get("bike_type", ""),
-                    timestamp,
+                    last_updated,
                 )
             )
 
@@ -134,7 +134,7 @@ def main():
                     place_number,
                     place_maintenance,
                     place_terminal_type,
-                    timestamp,
+                    last_updated,
                 )
             )
     print(station_entries, bike_entries)
