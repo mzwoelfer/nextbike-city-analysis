@@ -12,6 +12,8 @@ CREATE TABLE public.bikes (
     active BOOLEAN,
     state TEXT,
     bike_type TEXT,
+    station_number INTEGER,
+    station_uid INTEGER,
     last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 

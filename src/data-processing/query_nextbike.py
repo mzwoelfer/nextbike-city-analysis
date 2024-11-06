@@ -14,44 +14,6 @@ def fetch_data():
     return response.json()
 
 
-def get_bike_entries(bike_list, last_updated):
-    bike_entries = []
-    for bike in bike_list:
-        bike_entries.append(
-            (
-                bike.get("number"),
-                bike.get("bike_type"),
-                bike.get("lat"),
-                bike.get("lng"),
-                last_updated,
-                bike.get("active"),
-                bike.get("state"),
-                bike.get("last_updated"),
-            )
-        )
-    return bike_entries
-
-
-def get_station_entries(places, last_updated):
-    station_entries = []
-    for place in places:
-        station_entries.append(
-            (
-                place.get("uid"),
-                place.get("lat"),
-                place.get("lng"),
-                last_updated,
-                place.get("name"),
-                place.get("spot"),
-                place.get("number"),
-                place.get("maintenance"),
-                place.get("terminal_type"),
-                place.get("last_updated"),
-            )
-        )
-    return station_entries
-
-
 def get_places(data):
     try:
         # Access countries[0]["cities"][0]["places"] safely
@@ -69,9 +31,9 @@ def write_to_database(bike_entries, station_entries):
         with conn.cursor() as cur:
             bike_sql = """
             INSERT INTO public.bikes (
-                bike_number, latitude, longitude, active, state, bike_type, last_updated
+                bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING;
             """
             cur.executemany(bike_sql, bike_entries)
@@ -119,6 +81,8 @@ def main():
                     bike.get("active", None),
                     bike.get("state", ""),
                     bike.get("bike_type", ""),
+                    place_number,
+                    place_uid,
                     last_updated,
                 )
             )
