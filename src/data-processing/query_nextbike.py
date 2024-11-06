@@ -72,7 +72,7 @@ def write_to_database(bike_entries, station_entries):
                 bike_number, latitude, longitude, active, state, bike_type, last_updated
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (bike_number, last_updated) DO NOTHING;
+            ON CONFLICT DO NOTHING;
             """
             cur.executemany(bike_sql, bike_entries)
 
@@ -81,7 +81,7 @@ def write_to_database(bike_entries, station_entries):
                 uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (uid, last_updated) DO NOTHING;
+            ON CONFLICT DO NOTHING;
             """
             cur.executemany(station_sql, station_entries)
 
