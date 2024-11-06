@@ -33,15 +33,16 @@ sudo chown -R $DB_USER:$DB_USER /home/$DB_USER/.ssh
 sudo chmod 700 /home/$DB_USER/.ssh
 sudo chmod 600 /home/$DB_USER/.ssh/authorized_keys
 
-# 4. Configure PostgreSQL and create database and user
-echo "Configuring PostgreSQL..."
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
-sudo -u postgres psql -c "ALTER ROLE $DB_USER CREATEDB SUPERUSER;"
-
-# 5. Clone the repository to /opt and set permissions
+# 4. Clone the repository to /opt and set permissions
 echo "Cloning GitHub repository to /opt..."
 sudo git clone $GITHUB_REPO $INSTALL_DIR
 sudo chown -R $DB_USER:$DB_USER $INSTALL_DIR
+
+# 5. Configure PostgreSQL and create database and user
+echo "Configuring PostgreSQL..."
+sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -c "ALTER ROLE $DB_USER CREATEDB SUPERUSER;"
+sudo -u postgres psql -f $INSTALL_DIR/src/create_bike_and_stations_db.sql
 
 # 6. Switch to bike_admin to finish setup
 echo "Switching to $DB_USER for application setup..."
@@ -53,10 +54,6 @@ cd $INSTALL_DIR
 python3 -m venv Env
 source Env/bin/activate
 pip install -r $INSTALL_DIR/requirements.txt
-
-# Set up PostgreSQL schema
-echo "Setting up PostgreSQL schema..."
-psql -U $DB_USER -d $DB_NAME -f $INSTALL_DIR/src/create_bike_and_stations_db.sql
 
 # Configure config.py with database credentials
 echo "Creating config.py with database credentials..."
