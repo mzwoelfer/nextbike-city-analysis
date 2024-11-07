@@ -69,21 +69,7 @@ def main():
         axis=1,
     )
 
-    print(
-        trips[
-            [
-                "bike_number",
-                "start_latitude",
-                "start_longitude",
-                "start_time",
-                "end_latitude",
-                "end_longitude",
-                "end_time",
-                "duration",
-                "distance",
-            ]
-        ]
-    )
+    trips.to_csv("trips.csv", index=False)
 
 
 if __name__ == "__main__":

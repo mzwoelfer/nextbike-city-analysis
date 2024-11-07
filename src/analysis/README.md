@@ -37,3 +37,5 @@ ORDER BY bike_number, start_time;
 
 Install: `libpq-dev` on Debian/Ubuntu
 
+Be aware using `osmnx`:
+Source (50.571078, 8.674602) is not in G

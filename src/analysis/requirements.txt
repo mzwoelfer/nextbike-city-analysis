@@ -6,3 +6,5 @@ psycopg==3.2.3
 osmnx==1.9.3
 networkx==3.4.2
 scikit-learn==1.5.2
+matplotlib==3.9.2
+matplotlib-inline==0.1.7
