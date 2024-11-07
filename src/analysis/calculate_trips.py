@@ -54,7 +54,11 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
 
 
 def main():
-    G = ox.graph_from_place("Gießen, Germany", network_type="bike")
+    southwest_lat, southwest_lon = 50.52289, 8.60267
+    northeast_lat, northeast_lon = 50.63589, 8.74256
+
+    bbox = (northeast_lat, southwest_lat, northeast_lon, southwest_lon)
+    G = ox.graph_from_bbox(*bbox, network_type="bike")
 
     trips = get_trip_data()
 

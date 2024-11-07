@@ -7,6 +7,18 @@ The raw bikes data has timetamps and location data.
 For analysis, we extract "trips".
 Trips are the difference in time and location for the same bike.
 
+
+## Run analysis
+- Activate Python3 virtual env
+- cd `nextbike-city-analysis/src/analysis`
+- Install python dependencies: `pip install -r requirements.txt`
+
+1. Add your postgres credentials into `config.py`
+2. Calculate the trips: `python3 calculate_trips.py`
+3. Show trips: `python3 debug_plot_trips.py`
+
+---
+
 ## Create Trips
 ```SQL
 WITH bike_movements AS (
@@ -34,8 +46,3 @@ ORDER BY bike_number, start_time;
 ```
 
 
-
-Install: `libpq-dev` on Debian/Ubuntu
-
-Be aware using `osmnx`:
-Source (50.571078, 8.674602) is not in G
