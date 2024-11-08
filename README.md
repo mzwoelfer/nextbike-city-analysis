@@ -2,19 +2,12 @@
 
 🚧 WORK IN PROGRESS
 
-◎ GOAL:
-Complete project to setup NextBike Data gathering + analysis for your city
-
-## ToDos
-- Remove all non NextBike stuff.
-- Setup scripts to roll out aggregation on your server
-- accessable data (csv/Excel?)
-- Update Docs
-- Update to Python3.12 and higher
+- Data collection: `src/`
+- 
 
 
 ## Data Collection
-src/data-preprocessing
+src/
 
 ### Overview
 - create a database
@@ -24,64 +17,45 @@ src/data-preprocessing
 ### Prerequisites
 
 - Python 3.12
-- Libraries: 
-    - requests
-    - psycopg2
+- Python libraries: [requirementxt.txt](/requirements.txt)
 
-
-install packages: 
-
-    cd src/data-preprocessing
+install packages:
     pip install -r requirements.txt
 
-### Scripts 
-
-**SQL Script [create_bikeDB.sql](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/sql-scripts/create_bikeDB.sql) to create the database scheme**
+### Scripts
+**SQL Script [create_bike_and_stations_db.sql](/src/create_bike_and_stations_db.sql) to create the database scheme**
 
 Create a database where the data queried in the script is being stored.
 
-**Script [query_bike_apis.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/query_bike_apis.py) is used to query provider API data**
+**Script [query_nextbike.py](/src/query_nextbike.py) is used to query provider API data**
 
-API requests to receive all current locations of bikes from nextbike, lidlbike and mobike in Berlin (inner circle) and store them into a single database.
+API requests to receive current bike and station locations from Nextbike in Gießen and store them in a postgres database.
 
-**Script [query_nextbike_stations.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/query_nextbike_stations.py) is used to query the stations of nextbike**
 
 **Config File**
-Add config.py file to src/data-preprocessing with database credentials. (see Example **[config-example.py](https://github.com/zwoefler/nextbike-city-analysis/blob/master/src/data-processing/config-example.py)**)
+Add [config.py](/src/config.py) file to `src/` with database credentials.
 
 ## Run script automized
-Set up a cron job that runs the script in regular intervalls. 
-E.g. this setup 
-- runs the *query_bike_apis.py* script every 1 minutes
-- runs the *query_nextbike_stations.py* script once a day at 8 AM
-- runs a cleaning script on the database (*/src/clean_script.py*) once a day at 11 PM deleting all unnecessary rows in the database.
+Set up a cron job that runs the script in regular intervalls.
+E.g. this setup
+- run the *query_nextbike.py* script every minute
 
 **CRON JOBS**
-
-        */4 * * * * python3 [PATH TO FOLDER]/src/query_bike_apis.py
-        0 8 * * * python3 [PATH TO FOLDER]/src/query_nextbike_stations.py
-        0 23 * * * python3 [PATH TO FOLDER]/src/clean_script.py
-
+        * * * * * python3 [PATH TO FOLDER]/src/query_nextbike.py
 
 ### Query other cities or providers
-To query APIs for different cities the *src/data-processing/query_bike_apis.py* script has to be adapted accordingly.
 To query other providers [this documentation](https://github.com/ubahnverleih/WoBike/) is a good source of information.
-
-For access to lime bike API insert phone_no to config.py and follow steps in lime_access.py (three manual steps required).
 
 ## Data Analysis
 src/analysis
 
-Jupyter Notebook to analyse data.
+1. Add your postgres credentials into `config.py`
+2. Calculate the trips: `python3 calculate_trips.py`
+3. Show trips: `python3 plot_trips.py`
 
-- preprocess.ipynb contains the preprossing steps of the raw data to a usable format. 
-    - raw.csv contains the data from the database
-    - preprocessed.csv contains the data with added columns and fixed lat / lng
-    - routed.csv contains the data with distance and waypoints
-    - cleaned.csv is the cleaned routed dataset (unplausible data is removed)
-    - pseudonomysed.csv is the anonymized, cleaned data, following [this standard](https://data.louisvilleky.gov/dataset/dockless-vehicles) 
-    - pseudonomysed_raw.csv ist the anonymized data (NOT cleaned).
+- giessen_minimal_route.png - visualized Nextbike routes in city
+- config.py - COnfig to connect to postgres and pull data
+- calculate_trips.py - calculates trips from data and output trips.csv
+- plot_trips.py - plots the trips from trips.csv to an image
+- trips.csv - Holds the trips data with start and end location and timestamp
 
-- analysis.ipynb includes analysis about provider and bike specific data
-
-- pseudonomysed.ipynb includes analysis using the anonymized dataset (without information on providers.)

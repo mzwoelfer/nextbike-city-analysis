@@ -1,6 +1,6 @@
 # Analyzing Nextbike data
 
-Nextbike data is in postgres databases, with the format you cna see [here](../create_bike_and_stations_db.sql)
+Nextbike data is in postgres databases, with the format you can see [here](../create_bike_and_stations_db.sql)
 
 
 The raw bikes data has timetamps and location data.
