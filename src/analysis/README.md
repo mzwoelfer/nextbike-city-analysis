@@ -15,7 +15,7 @@ Trips are the difference in time and location for the same bike.
 
 1. Add your postgres credentials into `config.py`
 2. Calculate the trips: `python3 calculate_trips.py`
-3. Show trips: `python3 debug_plot_trips.py`
+3. Show trips: `python3 plot_trips.py`
 
 ---
 
