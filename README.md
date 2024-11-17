@@ -3,7 +3,7 @@
 🚧 WORK IN PROGRESS
 
 - Data collection: `src/`
-- 
+-
 
 
 ## Data Collection
@@ -58,4 +58,20 @@ src/analysis
 - calculate_trips.py - calculates trips from data and output trips.csv
 - plot_trips.py - plots the trips from trips.csv to an image
 - trips.csv - Holds the trips data with start and end location and timestamp
+
+
+
+## Credits
+Inspiration:
+[36c3 - Verkehrswende selber hacken](https://www.youtube.com/watch?v=WhgRRpA3b2c) talk by
+- [ubahnverleih](https://github.com/ubahnverleih) and
+- [robbie5](https://github.com/robbi5)
+
+🫵🏽 Check them out. An absolute treasure for mobility focused IT projects!
+
+
+Technical inspiration from the great visualization by [Technologiestiftung Berlin](https://github.com/technologiestiftung).
+Especially their two projects:
+- [Bike-Sharing](https://github.com/technologiestiftung/bike-sharing)
+- [Bikesharing-Vis](https://github.com/technologiestiftung/bikesharing-vis)
 
