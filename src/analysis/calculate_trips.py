@@ -1,8 +1,10 @@
+import json
 import psycopg
 import pandas as pd
 import osmnx as ox
 import networkx as nx
 import config
+import os
 
 
 def get_trip_data():
@@ -33,14 +35,29 @@ def get_trip_data():
         FROM bike_movements
         WHERE end_latitude IS NOT NULL
           AND (start_latitude != end_latitude OR start_longitude != end_longitude)
-        ORDER BY bike_number, start_time;
+        ORDER BY bike_number, start_time
+        LIMIT 50;
         """
 
-        # Execute the query and fetch the data into a DataFrame
         df = pd.read_sql_query(query_bike_movements, conn)
+
+    df["start_time"] = pd.to_datetime(df["start_time"])
+    df["end_time"] = pd.to_datetime(df["end_time"])
 
     df["duration"] = df["end_time"] - df["start_time"]
     return df
+
+
+def save_files_by_day(date, group):
+    trips_json = group.to_dict(orient="records")
+    json_file = os.path.join(f"trips_{date}.json")
+
+    print(trips_json)
+    with open(json_file, "w") as f:
+        json.dump(trips_json, f, indent=4)
+
+    csv_file = os.path.join(f"trips_{date}.csv")
+    group.to_csv(csv_file, index=False)
 
 
 def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
@@ -50,7 +67,11 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     shortest_path_length = nx.shortest_path_length(
         G, start_node, end_node, weight="length"
     )
-    return shortest_path_length
+
+    shortest_path = nx.shortest_path(G, start_node, end_node, weight="length")
+    path_segments = [[G.nodes[node]["y"], G.nodes[node]["x"]] for node in shortest_path]
+
+    return shortest_path_length, path_segments
 
 
 def main():
@@ -62,7 +83,9 @@ def main():
 
     trips = get_trip_data()
 
-    trips["distance"] = trips.apply(
+    trips["date"] = trips["start_time"].dt.date
+
+    results = trips.apply(
         lambda row: calculate_shortest_path(
             G,
             row["start_latitude"],
@@ -73,7 +96,14 @@ def main():
         axis=1,
     )
 
-    trips.to_csv("trips.csv", index=False)
+    trips["distance"], trips["segments"] = zip(*results)
+
+    trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    trips["duration"] = trips["duration"].dt.total_seconds()
+    trips["date"] = trips["date"].astype(str)
+
+    save_files_by_day("", trips)
 
 
 if __name__ == "__main__":
