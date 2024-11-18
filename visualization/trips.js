@@ -1,4 +1,4 @@
-const map = L.map('map').setView([52.5153242, 13.4076671], 8);
+const map = L.map('map').setView([50.5851475, 8.6643273], 8);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -15,8 +15,8 @@ async function loadTrips(trip_file){
 
         const data = await response.json();
         data.forEach(trip => {
-            if (trip.mode === 'trip' && trip.segments.length > 0) {
-                const route = trip.segments.map(([longitude, latitude]) => [latitude, longitude]);
+            if (trip.segments.length > 0) {
+                const route = trip.segments;
                 L.polyline(route, { color: 'blue', weight: 3}).addTo(map);
                 map.fitBounds(route);
             }
@@ -26,4 +26,4 @@ async function loadTrips(trip_file){
     }
 }
 
-loadTrips('data/17-11-2024-trips.json')
+loadTrips('data/06-11-2024-trips.json')
