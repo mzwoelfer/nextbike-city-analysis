@@ -26,4 +26,4 @@ async function loadTrips(trip_file){
     }
 }
 
-loadTrips('data/06-11-2024-trips.json')
+loadTrips('trips_2024-11-06.json')
