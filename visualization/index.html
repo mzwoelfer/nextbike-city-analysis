@@ -8,13 +8,30 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     #map {
-      height: 100vh;
+      height: 80vh;
       width: 100%;
+    }
+
+    #controls {
+      height: 20vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    input[type="range"] {
+      width: 80%;
     }
   </style>
 </head>
 
 <body>
+  <div id="controls">
+    <button id="playPause">Play</button>
+    <input type="range" id="timeSlider" min="0" max="1439" value="0">
+    <span id="currentTime">00:00</span>
+  </div>
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="trips.js"></script>
