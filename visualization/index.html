@@ -1,40 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nextbike Trips Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <style>
-    #map {
-      height: 80vh;
-      width: 100%;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Visualization</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
 
-    #controls {
-      height: 20vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
+        #controls {
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    input[type="range"] {
-      width: 80%;
-    }
-  </style>
+        #time-slider {
+            width: 90%;
+        }
+
+        #time-display {
+            margin-top: 5px;
+            font-size: 16px;
+        }
+    </style>
 </head>
-
 <body>
-  <div id="controls">
-    <button id="playPause">Play</button>
-    <input type="range" id="timeSlider" min="0" max="1439" value="0">
-    <span id="currentTime">00:00</span>
-  </div>
-  <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="trips.js"></script>
-</body>
+    <div id="map"></div>
+    <div id="controls">
+        <input type="range" id="time-slider" min="0" max="1440" value="0" />
+        <div id="time-display">Time: 00:00</div>
+    </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="trips.js"></script>
+</body>
 </html>
+
