@@ -3,14 +3,14 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
 }).addTo(map);
 
-let routeLayer = null;
-let tripData = null;
+let tripsData = [];
+let activeRoutes = {}; 
 
 fetch('data/timestamped_06-11-2024-trips.json')
     .then(response => response.json())
     .then(data => {
-        tripData = data[0]; 
-        console.log('Trip data loaded:', tripData);
+        tripsData = data; 
+        console.log('Trips data loaded:', tripsData);
     })
     .catch(err => console.error('Error loading trip data:', err));
 
@@ -20,53 +20,54 @@ function formatTime(minutes) {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-
 function updateMap(currentTimeMinutes) {
-    if (!tripData) {
-        console.error('Trip data is not loaded yet.');
+    if (!tripsData || tripsData.length === 0) {
+        console.error('Trips data is not loaded yet.');
         return;
     }
 
-    const tripStart = new Date(tripData.start_time);
-    const tripEnd = new Date(tripData.end_time);
-
-    const currentTime = new Date(tripStart);
+    const currentTime = new Date(tripsData[0].start_time); 
     currentTime.setHours(0, 0, 0, 0); 
     currentTime.setMinutes(currentTimeMinutes);
 
     console.log('Slider time:', formatTime(currentTimeMinutes));
-    console.log('Trip start:', tripStart, 'Trip end:', tripEnd, 'Current time:', currentTime);
+    console.log('Current time:', currentTime);
 
-    if (routeLayer) {
-        map.removeLayer(routeLayer);
-    }
+    tripsData.forEach((trip, index) => {
+        const tripStart = new Date(trip.start_time);
+        const tripEnd = new Date(trip.end_time);
 
-    if (currentTime >= tripStart && currentTime <= tripEnd) {
-        console.log('Trip is active at this time.');
-        const pathCoordinates = [];
+        if (currentTime >= tripStart && currentTime <= tripEnd) {
+            console.log(`Trip ${index} is active at this time.`);
 
-        tripData.segments.forEach(segment => {
-            const [lat, lon, timestamp] = segment;
-            const segmentTime = new Date(timestamp);
-            console.log('Segment:', segment, 'Segment time:', segmentTime);
+            const pathCoordinates = [];
 
-            if (segmentTime <= currentTime) {
-                console.log('Adding segment:', [lat, lon]);
-                pathCoordinates.push([lat, lon]);
+            trip.segments.forEach(segment => {
+                const [lat, lon, timestamp] = segment;
+                const segmentTime = new Date(timestamp);
+
+                if (segmentTime <= currentTime) {
+                    pathCoordinates.push([lat, lon]);
+                }
+            });
+
+            if (pathCoordinates.length > 0) {
+                if (activeRoutes[index]) {
+                    map.removeLayer(activeRoutes[index]); 
+                }
+
+                activeRoutes[index] = L.polyline(pathCoordinates, { color: 'blue', weight: 3 }).addTo(map);
             }
-        });
-
-        if (pathCoordinates.length > 0) {
-            console.log('Drawing polyline with coordinates:', pathCoordinates);
-            routeLayer = L.polyline(pathCoordinates, { color: 'blue', weight: 3 }).addTo(map);
         } else {
-            console.log('No coordinates to draw.');
-        }
-    } else {
-        console.log('Trip is inactive at this time.');
-    }
-}
+            console.log(`Trip ${index} is inactive at this time.`);
 
+            if (activeRoutes[index]) {
+                map.removeLayer(activeRoutes[index]);
+                delete activeRoutes[index];
+            }
+        }
+    });
+}
 
 const slider = document.getElementById('time-slider');
 const timeDisplay = document.getElementById('time-display');
