@@ -5,6 +5,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let tripsData = [];
 let activeRoutes = {}; 
+let timer = null; 
+let isPlaying = false; 
 
 fetch('data/timestamped_06-11-2024-trips.json')
     .then(response => response.json())
@@ -71,10 +73,39 @@ function updateMap(currentTimeMinutes) {
 
 const slider = document.getElementById('time-slider');
 const timeDisplay = document.getElementById('time-display');
+const playButton = document.getElementById('play-button');
 
 slider.addEventListener('input', (event) => {
     const currentTimeMinutes = parseInt(event.target.value, 10);
     timeDisplay.textContent = `Time: ${formatTime(currentTimeMinutes)}`;
     updateMap(currentTimeMinutes);
+});
+
+playButton.addEventListener('click', () => {
+    if (isPlaying) {
+        clearInterval(timer);
+        isPlaying = false;
+        playButton.textContent = 'Play';
+    } else {
+        const maxTime = parseInt(slider.max, 10);
+        let currentTimeMinutes = parseInt(slider.value, 10);
+
+        timer = setInterval(() => {
+            if (currentTimeMinutes >= maxTime) {
+                clearInterval(timer);
+                isPlaying = false;
+                playButton.textContent = 'Play';
+                return;
+            }
+
+            currentTimeMinutes += 1;
+            slider.value = currentTimeMinutes;
+            timeDisplay.textContent = `Time: ${formatTime(currentTimeMinutes)}`;
+            updateMap(currentTimeMinutes);
+        }, 100); 
+
+        isPlaying = true;
+        playButton.textContent = 'Pause';
+    }
 });
 
