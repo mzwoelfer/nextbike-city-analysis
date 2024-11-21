@@ -4,14 +4,14 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let tripsData = [];
-let activeRoutes = {}; 
-let timer = null; 
-let isPlaying = false; 
+let activeRoutes = {};
+let timer = null;
+let isPlaying = false;
 
-fetch('data/timestamped_06-11-2024-trips.json')
+fetch('data/timestamped_trips_2024-11-06.json')
     .then(response => response.json())
     .then(data => {
-        tripsData = data; 
+        tripsData = data;
         console.log('Trips data loaded:', tripsData);
     })
     .catch(err => console.error('Error loading trip data:', err));
@@ -28,8 +28,8 @@ function updateMap(currentTimeMinutes) {
         return;
     }
 
-    const currentTime = new Date(tripsData[0].start_time); 
-    currentTime.setHours(0, 0, 0, 0); 
+    const currentTime = new Date(tripsData[0].start_time);
+    currentTime.setHours(0, 0, 0, 0);
     currentTime.setMinutes(currentTimeMinutes);
 
     console.log('Slider time:', formatTime(currentTimeMinutes));
@@ -55,7 +55,7 @@ function updateMap(currentTimeMinutes) {
 
             if (pathCoordinates.length > 0) {
                 if (activeRoutes[index]) {
-                    map.removeLayer(activeRoutes[index]); 
+                    map.removeLayer(activeRoutes[index]);
                 }
 
                 activeRoutes[index] = L.polyline(pathCoordinates, { color: 'blue', weight: 3 }).addTo(map);
@@ -102,7 +102,7 @@ playButton.addEventListener('click', () => {
             slider.value = currentTimeMinutes;
             timeDisplay.textContent = `Time: ${formatTime(currentTimeMinutes)}`;
             updateMap(currentTimeMinutes);
-        }, 100); 
+        }, 100);
 
         isPlaying = true;
         playButton.textContent = 'Pause';
