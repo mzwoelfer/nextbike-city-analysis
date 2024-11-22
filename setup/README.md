@@ -1,7 +1,10 @@
-# Nextbike Data Aggregation Setup
-Configure a Debian Server to continuously collect and store data from the Nextbike API every minute, ready for analysis.
+# Nextbike Data Aggregation Server Setup
 
-Use the [script](setup_aggregation_server.sh) for a Debian server, or follow the [manual instructions](#setup-your-aggregation-server-manually) below.
+Setup Nextbike Data aggregation:
+Continuously collect and store data from the Nextbike API, every minute, ready for analysis.
+
+- Use the [script](setup_aggregation_server.sh) to setup a Debian server
+- or follow the [manual instructions](#setup-your-aggregation-server-manually) below.
 
 #### Overview
 - Create a database
@@ -106,10 +109,10 @@ git clone https://github.com/zwoefler/nextbike-city-analysis.git /opt/nextbike-c
 sudo chown -R bike_admin:bike_admin /opt/nextbike-city-analysis
 
 # Create the Database
-psql -U bike_admin -d postgres -f /opt/nextbike-city-analysis/src/create_bikeDB.sql
+psql -U bike_admin -d postgres -f /opt/nextbike-city-analysis/setup/create_bike_and_stations_db.sql
 ```
 
-7. Configure Data Automation: Fill out `/opt/nextbike-city-analysis/src/config.py`:
+7. Configure Data Automation: Fill out `/opt/nextbike-city-analysis/setup/config.py`:
 ```Python
 dbhost = "localhost"
 dbname = "bikes"
