@@ -26,10 +26,51 @@
             margin-top: 5px;
             font-size: 16px;
         }
+        #info-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            width: 200px;
+        }
+
+        #info-box div {
+            margin-bottom: 10px;
+        }
+
+        #info-stats {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #info-stats div {
+            width: 45%;
+            text-align: center;
+        }
+
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <div id="info-box">
+    <div id="info-date">
+        <strong>Date:</strong> <span id="trip-date">--</span>
+        </div>
+        <div id="info-time">
+            <strong>Current Time:</strong> <span id="current-time">--:--</span>
+        </div>
+        <div id="info-stats">
+            <div id="trips-count">
+                <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
+            </div>
+            <div id="bikes-count">
+                <strong>Current Trips:</strong> <span id="bike-count">0</span>
+            </div>
+        </div>
+    </div>
     <div id="controls">
         <input type="range" id="time-slider" min="0" max="1440" value="0" />
         <button id="play-button">Play</button>
