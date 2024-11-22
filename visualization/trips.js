@@ -70,7 +70,6 @@ function updateMap(currentTimeMinutes) {
         }
     });
 }
-
 const tripDateElement = document.getElementById('trip-date');
 const currentTimeElement = document.getElementById('current-time');
 const tripCountElement = document.getElementById('trip-count');
@@ -111,8 +110,6 @@ function updateInfoBox(currentTimeMinutes) {
 function minutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
-
-
 
 
 const slider = document.getElementById('time-slider');
