@@ -1,5 +1,5 @@
-const map = L.map('map').setView([50.585716, 8.657575], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const map = L.map('map').setView([50.5839167, 8.6792777], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors',
 }).addTo(map);
 
@@ -70,6 +70,47 @@ function updateMap(currentTimeMinutes) {
         }
     });
 }
+const tripDateElement = document.getElementById('trip-date');
+const currentTimeElement = document.getElementById('current-time');
+const tripCountElement = document.getElementById('trip-count');
+const bikeCountElement = document.getElementById('bike-count');
+
+// Update the info box
+function updateInfoBox(currentTimeMinutes) {
+    if (!tripsData || tripsData.length === 0) return;
+
+    // Get the date from the first trip
+    const tripDate = new Date(tripsData[0].start_time).toLocaleDateString();
+    tripDateElement.textContent = tripDate;
+
+    // Update the current time
+    currentTimeElement.textContent = formatTime(currentTimeMinutes);
+
+    // Count active trips and unique bikes
+    let activeTrips = 0;
+    const activeBikes = new Set();
+
+    tripsData.forEach(trip => {
+        const tripStart = new Date(trip.start_time);
+        const tripEnd = new Date(trip.end_time);
+
+        if (currentTimeMinutes >= minutesSinceMidnight(tripStart) &&
+            currentTimeMinutes <= minutesSinceMidnight(tripEnd)) {
+            activeTrips++;
+            activeBikes.add(trip.bike_number);
+        }
+    });
+
+    // Update stats
+    tripCountElement.textContent = tripsData.length; // Total trips that day
+    bikeCountElement.textContent = activeBikes.size; // Unique active bikes
+}
+
+// Helper function: Convert Date to minutes since midnight
+function minutesSinceMidnight(date) {
+    return date.getHours() * 60 + date.getMinutes();
+}
+
 
 const slider = document.getElementById('time-slider');
 const timeDisplay = document.getElementById('time-display');
@@ -79,6 +120,7 @@ slider.addEventListener('input', (event) => {
     const currentTimeMinutes = parseInt(event.target.value, 10);
     timeDisplay.textContent = `Time: ${formatTime(currentTimeMinutes)}`;
     updateMap(currentTimeMinutes);
+    updateInfoBox(currentTimeMinutes);
 });
 
 playButton.addEventListener('click', () => {
@@ -102,6 +144,7 @@ playButton.addEventListener('click', () => {
             slider.value = currentTimeMinutes;
             timeDisplay.textContent = `Time: ${formatTime(currentTimeMinutes)}`;
             updateMap(currentTimeMinutes);
+            updateInfoBox(currentTimeMinutes);
         }, 100);
 
         isPlaying = true;
