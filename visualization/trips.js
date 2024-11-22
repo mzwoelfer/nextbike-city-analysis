@@ -1,5 +1,5 @@
-const map = L.map('map').setView([50.585716, 8.657575], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+const map = L.map('map').setView([50.5839167, 8.6792777], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors',
 }).addTo(map);
 
