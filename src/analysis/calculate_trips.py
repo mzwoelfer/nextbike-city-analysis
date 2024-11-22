@@ -1,13 +1,14 @@
 import json
-import psycopg
 import pandas as pd
 import osmnx as ox
 import networkx as nx
+import argparse
+import psycopg
 import config
 import os
 
 
-def get_trip_data():
+def get_trip_data_from_database():
     with psycopg.connect(
         host=config.dbhost,
         dbname=config.dbname,
@@ -48,15 +49,24 @@ def get_trip_data():
     return df
 
 
-def save_files_by_day(date, group):
-    trips_json = group.to_dict(orient="records")
-    json_file = os.path.join(f"trips_{date}.json")
+def get_trip_data_from_csv(file_path):
+    df = pd.read_csv(file_path)
 
-    print(trips_json)
+    df["start_time"] = pd.to_datetime(df["start_time"])
+    df["end_time"] = pd.to_datetime(df["end_time"])
+
+    df["duration"] = df["end_time"] - df["start_time"]
+    return df
+
+
+def save_files_by_day(date, group, folder="../../data/trips_data"):
+    trips_json = group.to_dict(orient="records")
+    json_file = os.path.join(folder, f"trips_{date}.json")
+
     with open(json_file, "w") as f:
         json.dump(trips_json, f, indent=4)
 
-    csv_file = os.path.join(f"trips_{date}.csv")
+    csv_file = os.path.join(folder, f"trips_{date}.csv")
     group.to_csv(csv_file, index=False)
 
 
@@ -75,13 +85,30 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Calculate bike trips and their distances from a CSV file or database."
+    )
+    parser.add_argument(
+        "input_file",
+        nargs="?",
+        default=None,
+        help="Path to the input CSV file. If not provided, data will be fetched from the database.",
+    )
+
+    args = parser.parse_args()
+
+    if args.input_file:
+        print(f"Loading data from {args.input_file}...")
+        trips = get_trip_data_from_csv(args.input_file)
+    else:
+        print("Fetching data from the database...")
+        trips = get_trip_data_from_database()
+
     southwest_lat, southwest_lon = 50.52289, 8.60267
     northeast_lat, northeast_lon = 50.63589, 8.74256
 
     bbox = (northeast_lat, southwest_lat, northeast_lon, southwest_lon)
     G = ox.graph_from_bbox(*bbox, network_type="bike")
-
-    trips = get_trip_data()
 
     trips["date"] = trips["start_time"].dt.date
 
@@ -103,7 +130,9 @@ def main():
     trips["duration"] = trips["duration"].dt.total_seconds()
     trips["date"] = trips["date"].astype(str)
 
-    save_files_by_day("", trips)
+    grouped = trips.groupby("date")
+    for date, group in grouped:
+        save_files_by_day(date, trips)
 
 
 if __name__ == "__main__":

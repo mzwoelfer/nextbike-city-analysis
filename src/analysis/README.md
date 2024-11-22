@@ -13,8 +13,11 @@ Trips are the difference in time and location for the same bike.
 - cd `nextbike-city-analysis/src/analysis`
 - Install python dependencies: `pip install -r requirements.txt`
 
+> Calculate trips from a csv: `python3 calculate_trips.py ../../data/raw/trips_2024-11-06.csv`
+> Output is in path `$PROJECT_ROOT/data/trips_data/trips_2024-11-06.json`
+
 1. Add your postgres credentials into `config.py`
-2. Calculate the trips: `python3 calculate_trips.py`
+2. Calculate the trips: `python3 calculate_trips.py ../../data/raw/trips_2024-11-06.csv`
 3. Show trips: `python3 plot_trips.py`
 
 ---
