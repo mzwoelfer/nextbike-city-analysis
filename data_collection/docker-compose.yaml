@@ -1,0 +1,57 @@
+# Usage
+#   Start:          docker compose --file docker-compose.yaml up -d
+#   Stop:           docker compose --file docker-compose.yaml down
+#   Destroy:        docker compose --file docker-compose.yaml down -v --remove-orphans
+
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    container_name: nextbike_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./create_bike_and_stations_db.sql:/docker-entrypoint-initdb.d/create_bike_and_stations_db.sql
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nextbike_network
+
+  data_collector:
+    build:
+      context: .
+      dockerfile: CONTAINERFILE
+    container_name: nextbike_data_collector
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+      while true; do
+        python query_nextbike.py;
+        sleep 60;
+      done"
+    volumes:
+      - ./data_collection:/app
+    working_dir: /app
+    networks:
+      - nextbike_network
+
+volumes:
+  postgres_data:
+
+networks:
+  nextbike_network:
+    driver: bridge
