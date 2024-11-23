@@ -1,26 +1,41 @@
-# bike-sharing
+<div align="center" width="100%">
+    <h2>Nextbike city analysis</h2>
+    <p>NextBike trip analysis for your city. Includes Data gathering, aggregation, cleanup and display.</p>
+</div>
 
-🚧 WORK IN PROGRESS
-
-- Data collection: `src/`
--
-
-
-## Data Collection
-src/
+# 🚧 WORK IN PROGRESS...
 
 ### Overview
 - create a database
 - setup the script on a server
 - run script automated with a cron job
 
+## Structure
+```SHELL
+- setup/                # Setup data collection on a server
+- data_collection/      # Collect data from Nextbike API
+- data_processing/      # Calculate trips from data in database
+- visualization/        # Webpage to visualize the trips
+- data/                 # Nextbike trips data
+- docs/                 # Documentation
+- scripts/              # Miscellaneous scripts
+```
+
 ### Prerequisites
 
 - Python 3.12
 - Python libraries: [requirementxt.txt](/requirements.txt)
 
-install packages:
-    pip install -r requirements.txt
+#### Development
+1. Clone Repository: `git clone git@github.com:zwoefler/nextbike-city-analysis.git`
+2. Change directory: `cd nextbike-city-analysis/`
+3. Create python virtual environment:
+```SHELL
+python3 -m venv Env
+source Env/bin/activate
+pip install -r requirements.txt
+```
+
 
 ### Scripts
 **SQL Script [create_bike_and_stations_db.sql](/src/create_bike_and_stations_db.sql) to create the database scheme**

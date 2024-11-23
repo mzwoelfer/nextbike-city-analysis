@@ -7,11 +7,10 @@ Playbook:
 1. Get the trips from database
 2. calculate_trips.py from .csv
 3. Multithread the calculate trip
-4. visualization: put on map. Add timer, 
+4. visualization: put on map. Add timer,
 
 
 1. Get trips from database. Use the `daily_trip_extractor.sh` script on the database server.
-2. 
 
 ## Get the trips
 ```SQL
