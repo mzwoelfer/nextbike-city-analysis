@@ -4,6 +4,7 @@ Install the Nextbike data collection on a server using Containers.
 
 Continuously collect and store data from the Nextbike API, every minute, ready for analysis.
 
+Uses Postgres as a database, and a Python3 script to pull the data.
 
 ## Prerequisites
 Per entry roughly `0,12 KB`.
