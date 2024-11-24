@@ -8,7 +8,7 @@ let activeRoutes = {};
 let timer = null;
 let isPlaying = false;
 
-fetch('data/timestamped_trips_2024-11-06.json')
+fetch('data/trips_2024-11-19.json')
     .then(response => response.json())
     .then(data => {
         tripsData = data;
