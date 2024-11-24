@@ -4,6 +4,7 @@ Install the Nextbike data collection on a server using Containers.
 
 Continuously collect and store data from the Nextbike API, every minute, ready for analysis.
 
+Uses Postgres as a database, and a Python3 script to pull the data.
 
 ## Prerequisites
 Per entry roughly `0,12 KB`.
@@ -27,7 +28,7 @@ git clone https://github.com/zwoefler/nextbike-city-analysis.git
 cd nextbike-city-analysis/data_collection
 
 # Copy the fake env vars
-cp data_collection.env.example data_collection.env
+cp .env.example .env
 
 # Pulls & builds the images and starts the aggregation in the background
 docker compose --file docker-compose.yaml up -d

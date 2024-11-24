@@ -4,16 +4,24 @@ import osmnx as ox
 import networkx as nx
 import argparse
 import psycopg
-import config
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+db_host = os.getenv("DB_HOST")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
+db_user = os.getenv("DB_USER")
+db_password = os.getenv("DB_PASSWORD")
 
 
 def get_trip_data_from_database():
     with psycopg.connect(
-        host=config.dbhost,
-        dbname=config.dbname,
-        user=config.dbuser,
-        password=config.dbpassword,
+        host=db_host,
+        dbname=db_name,
+        user=db_user,
+        password=db_password,
     ) as conn:
         query_bike_movements = """
         WITH bike_movements AS (
@@ -59,7 +67,7 @@ def get_trip_data_from_csv(file_path):
     return df
 
 
-def save_files_by_day(date, group, folder="../../data/trips_data"):
+def save_files_by_day(date, group, folder="../data/trips_data"):
     trips_json = group.to_dict(orient="records")
     json_file = os.path.join(folder, f"trips_{date}.json")
 
@@ -68,6 +76,30 @@ def save_files_by_day(date, group, folder="../../data/trips_data"):
 
     csv_file = os.path.join(folder, f"trips_{date}.csv")
     group.to_csv(csv_file, index=False)
+
+
+def add_timestamps_to_segments(trips):
+    """
+    Adds timestamps to each segment in the DataFrame's segments column.
+    Uses existing start_time, end_time, and duration.
+    """
+
+    def add_timestamps(row):
+        start_time = pd.to_datetime(row["start_time"])
+        duration = row["duration"]
+
+        num_segments = len(row["segments"])
+        time_increment = duration / max(num_segments - 1, 1)  # Avoid division by zero
+
+        segments_with_timestamps = []
+        for i, segment in enumerate(row["segments"]):
+            timestamp = start_time + pd.to_timedelta(i * time_increment, unit="s")
+            segments_with_timestamps.append(segment + [timestamp.isoformat()])
+
+        return segments_with_timestamps
+
+    trips["segments"] = trips.apply(add_timestamps, axis=1)
+    return trips
 
 
 def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
@@ -129,6 +161,8 @@ def main():
     trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["duration"] = trips["duration"].dt.total_seconds()
     trips["date"] = trips["date"].astype(str)
+
+    trips = add_timestamps_to_segments(trips)
 
     grouped = trips.groupby("date")
     for date, group in grouped:
