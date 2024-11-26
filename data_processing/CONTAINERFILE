@@ -1,4 +1,4 @@
-FROM python:3.11-alpine AS builder
+FROM python:3.11-slim AS builder
 
 ENV PYTHONUNBUFFERED 1
 
@@ -6,18 +6,17 @@ WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
 
-RUN apk add build-base
-
 RUN pip install --no-cache-dir --prefix=/install -r /app/requirements.txt
 
 # STAGE 2
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
 COPY --from=builder /install /usr/local
+
 COPY calculate_trips.py /app/calculate_trips.py
 
-CMD ["python", "calculate_trips.py"]
+ENTRYPOINT ["python", "/app/calculate_trips.py"]

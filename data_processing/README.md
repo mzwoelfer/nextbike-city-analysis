@@ -31,7 +31,13 @@ python3 plot_trips.py
 
 ## Build Image
 ```SHELL
+# Build Image
 nerdctl build --file CONTAINERFILE -t nb_processing:0.1 .
+
+# RUn and pull data from local postgres
+nerdctl run --name proc --network data_collection_nextbike_network --env-file .env nb_processing:0.1
+
+
 
 ```
 
