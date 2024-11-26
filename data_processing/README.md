@@ -29,3 +29,10 @@ python3 plot_trips.py
 ```
 
 
+## Build Image
+```SHELL
+nerdctl build --file CONTAINERFILE -t nb_processing:0.1 .
+
+```
+
+
