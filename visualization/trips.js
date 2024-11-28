@@ -13,6 +13,8 @@ fetch('data/trips_2024-11-19.json')
     .then(data => {
         tripsData = data;
         console.log('Trips data loaded:', tripsData);
+
+        populateRouteTable();
     })
     .catch(err => console.error('Error loading trip data:', err));
 
@@ -75,18 +77,43 @@ const currentTimeElement = document.getElementById('current-time');
 const tripCountElement = document.getElementById('trip-count');
 const bikeCountElement = document.getElementById('bike-count');
 
-// Update the info box
+
+function populateRouteTable() {
+    const tableBody = document.querySelector('#route-table tbody');
+    tableBody.innerHTML = ''; // Clear existing rows
+
+    tripsData.forEach((trip, index) => {
+        const row = document.createElement('tr');
+
+        // Create and append cells
+        const bikeCell = document.createElement('td');
+        bikeCell.textContent = trip.bike_number;
+        row.appendChild(bikeCell);
+
+        const startTimeCell = document.createElement('td');
+        startTimeCell.textContent = new Date(trip.start_time).toLocaleTimeString();
+        row.appendChild(startTimeCell);
+
+        const endTimeCell = document.createElement('td');
+        endTimeCell.textContent = new Date(trip.end_time).toLocaleTimeString();
+        row.appendChild(endTimeCell);
+
+        const distanceCell = document.createElement('td');
+        distanceCell.textContent = trip.distance.toFixed(2);
+        row.appendChild(distanceCell);
+
+        tableBody.appendChild(row);
+    });
+}
+
 function updateInfoBox(currentTimeMinutes) {
     if (!tripsData || tripsData.length === 0) return;
 
-    // Get the date from the first trip
     const tripDate = new Date(tripsData[0].start_time).toLocaleDateString();
     tripDateElement.textContent = tripDate;
 
-    // Update the current time
     currentTimeElement.textContent = formatTime(currentTimeMinutes);
 
-    // Count active trips and unique bikes
     let activeTrips = 0;
     const activeBikes = new Set();
 
@@ -101,12 +128,10 @@ function updateInfoBox(currentTimeMinutes) {
         }
     });
 
-    // Update stats
     tripCountElement.textContent = tripsData.length; // Total trips that day
     bikeCountElement.textContent = activeBikes.size; // Unique active bikes
 }
 
-// Helper function: Convert Date to minutes since midnight
 function minutesSinceMidnight(date) {
     return date.getHours() * 60 + date.getMinutes();
 }
