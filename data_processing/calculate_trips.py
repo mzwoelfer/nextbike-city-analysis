@@ -67,7 +67,7 @@ def get_trip_data_from_csv(file_path):
     return df
 
 
-def save_files_by_day(date, group, folder="../data/trips_data"):
+def save_files_by_day(date, group, folder):
     trips_json = group.to_dict(orient="records")
     json_file = os.path.join(folder, f"trips_{date}.json")
 
@@ -126,8 +126,17 @@ def main():
         default=None,
         help="Path to the input CSV file. If not provided, data will be fetched from the database.",
     )
+    parser.add_argument(
+        "--export-folder",
+        required=True,
+        help="Folder to export the resulting JSON and CSV files (must exist).",
+    )
 
     args = parser.parse_args()
+    if not os.path.exists(args.export_folder):
+        print(f"Error: Export folder ${args.export_folder} doesn't exist.")
+        print(f"Error: Create the folder yourself or check your path")
+        exit(1)
 
     if args.input_file:
         print(f"Loading data from {args.input_file}...")
@@ -166,7 +175,7 @@ def main():
 
     grouped = trips.groupby("date")
     for date, group in grouped:
-        save_files_by_day(date, trips)
+        save_files_by_day(date, trips, args.export_folder)
 
 
 if __name__ == "__main__":

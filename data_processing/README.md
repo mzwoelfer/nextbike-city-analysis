@@ -6,7 +6,24 @@ The raw bikes data has timetamps and location data.
 For analysis, we extract "trips".
 Trips are the difference in time and location for the same bike.
 
-## Run analysis
+
+
+## Build Image
+```SHELL
+project_address=($PWD)
+cd data_processing
+
+# Build Image
+nerdctl build --file CONTAINERFILE -t nb_processing .
+
+# RUn and pull data from local postgres
+nerdctl run --rm --env-file .env nb_processing
+
+nerdctl run --rm -v "$project_address/data/trips_data/:/app/export" --network data_collection_nextbike_network --env-file .env nb_processing:0.1 --export /app/export
+```
+
+
+## Run analysis - Python
 - Activate Python3 virtual env
 - cd `nextbike-city-analysis/data_processing`
 - Install python dependencies: `pip install -r requirements.txt`
@@ -29,3 +46,17 @@ python3 plot_trips.py
 ```
 
 
+## Tips for the future
+#### Avoid using alpine python base images
+Alpine uncompressed is smaller than most images out there.
+But you get (especially for more python dependencies):
+- less compatibility
+- acutally bigger images
+- longer build times 
+- more hustle.
+
+The smallest I could get with `alpine` was 783.7 MB. 
+With the `slim` image: 745.8MB.
+
+Just use a Debian or Redhat slim base image like:
+`python:3.12.7-slim-bullseye`
