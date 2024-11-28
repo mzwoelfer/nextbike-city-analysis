@@ -45,7 +45,6 @@ def get_trip_data_from_database():
         WHERE end_latitude IS NOT NULL
           AND (start_latitude != end_latitude OR start_longitude != end_longitude)
         ORDER BY bike_number, start_time
-        LIMIT 50;
         """
 
         df = pd.read_sql_query(query_bike_movements, conn)
