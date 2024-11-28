@@ -44,3 +44,19 @@ $ python3 calculate_trips.py ../data/raw/trips_2024-11-19.csv
 # Show trips:
 python3 plot_trips.py
 ```
+
+
+## Tips for the future
+#### Avoid using alpine python base images
+Alpine uncompressed is smaller than most images out there.
+But you get (especially for more python dependencies):
+- less compatibility
+- acutally bigger images
+- longer build times 
+- more hustle.
+
+The smallest I could get with `alpine` was 783.7 MB. 
+With the `slim` image: 745.8MB.
+
+Just use a Debian or Redhat slim base image like:
+`python:3.12.7-slim-bullseye`

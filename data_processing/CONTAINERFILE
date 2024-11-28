@@ -1,22 +1,22 @@
-FROM python:3.11-slim AS builder
+FROM python:3.12.7-slim-bullseye AS builder
 
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
+RUN mkdir /install
+WORKDIR /install
 
-COPY requirements.txt /app/requirements.txt
+COPY requirements.txt /requirements.txt
 
-RUN pip install --no-cache-dir --prefix=/install -r /app/requirements.txt
+RUN pip install --prefix=/install -r /requirements.txt
 
 # STAGE 2
-FROM python:3.11-slim
+FROM python:3.12.7-slim-bullseye
 
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
-
 COPY --from=builder /install /usr/local
-
 COPY calculate_trips.py /app/calculate_trips.py
 
-ENTRYPOINT ["python", "/app/calculate_trips.py"]
+WORKDIR /app
+
+ENTRYPOINT ["python", "calculate_trips.py"]
