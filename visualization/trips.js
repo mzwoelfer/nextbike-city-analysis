@@ -84,6 +84,7 @@ function populateRouteTable() {
 
     tripsData.forEach((trip, index) => {
         const row = document.createElement('tr');
+        row.dataset.index = index;
 
         // Create and append cells
         const bikeCell = document.createElement('td');
@@ -102,8 +103,44 @@ function populateRouteTable() {
         distanceCell.textContent = trip.distance.toFixed(2);
         row.appendChild(distanceCell);
 
+        const durationCell = document.createElement('td');
+        durationSeconds = trip.duration.toFixed(2);
+        durationMinutes = durationSeconds / 60;
+        durationCell.textContent = durationMinutes.toFixed(0);
+        row.appendChild(durationCell);
+
         tableBody.appendChild(row);
+
+        row.addEventListener('click', () => {
+            const tripIndex = parseInt(row.dataset.index, 10);
+            highlightTrips(tripIndex);
+        })
     });
+}
+
+function highlightTrip(index) {
+    const trip = tripsData[index];
+    if (!trip) {
+        console.error(`No trip found at index ${index}`);
+        return;
+    }
+
+    Object.values(activeRoutes).forEach(route => map.removeLayer(route));
+    activeRoutes = {};
+
+    const pathCoordinates = trip.segments.map(segment => [segment[0], segment[1]]);
+    const selectedRoute = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
+
+    if (pathCoordinates.length > 0) {
+        map.panTo(pathCoordinates[0]);
+    }
+
+    activeRoutes[index] = selectedRoute;
+    console.log(`Highlighted trip ${index}`);
+
+    const rows = document.querySelectorAll('#route-table tbody tr');
+    rows.forEach(row => row.classList.remove('active')); // Remove active class from all rows
+    rows[index].classList.add('active'); // Add active class to the selected row
 }
 
 function updateInfoBox(currentTimeMinutes) {
