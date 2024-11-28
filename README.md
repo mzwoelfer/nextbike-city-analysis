@@ -1,80 +1,87 @@
 <div align="center" width="100%">
     <h2>Nextbike city analysis</h2>
-    <p>NextBike trip analysis for your city. Includes Data gathering, aggregation, cleanup and display.</p>
+    <p>NextBike trip analysis for your city. Collect, process and visualize bike trips in your City.</p>
 </div>
 
-# 🚧 WORK IN PROGRESS...
+## Overview
+The `collection/` folder contains scripts and a `docker_compose.yaml` to collect data from the Nextbike API.
+THe data is pulled every minute and stored in a `Postgres` database.
 
-### Overview
-- create a database
-- setup the script on a server
-- run script automated with a cron job
+The `processing/` directory holds scripts to calculate the trips from the raw data in the database.
+The resulting data is stored in `data/`
 
-## Structure
+`visualization/` holds the webpage to display the trips on a map.
+
+The `docs/` contain the docs, frequently asked questions and therelike.
+
 ```SHELL
-- setup/                # Setup data collection on a server
-- data_collection/      # Collect data from Nextbike API
-- data_processing/      # Calculate trips from data in database
-- visualization/        # Webpage to visualize the trips
+- collection/           # Setup Nextbike API data collection on a server
 - data/                 # Nextbike trips data
 - docs/                 # Documentation
-- scripts/              # Miscellaneous scripts
+- processing/           # Calculate trips from data in database
+- visualization/        # Webpage to visualize the trips
 ```
 
 ### Prerequisites
 
+- Docker (for containerized setup. See [Install Docker](https://docs.docker.com/engine/install/))
 - Python 3.12
-- Python libraries: [requirementxt.txt](/requirements.txt)
 
 #### Development
 1. Clone Repository: `git clone git@github.com:zwoefler/nextbike-city-analysis.git`
 2. Change directory: `cd nextbike-city-analysis/`
-3. Create python virtual environment:
+3. Change into directory for development. `collection/` or `processing/`
+4. Create python virtual environment:
 ```SHELL
 python3 -m venv Env
 source Env/bin/activate
 pip install -r requirements.txt
 ```
 
+## 🚀 Getting started / Install
+1. Clone repo:
+```SHELL
+git clone https://github.com/zwoefler/nextbike-city-analysis.git
+cd nextbike-city-analysis
+```
 
-### Scripts
-**SQL Script [create_bike_and_stations_db.sql](/src/create_bike_and_stations_db.sql) to create the database scheme**
+2. Setup data collection:
+```SHELL
+# Change directory into collection
+cd collection
 
-Create a database where the data queried in the script is being stored.
+# Copy the fake env vars
+cp .env.example .env
 
-**Script [query_nextbike.py](/src/query_nextbike.py) is used to query provider API data**
+# Start data aggregation in background. Pulls & builds the images 
+docker compose --file docker-compose.yaml up -d
 
-API requests to receive current bike and station locations from Nextbike in Gießen and store them in a postgres database.
+# cd back to project root
+cd ..
+```
 
+3. Calculate trips (Wait a few minutes before execution):
+```SHELL
+project_address=($PWD)
+image_tag=nb_processing
 
-**Config File**
-Add [config.py](/src/config.py) file to `src/` with database credentials.
+cd data_processing
 
-## Run script automized
-Set up a cron job that runs the script in regular intervalls.
-E.g. this setup
-- run the *query_nextbike.py* script every minute
+# Build Image
+nerdctl build --file CONTAINERFILE -t $image_tag .
 
-**CRON JOBS**
-        * * * * * python3 [PATH TO FOLDER]/src/query_nextbike.py
+nerdctl run --rm \
+    -v "$project_address/data/trips_data/:/app/export" \
+    --network data_collection_nextbike_network \
+    --env-file .env \
+    $image_tag \
+    --export /app/export
 
-### Query other cities or providers
-To query other providers [this documentation](https://github.com/ubahnverleih/WoBike/) is a good source of information.
+cd ..
+```
 
-## Data Analysis
-src/analysis
-
-1. Add your postgres credentials into `config.py`
-2. Calculate the trips: `python3 calculate_trips.py`
-3. Show trips: `python3 plot_trips.py`
-
-- giessen_minimal_route.png - visualized Nextbike routes in city
-- config.py - COnfig to connect to postgres and pull data
-- calculate_trips.py - calculates trips from data and output trips.csv
-- plot_trips.py - plots the trips from trips.csv to an image
-- trips.csv - Holds the trips data with start and end location and timestamp
-
-
+4. Visualize trips:
+🚧 TBD
 
 ## Credits
 Inspiration:
