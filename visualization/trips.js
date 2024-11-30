@@ -136,6 +136,13 @@ function highlightTrip(index) {
 
     document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
     document.querySelector(`[data-index='${index}']`).classList.add('active');
+
+    const tripStartTime = new Date(trip.start_time);
+    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
+
+    const slider = document.getElementById('time-slider');
+    slider.value = state.currentTimeMinutes;
+    document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
 }
 
 document.getElementById('time-slider').addEventListener('input', (event) => {
