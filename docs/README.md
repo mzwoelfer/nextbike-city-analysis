@@ -10,3 +10,11 @@ Includes Data gathering, aggregation, cleanup and display.
 - [X] WEBPAGE: Show number of trips
 - [ ] WEBPAGE: Show table of trips on webpage
 - [ ] WEBPAGE: Add Box with: number of bikes, all trips, date, time
+
+
+## WEBPAGE
+- Add table with trips
+    - id, bikeid, start time, end time, distance, trip time
+- Provide downloadbutto for data
+- make trip clickable in table, jumps to end time of slider and shows the trip with red, instead of blue color
+- make table sortable

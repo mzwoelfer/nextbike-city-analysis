@@ -3,15 +3,18 @@
 🚧 WORK IN PROGRESS
 
 ## Prerequisites
-1. Populated `data/` folder
+
+1. Run http-server locally:
+```SHELL
+cd visualization/
+```
+
+2. Populated `data/` folder
 Each JSON-file contains trips per day.
 See the format at the end of this README.
 
-2. Run http-server locally:
-```SHELL
-cd visualization/
-
 # Start http server
+```SHELL
 python3 -m http.server 8000
 ```
 
