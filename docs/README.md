@@ -5,16 +5,13 @@ Includes Data gathering, aggregation, cleanup and display.
 
 
 ## ToDo & Features:
-- [X] Add / Update docs to describe full data gathring proces until visualization
-- [ ] WEBPAGE: Add current date to Visualization
-- [X] WEBPAGE: Show number of trips
-- [ ] WEBPAGE: Show table of trips on webpage
-- [ ] WEBPAGE: Add Box with: number of bikes, all trips, date, time
 
+### Processing
+- Remove "trips" that are less than 100m.
 
-## WEBPAGE
+### WEBPAGE
 - Add table with trips
     - id, bikeid, start time, end time, distance, trip time
-- Provide downloadbutto for data
+- Provide downloadbutton for data
 - make trip clickable in table, jumps to end time of slider and shows the trip with red, instead of blue color
 - make table sortable
