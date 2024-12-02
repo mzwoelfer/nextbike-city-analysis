@@ -16,7 +16,11 @@ ENV PYTHONUNBUFFERED 1
 
 COPY --from=builder /install /usr/local
 COPY calculate_trips.py /app/calculate_trips.py
+COPY pull_stations.py /app/pull_stations.py
+COPY run_scripts.sh /app/run_scripts.sh
 
 WORKDIR /app
 
-ENTRYPOINT ["python", "calculate_trips.py"]
+RUN chmod +x /app/run_scripts.sh
+
+ENTRYPOINT ["/app/run_scripts.sh"]
