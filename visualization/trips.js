@@ -6,6 +6,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 const state = {
     tripsData: [],
     activeRoutes: {},
+    stationData: [],
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
@@ -30,6 +31,33 @@ async function loadTripsData() {
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
+}
+
+async function loadStationData() {
+    try {
+        const response = await fetch('data/stations_2024-12-02.json');
+        state.stationData = await response.json();
+        console.log('Station data loaded:', state.stationData);
+
+        plotStationsOnMap();
+    } catch (err) {
+        console.error('Error loading station data:', err);
+    }
+}
+
+function plotStationsOnMap() {
+    const { stationData } = state;
+    stationData.forEach((station) => {
+        const { latitude, longitude, name } = station;
+        L.circleMarker([latitude, longitude], {
+            radius: 2,
+            color: 'orange',
+            fillColor: 'orange',
+            fillOpacity: 0.3,
+        })
+        .bindPopup(`<strong>${name}</strong>`)
+        .addTo(map);
+    });
 }
 
 function updateMap() {
@@ -181,3 +209,4 @@ document.getElementById('play-button').addEventListener('click', () => {
 });
 
 loadTripsData();
+loadStationData();
