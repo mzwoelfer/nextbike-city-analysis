@@ -27,9 +27,7 @@ services:
       - nextbike_network
 
   data_collector:
-    build:
-      context: .
-      dockerfile: CONTAINERFILE
+    image: nextbike_collector:multiple_cities
     container_name: nextbike_data_collector
     restart: always
     env_file:
