@@ -16,6 +16,8 @@ cd nextbike-city-analysis/data_collection
 # Copy the fake env vars
 cp .env.example .env
 
+docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
+
 # Pulls & builds the images and starts the aggregation in the background
 docker compose --file docker-compose.yaml up -d
 ```
