@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS public.bikes (
     bike_type TEXT,
     station_number INTEGER,
     station_uid INTEGER,
-    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    city_id INTEGER NOT NULL,
+    city_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.stations (
@@ -21,6 +23,8 @@ CREATE TABLE IF NOT EXISTS public.stations (
     station_number INTEGER,
     maintenance BOOLEAN,
     terminal_type TEXT,
-    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    city_id INTEGER NOT NULL,
+    city_name TEXT NOT NULL
 );
 
