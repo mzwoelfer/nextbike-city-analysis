@@ -28,3 +28,14 @@ CREATE TABLE IF NOT EXISTS public.stations (
     city_name TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS public.cities (
+    id SERIAL PRIMARY KEY,
+    city_id INTEGER NOT NULL UNIQUE,
+    city_name TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    set_point_bikes INTEGER NOT NULL,
+    available_bikes INTEGER NOT NULL,
+    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
+);
