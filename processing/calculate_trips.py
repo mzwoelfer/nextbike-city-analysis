@@ -16,14 +16,14 @@ db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 
 
-def get_trip_data_from_database():
+def get_trip_data_from_database(city_id):
     with psycopg.connect(
         host=db_host,
         dbname=db_name,
         user=db_user,
         password=db_password,
     ) as conn:
-        query_bike_movements = """
+        query_bike_movements = f"""
         WITH bike_movements AS (
             SELECT bike_number,
                    latitude AS start_latitude,
@@ -33,6 +33,7 @@ def get_trip_data_from_database():
                    LEAD(longitude) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_longitude,
                    LEAD(last_updated) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_time
             FROM public.bikes
+            WHERE city_id = {city_id}
         )
         SELECT bike_number,
                start_latitude,
@@ -117,7 +118,13 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Calculate bike trips and their distances from a CSV file or database."
+        description="Calculate next bikebike trips and their distances from a CSV file or database."
+    )
+    parser.add_argument(
+        "--city-id",
+        type=int,
+        required=True,
+        help="The city_id to filter trips from the database",
     )
     parser.add_argument(
         "input_file",
@@ -141,8 +148,8 @@ def main():
         print(f"Loading data from {args.input_file}...")
         trips = get_trip_data_from_csv(args.input_file)
     else:
-        print("Fetching data from the database...")
-        trips = get_trip_data_from_database()
+        print(f"Fetching nextbike data for city_id: {args.city_id} from the database")
+        trips = get_trip_data_from_database(args.city_id)
 
     southwest_lat, southwest_lon = 50.52289, 8.60267
     northeast_lat, northeast_lon = 50.63589, 8.74256
