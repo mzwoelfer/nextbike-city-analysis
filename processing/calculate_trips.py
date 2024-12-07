@@ -88,15 +88,33 @@ def get_trip_data_from_csv(file_path):
     return df
 
 
-def save_files_by_day(date, group, folder):
-    trips_json = group.to_dict(orient="records")
+def add_city_info_to_trips_json(city_lat, city_lng, trips_json):
+    """
+    Takes the trips as JSON.
+    Returns an Object with city_info and trips
+    """
+    city_and_trips_json = {
+        "city_info": {"lat": city_lat, "lng": city_lng},
+        "trips": trips_json,
+    }
+
+    return city_and_trips_json
+
+
+def save_files_by_day_json(date, city_and_trips_json, folder):
     json_file = os.path.join(folder, f"trips_{date}.json")
 
     with open(json_file, "w") as f:
-        json.dump(trips_json, f, indent=4)
+        json.dump(city_and_trips_json, f, indent=4)
 
-    csv_file = os.path.join(folder, f"trips_{date}.csv")
-    group.to_csv(csv_file, index=False)
+
+def save_files_by_day_csv(date, group, folder):
+    """
+    TBD.
+    Export trips data including city info to a csv file
+    """
+
+    return
 
 
 def add_timestamps_to_segments(trips):
@@ -211,7 +229,12 @@ def main():
 
     grouped = trips.groupby("date")
     for date, group in grouped:
-        save_files_by_day(date, trips, args.export_folder)
+        trips_json = group.to_dict(orient="records")
+        city_and_trips_json = add_city_info_to_trips_json(
+            city_lat, city_lng, trips_json
+        )
+
+        save_files_by_day_json(date, city_and_trips_json, args.export_folder)
 
 
 if __name__ == "__main__":
