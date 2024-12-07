@@ -16,14 +16,14 @@ db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 
 
-def get_trip_data_from_database():
+def get_trip_data_from_database(city_id):
     with psycopg.connect(
         host=db_host,
         dbname=db_name,
         user=db_user,
         password=db_password,
     ) as conn:
-        query_bike_movements = """
+        query_bike_movements = f"""
         WITH bike_movements AS (
             SELECT bike_number,
                    latitude AS start_latitude,
@@ -33,6 +33,7 @@ def get_trip_data_from_database():
                    LEAD(longitude) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_longitude,
                    LEAD(last_updated) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_time
             FROM public.bikes
+            WHERE city_id = {city_id}
         )
         SELECT bike_number,
                start_latitude,
@@ -56,6 +57,27 @@ def get_trip_data_from_database():
     return df
 
 
+def get_city_coordinates_from_database(city_id):
+    with psycopg.connect(
+        host=db_host,
+        dbname=db_name,
+        user=db_user,
+        password=db_password,
+    ) as conn:
+        with conn.cursor() as cur:
+            query_cities = f"""
+            SELECT latitude, longitude
+            FROM public.cities
+            WHERE city_id = {city_id};
+            """
+            cur.execute(
+                query_cities,
+            )
+            lat, long = cur.fetchone()
+
+    return lat, long
+
+
 def get_trip_data_from_csv(file_path):
     df = pd.read_csv(file_path)
 
@@ -66,15 +88,33 @@ def get_trip_data_from_csv(file_path):
     return df
 
 
-def save_files_by_day(date, group, folder):
-    trips_json = group.to_dict(orient="records")
+def add_city_info_to_trips_json(city_lat, city_lng, trips_json):
+    """
+    Takes the trips as JSON.
+    Returns an Object with city_info and trips
+    """
+    city_and_trips_json = {
+        "city_info": {"lat": city_lat, "lng": city_lng},
+        "trips": trips_json,
+    }
+
+    return city_and_trips_json
+
+
+def save_files_by_day_json(date, city_and_trips_json, folder):
     json_file = os.path.join(folder, f"trips_{date}.json")
 
     with open(json_file, "w") as f:
-        json.dump(trips_json, f, indent=4)
+        json.dump(city_and_trips_json, f, indent=4)
 
-    csv_file = os.path.join(folder, f"trips_{date}.csv")
-    group.to_csv(csv_file, index=False)
+
+def save_files_by_day_csv(date, group, folder):
+    """
+    TBD.
+    Export trips data including city info to a csv file
+    """
+
+    return
 
 
 def add_timestamps_to_segments(trips):
@@ -105,11 +145,20 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     start_node = ox.distance.nearest_nodes(G, X=start_lon, Y=start_lat)
     end_node = ox.distance.nearest_nodes(G, X=end_lon, Y=end_lat)
 
-    shortest_path_length = nx.shortest_path_length(
-        G, start_node, end_node, weight="length"
-    )
+    if start_node not in G.nodes or end_node not in G.nodes:
+        raise ValueError(f"Start or end node not in graph: {start_node}, {end_node}")
 
-    shortest_path = nx.shortest_path(G, start_node, end_node, weight="length")
+    try:
+        shortest_path_length = nx.shortest_path_length(
+            G, start_node, end_node, weight="length"
+        )
+        shortest_path = nx.shortest_path(G, start_node, end_node, weight="length")
+    except nx.NetworkXNoPath:
+        print(f"No path found between {start_node} and {end_node}")
+        shortest_path_length = 0
+        shortest_path = []
+        return shortest_path_length, shortest_path
+
     path_segments = [[G.nodes[node]["y"], G.nodes[node]["x"]] for node in shortest_path]
 
     return shortest_path_length, path_segments
@@ -117,7 +166,13 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Calculate bike trips and their distances from a CSV file or database."
+        description="Calculate next bikebike trips and their distances from a CSV file or database."
+    )
+    parser.add_argument(
+        "--city-id",
+        type=int,
+        required=True,
+        help="The city_id to filter trips from the database",
     )
     parser.add_argument(
         "input_file",
@@ -141,14 +196,14 @@ def main():
         print(f"Loading data from {args.input_file}...")
         trips = get_trip_data_from_csv(args.input_file)
     else:
-        print("Fetching data from the database...")
-        trips = get_trip_data_from_database()
+        print(f"Fetching nextbike data for city_id: {args.city_id} from the database")
+        trips = get_trip_data_from_database(args.city_id)
 
-    southwest_lat, southwest_lon = 50.52289, 8.60267
-    northeast_lat, northeast_lon = 50.63589, 8.74256
-
-    bbox = (northeast_lat, southwest_lat, northeast_lon, southwest_lon)
-    G = ox.graph_from_bbox(*bbox, network_type="bike")
+    city_lat, city_lng = get_city_coordinates_from_database(args.city_id)
+    city_coordinates = (city_lat, city_lng)
+    G = ox.graph_from_point(
+        city_coordinates, dist=10000, network_type="bike", simplify=True
+    )
 
     trips["date"] = trips["start_time"].dt.date
 
@@ -174,7 +229,12 @@ def main():
 
     grouped = trips.groupby("date")
     for date, group in grouped:
-        save_files_by_day(date, trips, args.export_folder)
+        trips_json = group.to_dict(orient="records")
+        city_and_trips_json = add_city_info_to_trips_json(
+            city_lat, city_lng, trips_json
+        )
+
+        save_files_by_day_json(date, city_and_trips_json, args.export_folder)
 
 
 if __name__ == "__main__":

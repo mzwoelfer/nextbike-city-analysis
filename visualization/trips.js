@@ -1,9 +1,6 @@
-const map = L.map('map').setView([50.5839167, 8.6792777], 12);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-}).addTo(map);
-
 const state = {
+    city_lat: 0,
+    city_lng: 0,
     tripsData: [],
     activeRoutes: {},
     stationData: [],
@@ -11,6 +8,18 @@ const state = {
     timer: null,
     currentTimeMinutes: 0,
 };
+
+let map;
+const initializeMap = (lat, lng) => {
+    if (map) {
+        map.remove();
+    }
+
+    map = L.map('map').setView([lat, lng], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+}
 
 const formatTime = (minutes) => {
     const hrs = Math.floor(minutes / 60);
@@ -22,10 +31,16 @@ const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 async function loadTripsData() {
     try {
-        const response = await fetch('data/trips_2024-11-19.json');
-        state.tripsData = await response.json();
+        const response = await fetch('data/trips_2024-12-07.json');
+        const data = await response.json();
+
+        state.tripsData = data["trips"];
+        state.city_lat = data["city_info"]["lat"];
+        state.city_lng = data["city_info"]["lng"];
+
         console.log('Trips data loaded:', state.tripsData);
 
+        initializeMap(state.city_lat, state.city_lng)
         populateRouteTable();
         updateAllComponents();
     } catch (err) {
@@ -35,7 +50,7 @@ async function loadTripsData() {
 
 async function loadStationData() {
     try {
-        const response = await fetch('data/stations_2024-12-02.json');
+        const response = await fetch('data/438_stations_2024-12-07.json');
         state.stationData = await response.json();
         console.log('Station data loaded:', state.stationData);
 
@@ -55,8 +70,8 @@ function plotStationsOnMap() {
             fillColor: 'orange',
             fillOpacity: 0.3,
         })
-        .bindPopup(`<strong>${name}</strong>`)
-        .addTo(map);
+            .bindPopup(`<strong>${name}</strong>`)
+            .addTo(map);
     });
 }
 

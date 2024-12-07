@@ -11,15 +11,30 @@ Trips are the difference in time and location for the same bike.
 ## Build Image
 ```SHELL
 project_address=($PWD)
-cd data_processing
+cd processing
 
 # Build Image
 nerdctl build --file CONTAINERFILE -t nb_processing .
 
-# RUn and pull data from local postgres
+# Run and pull data from local postgres
 nerdctl run --rm --env-file .env nb_processing
 
 nerdctl run --rm -v "$project_address/data/trips_data/:/app/export" --network collection_nextbike_network --env-file .env nb_processing:0.1 --export /app/export
+```
+
+## Local Development
+```SHELL
+project_address=($PWD)
+cd processing
+
+source Env/bin/activate
+pip install -r requirements.txt
+```
+
+ADD YOUR CITY ID:
+```SHELL
+python3 calculate_trips.py --city-id <CITY_ID> --export-folder test_data/
+python3 pull_stations.py --city-id <CITY_ID> --export-folder test_data/
 ```
 
 
@@ -52,10 +67,10 @@ Alpine uncompressed is smaller than most images out there.
 But you get (especially for more python dependencies):
 - less compatibility
 - acutally bigger images
-- longer build times 
+- longer build times
 - more hustle.
 
-The smallest I could get with `alpine` was 783.7 MB. 
+The smallest I could get with `alpine` was 783.7 MB.
 With the `slim` image: 745.8MB.
 
 Just use a Debian or Redhat slim base image like:

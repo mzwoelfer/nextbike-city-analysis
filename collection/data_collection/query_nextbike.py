@@ -35,6 +35,44 @@ def get_places(data):
     return places
 
 
+def get_city_info(data):
+    try:
+        city = data.get("countries", [{}])[0]
+        city_info = {
+            "city_id": city.get("cities", [{}])[0].get("uid", 0),
+            "city_name": city.get("cities", [{}])[0].get("name", "Unknown"),
+            "timezone": city.get("timezone", "Unknown"),
+            "latitude": city.get("lat", 0),
+            "longitude": city.get("lng", 0),
+            "set_point_bikes": city.get("set_point_bikes", 0),
+            "available_bikes": city.get("available_bikes", 0),
+            "last_updated": datetime.datetime.now(),
+        }
+    except (IndexError, KeyError):
+        city_info = {}
+    return city_info
+
+
+def write_city_info_to_database(city_info):
+    conn_str: str = (
+        f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
+    )
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+            city_sql = """
+            INSERT INTO public.cities (
+                city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING;
+            """
+            cur.execute(city_sql, tuple(city_info.values()))
+
+        conn.commit()
+
+    return
+
+
 def write_to_database(bike_entries, station_entries):
     conn_str: str = (
         f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
@@ -126,7 +164,9 @@ def main():
                         city_name,
                     )
                 )
+        city_info = get_city_info(data)
         write_to_database(bike_entries, station_entries)
+        write_city_info_to_database(city_info)
 
 
 if __name__ == "__main__":
