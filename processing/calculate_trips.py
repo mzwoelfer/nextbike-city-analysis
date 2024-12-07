@@ -137,7 +137,9 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
         shortest_path = nx.shortest_path(G, start_node, end_node, weight="length")
     except nx.NetworkXNoPath:
         print(f"No path found between {start_node} and {end_node}")
-        return float("inf"), []
+        shortest_path_length = 0
+        shortest_path = []
+        return shortest_path_length, shortest_path
 
     path_segments = [[G.nodes[node]["y"], G.nodes[node]["x"]] for node in shortest_path]
 
