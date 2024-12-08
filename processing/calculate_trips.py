@@ -24,7 +24,14 @@ def get_trip_data_from_database(city_id):
         password=db_password,
     ) as conn:
         query_bike_movements = f"""
-        WITH bike_movements AS (
+        WITH ordered_bikes AS (
+            SELECT *
+            FROM public.bikes
+            WHERE city_id = {city_id}
+            AND DATE(last_updated) = '2024-12-06'
+            ORDER BY bike_number, last_updated
+        ),
+        bike_movements AS (
             SELECT bike_number,
                    latitude AS start_latitude,
                    longitude AS start_longitude,
@@ -32,8 +39,7 @@ def get_trip_data_from_database(city_id):
                    LEAD(latitude) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_latitude,
                    LEAD(longitude) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_longitude,
                    LEAD(last_updated) OVER (PARTITION BY bike_number ORDER BY last_updated) AS end_time
-            FROM public.bikes
-            WHERE city_id = {city_id}
+            FROM ordered_bikes
         )
         SELECT bike_number,
                start_latitude,
@@ -45,7 +51,7 @@ def get_trip_data_from_database(city_id):
         FROM bike_movements
         WHERE end_latitude IS NOT NULL
           AND (start_latitude != end_latitude OR start_longitude != end_longitude)
-        ORDER BY bike_number, start_time
+        ORDER BY start_time, bike_number;
         """
 
         df = pd.read_sql_query(query_bike_movements, conn)
