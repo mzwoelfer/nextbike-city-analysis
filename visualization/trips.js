@@ -31,7 +31,7 @@ const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 async function loadTripsData() {
     try {
-        const response = await fetch('data/trips_2024-12-07.json');
+        const response = await fetch('data/trips_2024-12-06.json');
         const data = await response.json();
 
         state.tripsData = data["trips"];
@@ -41,8 +41,11 @@ async function loadTripsData() {
         console.log('Trips data loaded:', state.tripsData);
 
         initializeMap(state.city_lat, state.city_lng)
+
         populateRouteTable();
         updateAllComponents();
+
+        await loadStationData();
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
@@ -50,11 +53,15 @@ async function loadTripsData() {
 
 async function loadStationData() {
     try {
-        const response = await fetch('data/438_stations_2024-12-07.json');
+        const response = await fetch('data/467_stations_2024-12-06.json');
         state.stationData = await response.json();
         console.log('Station data loaded:', state.stationData);
 
-        plotStationsOnMap();
+        if (map) {
+            plotStationsOnMap();
+        } else {
+            console.error('Map is not initialized. Cannot plot stations.');
+        }
     } catch (err) {
         console.error('Error loading station data:', err);
     }
