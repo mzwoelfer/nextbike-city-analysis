@@ -11,6 +11,7 @@ Trips are the difference in time and location for the same bike.
 ## Build Image
 ```SHELL
 project_address=($PWD)
+city_id=467
 cd processing
 
 # Build Image
@@ -19,7 +20,7 @@ nerdctl build --file CONTAINERFILE -t nb_processing .
 # Run and pull data from local postgres
 nerdctl run --rm --env-file .env nb_processing
 
-nerdctl run --rm -v "$project_address/data/trips_data/:/app/export" --network collection_nextbike_network --env-file .env nb_processing:0.1 --export /app/export
+nerdctl run --rm -v "$project_address/data/trips_data/:/app/export" --network collection_nextbike_network --env-file .env nb_processing:latest --export-folder /app/export --city-id "$city_id"
 ```
 
 ## Local Development
