@@ -4,15 +4,6 @@
 </div>
 
 ## Overview
-The `collection/` folder contains scripts and a `docker_compose.yaml` to collect data from the Nextbike API.
-THe data is pulled every minute and stored in a `Postgres` database.
-
-The `processing/` directory holds scripts to calculate the trips from the raw data in the database.
-The resulting data is stored in `data/`
-
-`visualization/` holds the webpage to display the trips on a map.
-
-The `docs/` contain the docs, frequently asked questions and therelike.
 
 ```SHELL
 - collection/           # Setup Nextbike API data collection on a server
@@ -53,7 +44,7 @@ cd collection
 # Copy the fake env vars
 cp .env.example .env
 
-# Start data aggregation in background. Pulls & builds the images 
+# Start data aggregation in background. Pulls & builds the images
 docker compose --file docker-compose.yaml up -d
 
 # cd back to project root
