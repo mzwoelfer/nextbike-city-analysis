@@ -24,7 +24,17 @@ def get_station_data_from_database(city_id, date):
         query_stations = f"""
         WITH station_data AS (
             SELECT
-                id, uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, city_id, city_name,
+                id,
+                uid,
+                latitude,
+                longitude,
+                name,
+                spot,
+                station_number,
+                maintenance,
+                terminal_type,
+                city_id,
+                city_name,
                 ROW_NUMBER() OVER (
                     PARTITION BY uid, latitude, longitude, name, spot, station_number, terminal_type, DATE(last_updated), maintenance
                     ORDER BY last_updated DESC
@@ -35,7 +45,17 @@ def get_station_data_from_database(city_id, date):
         ),
         filtered_stations AS (
             SELECT
-                id, uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, city_id, city_name
+                id,
+                uid,
+                latitude,
+                longitude,
+                name,
+                spot,
+                station_number,
+                maintenance,
+                terminal_type,
+                city_id,
+                city_name
             FROM station_data
             WHERE rn = 1
         ),
@@ -78,31 +98,66 @@ def get_station_data_from_database(city_id, date):
                 distinct_minutes dm
             CROSS JOIN
                 filtered_stations fs
+        ),
+        station_bike_combined AS (
+            SELECT
+                smc.minute,
+                smc.id,
+                smc.uid,
+                smc.latitude,
+                smc.longitude,
+                smc.name,
+                smc.spot,
+                smc.station_number,
+                smc.maintenance,
+                smc.terminal_type,
+                smc.city_id,
+                smc.city_name,
+                COALESCE(bd.bike_count, 0) AS bike_count,
+                COALESCE(bd.bike_list, '') AS bike_list
+            FROM
+                station_minute_combinations smc
+            LEFT JOIN
+                bike_data bd
+            ON
+                smc.station_number = bd.station_number
+                AND smc.minute = bd.minute
+        ),
+        bike_changes AS (
+            SELECT
+                sbc.*,
+                LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count
+            FROM
+                station_bike_combined sbc
+        ),
+        filtered_changes AS (
+            SELECT
+                *
+            FROM
+                bike_changes
+            WHERE
+                bike_count IS DISTINCT FROM previous_bike_count
         )
         SELECT
-            smc.minute,
-            smc.id,
-            smc.uid,
-            smc.latitude,
-            smc.longitude,
-            smc.name,
-            smc.spot,
-            smc.station_number,
-            smc.maintenance,
-            smc.terminal_type,
-            smc.city_id,
-            smc.city_name,
-            COALESCE(bd.bike_count, 0) AS bike_count,
-            COALESCE(bd.bike_list, '') AS bike_list
+            minute,
+            id,
+            uid,
+            latitude,
+            longitude,
+            name,
+            spot,
+            station_number,
+            maintenance,
+            terminal_type,
+            city_id,
+            city_name,
+            bike_count,
+            bike_list
         FROM
-            station_minute_combinations smc
-        LEFT JOIN
-            bike_data bd
-        ON
-            smc.station_number = bd.station_number
-            AND smc.minute = bd.minute
+            filtered_changes
         ORDER BY
-            smc.minute, smc.station_number;
+            station_number, minute;
+
         """
 
         df = pd.read_sql_query(query_stations, conn)
