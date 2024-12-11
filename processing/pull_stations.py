@@ -31,7 +31,7 @@ def get_station_data_from_database(city_id, date):
                 ) AS rn
             FROM public.stations
             WHERE city_id = {city_id}
-            AND DATE(last_updated) = '2024-12-05'
+            AND DATE(last_updated) = '{date}'
         ),
         filtered_stations AS (
             SELECT
@@ -49,7 +49,7 @@ def get_station_data_from_database(city_id, date):
                 public.bikes b
             WHERE
                 city_id = {city_id}
-                AND DATE(b.last_updated) = '2024-12-05'
+                AND DATE(b.last_updated) = '{date}'
             GROUP BY
                 DATE_TRUNC('minute', b.last_updated), b.station_number
         ),
@@ -58,7 +58,7 @@ def get_station_data_from_database(city_id, date):
             FROM public.bikes b
             WHERE
                 city_id = {city_id}
-                AND DATE(b.last_updated) = '2024-12-05'
+                AND DATE(b.last_updated) = '{date}'
         ),
         station_minute_combinations AS (
             SELECT
@@ -161,7 +161,7 @@ def main():
         stations = get_station_data_from_csv(args.input_file)
     else:
         print("Fetching data from the database...")
-        date = "2024-12-05"
+        date = "2024-12-06"
         stations = get_station_data_from_database(args.city_id, date)
 
     print(stations)
