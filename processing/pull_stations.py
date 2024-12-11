@@ -14,7 +14,7 @@ db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 
 
-def get_station_data_from_database(city_id):
+def get_station_data_from_database(city_id, date):
     with psycopg.connect(
         host=db_host,
         dbname=db_name,
@@ -24,48 +24,90 @@ def get_station_data_from_database(city_id):
         query_stations = f"""
         WITH station_data AS (
             SELECT
-                id,
-                uid,
-                latitude,
-                longitude,
-                name,
-                spot,
-                station_number,
-                maintenance,
-                terminal_type,
-                last_updated,
+                id, uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, city_id, city_name,
                 ROW_NUMBER() OVER (
                     PARTITION BY uid, latitude, longitude, name, spot, station_number, terminal_type, DATE(last_updated), maintenance
-                    ORDER BY last_updated
+                    ORDER BY last_updated DESC
                 ) AS rn
             FROM public.stations
             WHERE city_id = {city_id}
+            AND DATE(last_updated) = '2024-12-05'
         ),
-        filtered_data AS (
+        filtered_stations AS (
             SELECT
-                *
+                id, uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, city_id, city_name
             FROM station_data
             WHERE rn = 1
+        ),
+        bike_data AS (
+            SELECT
+                DATE_TRUNC('minute', b.last_updated) AS minute,
+                b.station_number,
+                COUNT(b.bike_number) AS bike_count,
+                STRING_AGG(b.bike_number::TEXT, ', ') AS bike_list
+            FROM
+                public.bikes b
+            WHERE
+                city_id = {city_id}
+                AND DATE(b.last_updated) = '2024-12-05'
+            GROUP BY
+                DATE_TRUNC('minute', b.last_updated), b.station_number
+        ),
+        distinct_minutes AS (
+            SELECT DISTINCT DATE_TRUNC('minute', b.last_updated) AS minute
+            FROM public.bikes b
+            WHERE
+                city_id = {city_id}
+                AND DATE(b.last_updated) = '2024-12-05'
+        ),
+        station_minute_combinations AS (
+            SELECT
+                dm.minute,
+                fs.id,
+                fs.uid,
+                fs.latitude,
+                fs.longitude,
+                fs.name,
+                fs.spot,
+                fs.station_number,
+                fs.maintenance,
+                fs.terminal_type,
+                fs.city_id,
+                fs.city_name
+            FROM
+                distinct_minutes dm
+            CROSS JOIN
+                filtered_stations fs
         )
         SELECT
-            id,
-            uid,
-            latitude,
-            longitude,
-            name,
-            spot,
-            station_number,
-            maintenance,
-            terminal_type,
-            last_updated
-        FROM filtered_data
-        ORDER BY uid, last_updated;
+            smc.minute,
+            smc.id,
+            smc.uid,
+            smc.latitude,
+            smc.longitude,
+            smc.name,
+            smc.spot,
+            smc.station_number,
+            smc.maintenance,
+            smc.terminal_type,
+            smc.city_id,
+            smc.city_name,
+            COALESCE(bd.bike_count, 0) AS bike_count,
+            COALESCE(bd.bike_list, '') AS bike_list
+        FROM
+            station_minute_combinations smc
+        LEFT JOIN
+            bike_data bd
+        ON
+            smc.station_number = bd.station_number
+            AND smc.minute = bd.minute
+        ORDER BY
+            smc.minute, smc.station_number;
         """
 
         df = pd.read_sql_query(query_stations, conn)
 
-    df["date"] = df["last_updated"].dt.date.astype(str)
-    df["last_updated"] = df["last_updated"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    df["minute"] = df["minute"].dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     return df
 
@@ -119,13 +161,12 @@ def main():
         stations = get_station_data_from_csv(args.input_file)
     else:
         print("Fetching data from the database...")
-        stations = get_station_data_from_database(args.city_id)
+        date = "2024-12-05"
+        stations = get_station_data_from_database(args.city_id, date)
 
     print(stations)
 
-    grouped = stations.groupby("date")
-    for date, group in grouped:
-        save_files_by_day(date, stations, args.export_folder, args.city_id)
+    save_files_by_day(date, stations, args.export_folder, args.city_id)
 
 
 if __name__ == "__main__":
