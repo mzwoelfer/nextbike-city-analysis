@@ -1,133 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Route Visualization</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        #map {
-            height: 500px;
-            width: 100%;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route Visualization</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 500px;
+      width: 100%;
+    }
 
-        #controls {
-            margin: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    #controls {
+      margin: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-            #route-table-container {
-        margin: 20px;
-        width: 90%;
-        overflow-x: auto;
+    #city-selector {
+      margin: 10px;
+      padding: 5px;
+      font-size: 16px;
+    }
+
+    #route-table-container {
+      margin: 20px;
+      width: 90%;
+      overflow-x: auto;
     }
 
     #route-table {
-        border-collapse: collapse;
-        width: 100%;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
+      border-collapse: collapse;
+      width: 100%;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
     }
 
-    #route-table th, #route-table td {
-        border: 1px solid #ddd;
-        text-align: left;
-        padding: 8px;
+    #route-table th,
+    #route-table td {
+      border: 1px solid #ddd;
+      text-align: left;
+      padding: 8px;
     }
 
     #route-table th {
-        background-color: #f2f2f2;
+      background-color: #f2f2f2;
     }
 
     #route-table tr:hover {
-        background-color: #f5f5f5;
+      background-color: #f5f5f5;
     }
 
     #route-table tr.active {
-        background-color: #e6f7ff;
-        font-weight: bold;
+      background-color: #e6f7ff;
+      font-weight: bold;
     }
 
-      #time-slider {
-            width: 90%;
-        }
+    #time-slider {
+      width: 90%;
+    }
 
-        #time-display {
-            margin-top: 5px;
-            font-size: 16px;
-        }
-        #info-box {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.5;
-            width: 200px;
-        }
+    #time-display {
+      margin-top: 5px;
+      font-size: 16px;
+    }
 
-        #info-box div {
-            margin-bottom: 10px;
-        }
+    #info-box {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      width: 200px;
+    }
 
-        #info-stats {
-            display: flex;
-            justify-content: space-between;
-        }
+    #info-box div {
+      margin-bottom: 10px;
+    }
 
-        #info-stats div {
-            width: 45%;
-            text-align: center;
-        }
+    #info-stats {
+      display: flex;
+      justify-content: space-between;
+    }
 
-    </style>
+    #info-stats div {
+      width: 45%;
+      text-align: center;
+    }
+  </style>
 </head>
+
 <body>
-    <div id="map"></div>
-    <div id="info-box">
+  <select id="city-selector">
+    <option value="467">Gießen</option>
+    <option value="438">Marburg</option>
+  </select>
+  <div id="map"></div>
+  <div id="info-box">
     <div id="info-date">
-        <strong>Date:</strong> <span id="trip-date">--</span>
-        </div>
-        <div id="info-time">
-            <strong>Current Time:</strong> <span id="current-time">--:--</span>
-        </div>
-        <div id="info-stats">
-            <div id="trips-count">
-                <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
-            </div>
-            <div id="bikes-count">
-                <strong>Current Trips:</strong> <span id="bike-count">0</span>
-            </div>
-        </div>
+      <strong>Date:</strong> <span id="trip-date">--</span>
     </div>
-    <div id="controls">
-        <input type="range" id="time-slider" min="0" max="1440" value="0" />
-            <button id="play-button">Play</button>
-            <div id="time-display">Time: 00:00</div>
-        </div>
-
-    <div id="route-table-container">
-        <table id="route-table">
-            <thead>
-                <tr>
-                    <th>Bike Number</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Distance (m)</th>
-                    <th>Duration (Minutes)</th>
-                </tr>
-            </thead>
-            <tbody>
-                    <!-- Table is dynamically populated -->
-            </tbody>
-        </table>
+    <div id="info-time">
+      <strong>Current Time:</strong> <span id="current-time">--:--</span>
     </div>
+    <div id="info-stats">
+      <div id="trips-count">
+        <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
+      </div>
+      <div id="bikes-count">
+        <strong>Current Trips:</strong> <span id="bike-count">0</span>
+      </div>
+    </div>
+  </div>
+  <div id="controls">
+    <input type="range" id="time-slider" min="0" max="1440" value="0" />
+    <button id="play-button">Play</button>
+    <div id="time-display">Time: 00:00</div>
+  </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="trips.js"></script>
+  <div id="route-table-container">
+    <table id="route-table">
+      <thead>
+        <tr>
+          <th>Bike Number</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Distance (m)</th>
+          <th>Duration (Minutes)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table is dynamically populated -->
+      </tbody>
+    </table>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="trips.js"></script>
 </body>
-</html>
 
+</html>

@@ -1,4 +1,5 @@
 const state = {
+    city_id: 467,
     city_lat: 0,
     city_lng: 0,
     tripsData: [],
@@ -31,7 +32,7 @@ const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 async function loadTripsData() {
     try {
-        const response = await fetch('data/trips_2024-12-06.json');
+        const response = await fetch('data/467_trips_2024-12-06.json');
         const data = await response.json();
 
         state.tripsData = data["trips"];
@@ -195,6 +196,11 @@ function highlightTrip(index) {
     document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
 }
 
+document.getElementById('city-selector').addEventListener('change', (event) => {
+    const selectedCityId = event.target.value;
+    loadCityData(selectedCityId);
+});
+
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
     document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
@@ -230,5 +236,10 @@ document.getElementById('play-button').addEventListener('click', () => {
     }
 });
 
-loadTripsData();
-loadStationData();
+async function loadCityData(city_id) {
+    state.city_id = city_id;
+    await loadTripsData();
+    await loadStationData();
+}
+
+loadCityData(state.city_id);
