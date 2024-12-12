@@ -148,7 +148,7 @@ function updateMap() {
                 if (activeRoutes[index]) {
                     map.removeLayer(activeRoutes[index]);
                 }
-                activeRoutes[index] = L.polyline(pathCoordinates, { color: 'blue', weight: 3 }).addTo(map);
+                activeRoutes[index] = L.polyline(pathCoordinates, { color: '#91785D', weight: 3 }).addTo(map);
             }
         } else {
             if (activeRoutes[index]) {
