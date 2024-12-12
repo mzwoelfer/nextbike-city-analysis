@@ -5,6 +5,7 @@ const state = {
     tripsData: [],
     activeRoutes: {},
     stationData: [],
+    stationMarkers: {},
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
@@ -68,16 +69,43 @@ async function loadStationData() {
 
 function plotStationsOnMap() {
     const { stationData } = state;
+
     stationData.forEach((station) => {
-        const { latitude, longitude, name } = station;
-        L.circleMarker([latitude, longitude], {
-            radius: 2,
+        const { latitude, longitude, name, bike_count, id } = station;
+        console.log("STATION: ", name, bike_count)
+        const marker = L.circleMarker([latitude, longitude], {
+            radius: 3,
             color: 'orange',
             fillColor: 'orange',
-            fillOpacity: 0.3,
+            fillOpacity: 0.8,
         })
-            .bindPopup(`<strong>${name}</strong>`)
+            .bindPopup(`${bike_count} - <strong>${name}</strong>`)
             .addTo(map);
+
+        state.stationMarkers[id] = marker;
+    });
+}
+
+function updateStationMarkers() {
+    const { stationData, currentTimeMinutes } = state;
+
+    if (!stationData || stationData.length === 0) return;
+
+    const latestStationData = {};
+
+    stationData.forEach((station) => {
+        const stationTime = minutesSinceMidnight(new Date(station.minute));
+        if (stationTime <= currentTimeMinutes) {
+            if (!latestStationData[station.id] || stationTime > latestStationData[station.id].time) {
+                latestStationData[station.id] = { ...station, time: stationTime };
+            }
+        }
+    });
+
+    Object.values(latestStationData).forEach((latestEntry) => {
+        console.log(
+            `Station: ${latestEntry.name}, Time: ${formatTime(currentTimeMinutes)}, Bike Count: ${latestEntry.bike_count}`
+        );
     });
 }
 
@@ -112,6 +140,8 @@ function updateMap() {
             }
         }
     });
+
+    updateStationMarkers();
 }
 
 function updateInfoBox() {
