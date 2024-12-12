@@ -1,15 +1,20 @@
 const state = {
+    city_id: 467,
     city_lat: 0,
     city_lng: 0,
     tripsData: [],
     activeRoutes: {},
     stationData: [],
+    stationMarkers: {},
+    markerMap: {},
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
 };
 
 let map;
+let updateThrottle;
+
 const initializeMap = (lat, lng) => {
     if (map) {
         map.remove();
@@ -31,7 +36,7 @@ const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 async function loadTripsData() {
     try {
-        const response = await fetch('data/trips_2024-12-06.json');
+        const response = await fetch(`data/${state.city_id}_trips_2024-12-06.json`);
         const data = await response.json();
 
         state.tripsData = data["trips"];
@@ -44,8 +49,6 @@ async function loadTripsData() {
 
         populateRouteTable();
         updateAllComponents();
-
-        await loadStationData();
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
@@ -53,7 +56,7 @@ async function loadTripsData() {
 
 async function loadStationData() {
     try {
-        const response = await fetch('data/467_stations_2024-12-06.json');
+        const response = await fetch(`data/${state.city_id}_stations_2024-12-06.json`);
         state.stationData = await response.json();
         console.log('Station data loaded:', state.stationData);
 
@@ -69,18 +72,59 @@ async function loadStationData() {
 
 function plotStationsOnMap() {
     const { stationData } = state;
+
     stationData.forEach((station) => {
-        const { latitude, longitude, name } = station;
-        L.circleMarker([latitude, longitude], {
-            radius: 2,
-            color: 'orange',
-            fillColor: 'orange',
-            fillOpacity: 0.3,
-        })
-            .bindPopup(`<strong>${name}</strong>`)
-            .addTo(map);
+        const { latitude, longitude, id } = station;
+
+        const marker = L.circleMarker([latitude, longitude], {
+            radius: 6,
+            color: '#7C0A02',
+            fillColor: '#7C0A02',
+            fillOpacity: 1,
+        }).addTo(map);
+
+        const bikeCountLabel = L.divIcon({
+            className: 'bike-count-label',
+            html: `<div class="bike-count-text"></div>`,
+        });
+
+        const labelMarker = L.marker([latitude, longitude], { icon: bikeCountLabel, interactive: false }).addTo(map);
+
+        state.markerMap[id] = { marker, labelMarker };
     });
 }
+
+function updateStationMarkers() {
+    const { stationData, currentTimeMinutes, markerMap } = state;
+
+    if (!stationData || stationData.length === 0 || !markerMap) return;
+
+    const latestStationData = {};
+
+    stationData.forEach((station) => {
+        const stationTime = minutesSinceMidnight(new Date(station.minute));
+        if (stationTime <= currentTimeMinutes) {
+            if (!latestStationData[station.id] || stationTime > latestStationData[station.id].time) {
+                latestStationData[station.id] = { ...station, time: stationTime };
+            }
+        }
+    });
+
+    requestAnimationFrame(() => {
+        Object.values(latestStationData).forEach((latestEntry) => {
+            const { id, bike_count } = latestEntry;
+            const stationMarkers = markerMap[id];
+
+            if (stationMarkers && stationMarkers.labelMarker) {
+                const labelElement = stationMarkers.labelMarker.getElement().querySelector('.bike-count-text');
+                if (labelElement) {
+                    labelElement.textContent = bike_count;
+                }
+            }
+        });
+    });
+}
+
 
 function updateMap() {
     const { tripsData, currentTimeMinutes, activeRoutes } = state;
@@ -113,6 +157,8 @@ function updateMap() {
             }
         }
     });
+
+    updateStationMarkers();
 }
 
 function updateInfoBox() {
@@ -143,8 +189,15 @@ function updateInfoBox() {
 }
 
 function updateAllComponents() {
-    updateMap();
-    updateInfoBox();
+    if (updateThrottle) {
+        cancelAnimationFrame(updateThrottle);
+    }
+
+    updateThrottle = requestAnimationFrame(() => {
+        updateMap();
+        updateStationMarkers();
+        updateInfoBox();
+    });
 }
 
 function populateRouteTable() {
@@ -230,5 +283,10 @@ document.getElementById('play-button').addEventListener('click', () => {
     }
 });
 
-loadTripsData();
-loadStationData();
+async function loadCityData(city_id) {
+    state.city_id = city_id;
+    await loadTripsData();
+    await loadStationData();
+}
+
+loadCityData(state.city_id);

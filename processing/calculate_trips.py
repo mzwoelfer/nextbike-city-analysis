@@ -107,8 +107,8 @@ def add_city_info_to_trips_json(city_lat, city_lng, trips_json):
     return city_and_trips_json
 
 
-def save_files_by_day_json(date, city_and_trips_json, folder):
-    json_file = os.path.join(folder, f"trips_{date}.json")
+def save_files_by_day_json(date, city_id, city_and_trips_json, folder):
+    json_file = os.path.join(folder, f"{city_id}_trips_{date}.json")
 
     with open(json_file, "w") as f:
         json.dump(city_and_trips_json, f, indent=4)
@@ -240,7 +240,9 @@ def main():
             city_lat, city_lng, trips_json
         )
 
-        save_files_by_day_json(date, city_and_trips_json, args.export_folder)
+        save_files_by_day_json(
+            date, args.city_id, city_and_trips_json, args.export_folder
+        )
 
 
 if __name__ == "__main__":
