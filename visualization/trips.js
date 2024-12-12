@@ -6,7 +6,7 @@ const state = {
     activeRoutes: {},
     stationData: [],
     stationMarkers: {},
-    markerMap: {}, // Map to store station markers by station ID
+    markerMap: {},
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
@@ -78,9 +78,9 @@ function plotStationsOnMap() {
 
         const marker = L.circleMarker([latitude, longitude], {
             radius: 6,
-            color: 'orange',
-            fillColor: 'orange',
-            fillOpacity: 0.8,
+            color: '#7C0A02',
+            fillColor: '#7C0A02',
+            fillOpacity: 1,
         }).addTo(map);
 
         const bikeCountLabel = L.divIcon({
@@ -247,11 +247,6 @@ function highlightTrip(index) {
     slider.value = state.currentTimeMinutes;
     document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
 }
-
-document.getElementById('city-selector').addEventListener('change', (event) => {
-    const selectedCityId = event.target.value;
-    loadCityData(selectedCityId);
-});
 
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
