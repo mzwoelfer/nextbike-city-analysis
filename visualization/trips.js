@@ -91,7 +91,7 @@ function plotStationsOnMap() {
         const labelMarker = L.marker([latitude, longitude], { icon: bikeCountLabel }).addTo(map);
         state.markerMap[id] = { marker, labelMarker };
 
-        labelMarker.getElement().querySelector('.bike-count-text').textContent = '--';
+        labelMarker.getElement().querySelector('.bike-count-text').textContent = '';
     });
 }
 
