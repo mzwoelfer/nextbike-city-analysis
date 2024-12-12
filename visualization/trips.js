@@ -13,6 +13,8 @@ const state = {
 };
 
 let map;
+let updateThrottle;
+
 const initializeMap = (lat, lng) => {
     if (map) {
         map.remove();
@@ -72,26 +74,23 @@ function plotStationsOnMap() {
     const { stationData } = state;
 
     stationData.forEach((station) => {
-        const { latitude, longitude, name, bike_count, id } = station;
-        console.log("STATION: ", name, bike_count)
+        const { latitude, longitude, id } = station;
+
         const marker = L.circleMarker([latitude, longitude], {
-            radius: 8,
+            radius: 6,
             color: 'orange',
             fillColor: 'orange',
             fillOpacity: 0.8,
-        })
+        }).addTo(map);
 
         const bikeCountLabel = L.divIcon({
             className: 'bike-count-label',
-            html: `<div class="bike-count-text">--</div>`,
-            iconSize: [10, 10],
-            iconAnchor: [10, 10],
+            html: `<div class="bike-count-text"></div>`,
         });
 
-        const labelMarker = L.marker([latitude, longitude], { icon: bikeCountLabel }).addTo(map);
-        state.markerMap[id] = { marker, labelMarker };
+        const labelMarker = L.marker([latitude, longitude], { icon: bikeCountLabel, interactive: false }).addTo(map);
 
-        labelMarker.getElement().querySelector('.bike-count-text').textContent = '';
+        state.markerMap[id] = { marker, labelMarker };
     });
 }
 
@@ -100,31 +99,32 @@ function updateStationMarkers() {
 
     if (!stationData || stationData.length === 0 || !markerMap) return;
 
-    const latestStationData = {}; // To store the most recent entry for each station by `id`
+    const latestStationData = {};
 
     stationData.forEach((station) => {
         const stationTime = minutesSinceMidnight(new Date(station.minute));
         if (stationTime <= currentTimeMinutes) {
-            // Only keep the latest entry for each station
             if (!latestStationData[station.id] || stationTime > latestStationData[station.id].time) {
                 latestStationData[station.id] = { ...station, time: stationTime };
             }
         }
     });
 
-    // Update the label for each station
-    Object.values(latestStationData).forEach((latestEntry) => {
-        const { id, bike_count } = latestEntry;
-        const stationMarkers = markerMap[id];
+    requestAnimationFrame(() => {
+        Object.values(latestStationData).forEach((latestEntry) => {
+            const { id, bike_count } = latestEntry;
+            const stationMarkers = markerMap[id];
 
-        if (stationMarkers && stationMarkers.labelMarker) {
-            const labelElement = stationMarkers.labelMarker.getElement().querySelector('.bike-count-text');
-            if (labelElement) {
-                labelElement.textContent = bike_count;
+            if (stationMarkers && stationMarkers.labelMarker) {
+                const labelElement = stationMarkers.labelMarker.getElement().querySelector('.bike-count-text');
+                if (labelElement) {
+                    labelElement.textContent = bike_count;
+                }
             }
-        }
+        });
     });
 }
+
 
 function updateMap() {
     const { tripsData, currentTimeMinutes, activeRoutes } = state;
@@ -189,9 +189,15 @@ function updateInfoBox() {
 }
 
 function updateAllComponents() {
-    updateMap();
-    updateInfoBox();
-    updateStationMarkers();
+    if (updateThrottle) {
+        cancelAnimationFrame(updateThrottle);
+    }
+
+    updateThrottle = requestAnimationFrame(() => {
+        updateMap();
+        updateStationMarkers();
+        updateInfoBox();
+    });
 }
 
 function populateRouteTable() {
