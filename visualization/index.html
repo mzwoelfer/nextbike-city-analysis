@@ -68,13 +68,17 @@
     }
 
     th[data-order="asc"]::after {
-      content: " ▲"; 
+      content: " ▼"; 
       margin-left: 5px;
     }
 
     th[data-order="desc"]::after {
-        content: " ▼"; 
+        content: " ▲"; 
         margin-left: 5px;
+    }
+    
+    th[data-order=""]::after {
+      content: ""; 
     }
 
     #route-table-container {
@@ -205,11 +209,11 @@
     <table id="route-table">
       <thead>
         <tr>
-          <th data-column="bike_number" data-order="asc">Bike Number</th>
+          <th data-column="bike_number" data-order="">Bike Number</th>
           <th data-column="start_time" data-order="asc">Start Time</th>
-          <th data-column="end_time" data-order="asc">End Time</th>
-          <th data-column="distance" data-order="asc">Distance (m)</th>
-          <th data-column="duration" data-order="asc">Duration (Minutes)</th>
+          <th data-column="end_time" data-order="">End Time</th>
+          <th data-column="distance" data-order="">Distance (m)</th>
+          <th data-column="duration" data-order="">Duration (Minutes)</th>
         </tr>
       </thead>
       <tbody>
@@ -248,7 +252,7 @@
             const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
 
             document.querySelectorAll('#route-table th').forEach(otherHeader => {
-              otherHeader.setAttribute('data-order', 'asc');
+              otherHeader.setAttribute('data-order', '');
             })
 
 
