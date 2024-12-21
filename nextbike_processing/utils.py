@@ -1,6 +1,5 @@
 import os
 import json
-import pandas as pd
 
 
 def save_json(file_path, data):
