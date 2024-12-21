@@ -1,5 +1,5 @@
 import state from './state.js';
-import { loadStationData } from './data.js';
+import { loadStationData, loadTripsData } from './data.js';
 
 let map;
 let updateThrottle;
@@ -22,27 +22,6 @@ const formatTime = (minutes) => {
 };
 
 const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
-
-async function loadTripsData() {
-    try {
-        const response = await fetch(`data/${state.city_id}_trips_2024-12-20.json`);
-        const data = await response.json();
-
-        state.tripsData = data["trips"];
-        state.city_lat = data["city_info"]["lat"];
-        state.city_lng = data["city_info"]["lng"];
-
-        console.log('Trips data loaded:', state.tripsData);
-
-        initializeMap(state.city_lat, state.city_lng)
-
-        populateRouteTable();
-        updateAllComponents();
-    } catch (err) {
-        console.error('Error loading trip data:', err);
-    }
-}
-
 
 function plotStationsOnMap() {
     const { stationData } = state;
@@ -259,6 +238,10 @@ document.getElementById('play-button').addEventListener('click', () => {
 async function loadCityData(city_id) {
     state.city_id = city_id;
     await loadTripsData();
+    initializeMap(state.city_lat, state.city_lng)
+    populateRouteTable();
+    updateAllComponents();
+
     await loadStationData();
     if (map) {
         plotStationsOnMap();

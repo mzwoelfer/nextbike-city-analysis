@@ -9,7 +9,6 @@ export const loadTripsData = async () => {
         state.city_lat = data.city_info.lat;
         state.city_lng = data.city_info.lng;
 
-        initializeMap(state.city_lat, state.city_lng);
         console.log('Trips data loaded:', state.tripsData);
         return 
     } catch (err) {
@@ -22,7 +21,6 @@ export const loadStationData = async () => {
         const response = await fetch(`data/${state.city_id}_stations_2024-12-20.json`);
         state.stationData = await response.json();
 
-        plotStationsOnMap();
         console.log('Station data loaded:', state.stationData);
         return
     } catch (err) {
