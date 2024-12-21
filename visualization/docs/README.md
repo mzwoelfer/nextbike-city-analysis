@@ -2,7 +2,7 @@
 
 ## ToDOs & Features
 - [X] Play button higher up in the screen (mobile)
-- [ ] Make table with entries sortable, for every column
+- [X] Make table with entries sortable, for every column
 - [X] Make map almost fullscreen, table below.
 - [ ] "burn" multiple trips on same trip into the map. Visualize heavily used routes
 - [ ] Add fading effect: When the tirp ends, the start point is at 50% opacity
