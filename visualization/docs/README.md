@@ -1,9 +1,14 @@
 # Docs - Visualization - Nextbike City Analysis
 
-
-
 ## ToDOs & Features
-- Slicker grayish color scheme
+- [X] Play button higher up in the screen (mobile)
+- [ ] Make table with entries sortable, for every column
+- [X] Make map almost fullscreen, table below.
+- [ ] "burn" multiple trips on same trip into the map. Visualize heavily used routes
+- [ ] Add fading effect: When the tirp ends, the start point is at 50% opacity
+- [ ] Add download button for data
+- [X] Add "back to top" button
+
 - Slicker info box and controls:
     - Time, play and pause button and date + previous/next day in top row
     - Time slider
