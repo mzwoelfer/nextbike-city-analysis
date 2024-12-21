@@ -8,6 +8,7 @@
 - [ ] Add fading effect: When the tirp ends, the start point is at 50% opacity
 - [ ] Add download button for data
 - [X] Add "back to top" button
+- [ ] When clicking on a path, indicate start and end with color. Red is ending of path, yellowish/brown/gold is beginning. 
 
 - Slicker info box and controls:
     - Time, play and pause button and date + previous/next day in top row
