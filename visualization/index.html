@@ -67,6 +67,16 @@
       align-items: center;
     }
 
+    th[data-order="asc"]::after {
+      content: " ▲"; 
+      margin-left: 5px;
+    }
+
+    th[data-order="desc"]::after {
+        content: " ▼"; 
+        margin-left: 5px;
+    }
+
     #route-table-container {
       margin: 20px;
       width: 90%;
@@ -195,11 +205,11 @@
     <table id="route-table">
       <thead>
         <tr>
-          <th>Bike Number</th>
-          <th>Start Time</th>
-          <th>End Time</th>
-          <th>Distance (m)</th>
-          <th>Duration (Minutes)</th>
+          <th data-column="bike_number" data-order="asc">Bike Number</th>
+          <th data-column="start_time" data-order="asc">Start Time</th>
+          <th data-column="end_time" data-order="asc">End Time</th>
+          <th data-column="distance" data-order="asc">Distance (m)</th>
+          <th data-column="duration" data-order="asc">Duration (Minutes)</th>
         </tr>
       </thead>
       <tbody>
@@ -209,6 +219,41 @@
   </div>
 
   <script>
+    // sort table
+    function sortTable(column, order) {
+      const tableBody = document.querySelector('#route-table tbody');
+      const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+      const sortedRows = rows.sort((a, b) => {
+          const aData = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+          const bData = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+
+          const aValue = isNaN(aData) ? aData : parseFloat(aData);
+          const bValue = isNaN(bData) ? bData : parseFloat(bData);
+
+          if (order === 'asc') {
+              return aValue > bValue ? 1 : -1;
+          } else {
+              return aValue < bValue ? 1 : -1;
+          }
+      });
+
+          tableBody.innerHTML = '';
+          sortedRows.forEach(row => tableBody.appendChild(row));
+    }
+
+    document.querySelectorAll('#route-table th').forEach((header, index) => {
+        header.addEventListener('click', () => {
+            const currentOrder = header.getAttribute('data-order');
+            const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+
+
+            header.setAttribute('data-order', newOrder);
+            sortTable(index, newOrder);
+        });
+    });
+
+    // Scroll back to top 
     document.addEventListener("DOMContentLoaded", () => {
         const backToTopButton = document.getElementById("back-to-top");
 
