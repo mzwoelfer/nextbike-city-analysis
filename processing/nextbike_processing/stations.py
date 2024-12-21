@@ -1,28 +1,12 @@
-import json
-import pandas as pd
-import argparse
-import psycopg
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-db_host = os.getenv("DB_HOST")
-db_port = os.getenv("DB_PORT")
-db_name = os.getenv("DB_NAME")
-db_user = os.getenv("DB_USER")
-db_password = os.getenv("DB_PASSWORD")
+import pandas as pd
+from nextbike_processing.database import get_connection
+from nextbike_processing.utils import save_csv, save_json
 
 
-def get_station_data_from_database(city_id, date):
-    with psycopg.connect(
-        host=db_host,
-        dbname=db_name,
-        user=db_user,
-        password=db_password,
-    ) as conn:
-        query_stations = f"""
-        WITH station_data AS (
+def fetch_station_data(city_id, date):
+    query = f"""
+    WITH station_data AS (
             SELECT
                 id,
                 uid,
@@ -158,71 +142,17 @@ def get_station_data_from_database(city_id, date):
         ORDER BY
             station_number, minute;
 
-        """
-
-        df = pd.read_sql_query(query_stations, conn)
-
-    df["minute"] = df["minute"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-
+    """
+    with get_connection() as conn:
+        df = pd.read_sql_query(query, conn)
+    df["minute"] = pd.to_datetime(df["minute"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
     return df
 
 
-def get_station_data_from_csv(file_path):
-    df = pd.read_csv(file_path)
-    df["date"] = df["last_updated"].dt.date
-
-    return df
-
-
-def save_files_by_day(date, group, folder, city_id):
-    stations_json = group.to_dict(orient="records")
-    json_file = os.path.join(folder, f"{city_id}_stations_{date}.json")
-
-    with open(json_file, "w") as f:
-        json.dump(stations_json, f, indent=4)
-
-    csv_file = os.path.join(folder, f"{city_id}_stations_{date}.csv")
-    group.to_csv(csv_file, index=False)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Pull station data from database")
-    parser.add_argument(
-        "--city-id",
-        type=int,
-        required=True,
-        help="The city_id to filter trips from the database",
+def process_and_save_stations(city_id, date, folder):
+    df = fetch_station_data(city_id, date)
+    save_json(
+        os.path.join(folder, f"{city_id}_stations_{date}.json"),
+        df.to_dict(orient="records"),
     )
-    parser.add_argument(
-        "input_file",
-        nargs="?",
-        default=None,
-        help="Path to the input CSV file. If not provided, data will be fetched from the database.",
-    )
-    parser.add_argument(
-        "--export-folder",
-        required=True,
-        help="Folder to export the resulting JSON and CSV files (must exist).",
-    )
-
-    args = parser.parse_args()
-    if not os.path.exists(args.export_folder):
-        print(f"Error: Export folder ${args.export_folder} doesn't exist.")
-        print(f"Error: Create the folder yourself or check your path")
-        exit(1)
-
-    if args.input_file:
-        print(f"Loading data from {args.input_file}...")
-        stations = get_station_data_from_csv(args.input_file)
-    else:
-        print("Fetching data from the database...")
-        date = "2024-12-06"
-        stations = get_station_data_from_database(args.city_id, date)
-
-    print(stations)
-
-    save_files_by_day(date, stations, args.export_folder, args.city_id)
-
-
-if __name__ == "__main__":
-    main()
+    save_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv"), df)

@@ -36,7 +36,7 @@ const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 async function loadTripsData() {
     try {
-        const response = await fetch(`data/${state.city_id}_trips_2024-12-06.json`);
+        const response = await fetch(`data/${state.city_id}_trips_2024-12-20.json`);
         const data = await response.json();
 
         state.tripsData = data["trips"];
@@ -56,7 +56,7 @@ async function loadTripsData() {
 
 async function loadStationData() {
     try {
-        const response = await fetch(`data/${state.city_id}_stations_2024-12-06.json`);
+        const response = await fetch(`data/${state.city_id}_stations_2024-12-20.json`);
         state.stationData = await response.json();
         console.log('Station data loaded:', state.stationData);
 
