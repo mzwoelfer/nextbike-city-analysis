@@ -201,7 +201,10 @@ function highlightTrip(index) {
 
     const tripStartTime = new Date(trip.start_time);
     state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
+    setSliderTime();
+}
 
+function setSliderTime() {
     const slider = document.getElementById('time-slider');
     slider.value = state.currentTimeMinutes;
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
