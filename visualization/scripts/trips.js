@@ -110,8 +110,6 @@ function updateMap() {
             }
         }
     });
-
-    updateStationMarkers();
 }
 
 function updateInfoBox() {
@@ -168,14 +166,17 @@ function populateRouteTable() {
             <td>${Math.floor(trip.duration / 60)}</td>
         `;
 
-        row.addEventListener('click', () => handleTableRowClick(index));
+        row.addEventListener('click', () => highlightTrip(index));
         tableBody.appendChild(row);
     });
 }
 
-function handleTableRowClick(index){
-    highlightTrip(index);
+// ++++++++++++++ //
+// HIGHLIGHT TRIP //
+function highlightTrip(index){
+    highlightTripOnMap(index);
     highlightTableRow(index);
+    setSliderTime();
 }
 
 function highlightTableRow(index){
@@ -183,9 +184,11 @@ function highlightTableRow(index){
     document.querySelector(`[data-index='${index}']`).classList.add('active');
 }
 
-function highlightTrip(index) {
+function highlightTripOnMap(index) {
     const trip = state.tripsData[index];
     if (!trip) return;
+    const tripStartTime = new Date(trip.start_time);
+    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
 
     Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
     state.activeRoutes = {};
@@ -198,10 +201,6 @@ function highlightTrip(index) {
     }
 
     state.activeRoutes[index] = selectedRoute;
-
-    const tripStartTime = new Date(trip.start_time);
-    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
-    setSliderTime();
 }
 
 function setSliderTime() {
@@ -210,6 +209,12 @@ function setSliderTime() {
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
 }
 
+// ++++++++++++++++++ //
+// ++++++++++++++++++ //
+//
+
+// ++++++++++++++++++ //
+// Event Listener
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
