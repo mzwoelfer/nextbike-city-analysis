@@ -168,9 +168,19 @@ function populateRouteTable() {
             <td>${Math.floor(trip.duration / 60)}</td>
         `;
 
-        row.addEventListener('click', () => highlightTrip(index));
+        row.addEventListener('click', () => handleTableRowClick(index));
         tableBody.appendChild(row);
     });
+}
+
+function handleTableRowClick(index){
+    highlightTrip(index);
+    highlightTableRow(index);
+}
+
+function highlightTableRow(index){
+    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
+    document.querySelector(`[data-index='${index}']`).classList.add('active');
 }
 
 function highlightTrip(index) {
@@ -188,9 +198,6 @@ function highlightTrip(index) {
     }
 
     state.activeRoutes[index] = selectedRoute;
-
-    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
-    document.querySelector(`[data-index='${index}']`).classList.add('active');
 
     const tripStartTime = new Date(trip.start_time);
     state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
