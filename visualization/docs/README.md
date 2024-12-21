@@ -7,7 +7,7 @@
 - [ ] "burn" multiple trips on same trip into the map. Visualize heavily used routes
 - [ ] Add fading effect: When the tirp ends, the start point is at 50% opacity
 - [ ] Add download button for data
-- [ ] Add "back to top" button
+- [X] Add "back to top" button
 
 - Slicker info box and controls:
     - Time, play and pause button and date + previous/next day in top row
