@@ -1,5 +1,4 @@
 import argparse
-import datetime
 from nextbike_processing.utils import ensure_directory_exists
 from nextbike_processing.stations import process_and_save_stations
 from nextbike_processing.trips import process_and_save_trips
