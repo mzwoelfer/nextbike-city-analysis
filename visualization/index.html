@@ -15,7 +15,7 @@
     #control_panel {
       position: absolute;
       width: 80vw;
-      top: 60vh;
+      top: 62vh;
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
@@ -69,6 +69,10 @@
       font-weight: bold;
     }
 
+    #time {
+      display: flex;
+    }
+
     #time-slider {
       width: 100%;
     }
@@ -88,15 +92,18 @@
       width: 100%;
     }
 
+    #info-date {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+
     #info-stats {
       width: 100%;
       display: flex;
       justify-content: space-between;
     }
 
-    #info-stats div {
-      width: 100%;
-    }
 
     .bike-count-label {
       text-align: center;
@@ -117,7 +124,13 @@
     <div id="control_panel">
       <div id="info-box">
         <div id="info-date">
-          <strong>Date:</strong> <span id="trip-date">--</span> <span id="current-time">--:--</span>
+          <div>
+            <strong>Date:</strong> <span id="trip-date">--</span>
+          </div>
+          <div id="time">
+            <span><strong>Time:</strong></span>
+            <span id="time-display">--:--</span>
+          </div>
         </div>
         <div id="info-stats">
           <div id="trips-count">
@@ -131,7 +144,6 @@
       <div id="controls">
         <input type="range" id="time-slider" min="0" max="1440" value="0" />
         <button id="play-button">Play</button>
-        <div id="time-display">Time: 00:00</div>
       </div>
     </div>
   <div id="map">

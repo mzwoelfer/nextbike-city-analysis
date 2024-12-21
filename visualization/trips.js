@@ -168,7 +168,6 @@ function updateInfoBox() {
 
     const tripDate = new Date(tripsData[0].start_time).toLocaleDateString();
     document.getElementById('trip-date').textContent = tripDate;
-    document.getElementById('current-time').textContent = formatTime(currentTimeMinutes);
 
     let activeTrips = 0;
     const activeBikes = new Set();
@@ -245,12 +244,12 @@ function highlightTrip(index) {
 
     const slider = document.getElementById('time-slider');
     slider.value = state.currentTimeMinutes;
-    document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
+    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
 }
 
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
-    document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
+    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
     updateAllComponents();
 });
 
@@ -274,7 +273,7 @@ document.getElementById('play-button').addEventListener('click', () => {
 
             state.currentTimeMinutes++;
             document.getElementById('time-slider').value = state.currentTimeMinutes;
-            document.getElementById('time-display').textContent = `Time: ${formatTime(state.currentTimeMinutes)}`;
+            document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
             updateAllComponents();
         }, 100);
 
