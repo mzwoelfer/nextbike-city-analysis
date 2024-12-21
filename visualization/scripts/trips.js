@@ -1,4 +1,5 @@
 import state from './state.js';
+import { loadStationData } from './data.js';
 
 let map;
 let updateThrottle;
@@ -42,21 +43,6 @@ async function loadTripsData() {
     }
 }
 
-async function loadStationData() {
-    try {
-        const response = await fetch(`data/${state.city_id}_stations_2024-12-20.json`);
-        state.stationData = await response.json();
-        console.log('Station data loaded:', state.stationData);
-
-        if (map) {
-            plotStationsOnMap();
-        } else {
-            console.error('Map is not initialized. Cannot plot stations.');
-        }
-    } catch (err) {
-        console.error('Error loading station data:', err);
-    }
-}
 
 function plotStationsOnMap() {
     const { stationData } = state;
@@ -274,6 +260,11 @@ async function loadCityData(city_id) {
     state.city_id = city_id;
     await loadTripsData();
     await loadStationData();
+    if (map) {
+        plotStationsOnMap();
+    } else {
+        console.error('Map is not initialized. Cannot plot stations.');
+    }
 }
 
 loadCityData(state.city_id);

@@ -1,5 +1,4 @@
 import state from './state.js';
-import { initializeMap, plotStationsOnMap } from './map.js';
 
 export const loadTripsData = async () => {
     try {
@@ -12,6 +11,7 @@ export const loadTripsData = async () => {
 
         initializeMap(state.city_lat, state.city_lng);
         console.log('Trips data loaded:', state.tripsData);
+        return 
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
@@ -24,6 +24,7 @@ export const loadStationData = async () => {
 
         plotStationsOnMap();
         console.log('Station data loaded:', state.stationData);
+        return
     } catch (err) {
         console.error('Error loading station data:', err);
     }
