@@ -247,6 +247,10 @@
             const currentOrder = header.getAttribute('data-order');
             const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
 
+            document.querySelectorAll('#route-table th').forEach(otherHeader => {
+              otherHeader.setAttribute('data-order', 'asc');
+            })
+
 
             header.setAttribute('data-order', newOrder);
             sortTable(index, newOrder);
