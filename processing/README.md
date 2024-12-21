@@ -1,12 +1,6 @@
 # Analyzing Nextbike data
 
-Nextbike data is in postgres databases.
-
-The raw bikes data has timetamps and location data.
-For analysis, we extract "trips".
-Trips are the difference in time and location for the same bike.
-
-
+Extract Nextbike trips from the postgres databases.
 
 ## Get trips data
 1. Setup your environment
