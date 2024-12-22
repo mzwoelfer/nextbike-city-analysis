@@ -12,7 +12,6 @@
       padding 0px;
     }
 
-
     #map {
       height: 80vh;
       width: 100%;
@@ -51,9 +50,10 @@
 
     #control_panel {
       position: absolute;
-      width: 80vw;
+      width: 85vw;
       top: 62vh;
       left: 50%;
+      font-size: 14px;
       transform: translateX(-50%);
       z-index: 1000;
       background: rgba(255,255,255, 0.8);
@@ -69,7 +69,6 @@
       width: 100%;
       margin: 5px;
       display: flex;
-      flex-direction: column;
       align-items: center;
     }
 
@@ -128,10 +127,6 @@
       width: 100%;
     }
 
-    #time-display {
-      font-size: 16px;
-    }
-
     #info-box {
       background: rgba(255, 255, 255, 0.5);
       padding: 10px;
@@ -177,16 +172,28 @@
 
 <body>
     <div id="control_panel">
-      <div id="info-box">
+        <!-- First Layer -->
         <div id="info-date">
-          <div>
-            <strong>Date:</strong> <span id="trip-date">--</span>
-          </div>
           <div id="time">
             <span><strong>Time:</strong></span>
             <span id="time-display">--:--</span>
           </div>
+          <div>
+            <strong>Date:</strong> <span id="trip-date">--</span>
+          </div>
+          <div id="day-navigation">
+            <button id="previous-day" title="Previous Day">◀</button>
+            <button id="next-day" title="Next Day">▶</button>
+          </div>
         </div>
+
+        <!-- Second Layer -->
+        <div id="controls">
+          <button id="play-button">Play</button>
+          <input type="range" id="time-slider" min="0" max="1440" value="0" />
+        </div>
+
+        <!-- Third Layer -->
         <div id="info-stats">
           <div id="trips-count">
             <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
@@ -195,11 +202,6 @@
             <strong>Current Trips:</strong> <span id="bike-count">0</span>
           </div>
         </div>
-      </div>
-      <div id="controls">
-        <input type="range" id="time-slider" min="0" max="1440" value="0" />
-        <button id="play-button">Play</button>
-      </div>
     </div>
 
 
