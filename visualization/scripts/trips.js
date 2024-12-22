@@ -9,7 +9,12 @@ const initializeMap = (lat, lng) => {
         map.remove();
     }
 
-    map = L.map('map', { zoomSnap: 0.2 }).setView([lat, lng], 12);
+    map = L.map('map', { 
+        center: [lat, lng],
+        zoom: 12,
+        zoomSnap: 0.2,
+        attributionControl: false,
+    });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
