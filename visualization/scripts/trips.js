@@ -1,6 +1,6 @@
 import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
-import { togglePlay, updatePlayButtonUI, updateSlider } from './playback.js'; 
+import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 
 let map;
@@ -11,7 +11,7 @@ const initializeMap = (lat, lng) => {
         map.remove();
     }
 
-    map = L.map('map', { 
+    map = L.map('map', {
         center: [lat, lng],
         zoom: 12.3,
         zoomSnap: 0.2,
@@ -170,13 +170,13 @@ function populateRouteTable() {
 
 // ++++++++++++++ //
 // HIGHLIGHT TRIP //
-function highlightTrip(index){
+function highlightTrip(index) {
     highlightTripOnMap(index);
     highlightTableRow(index);
     updateSlider();
 }
 
-function highlightTableRow(index){
+function highlightTableRow(index) {
     document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
     document.querySelector(`[data-index='${index}']`).classList.add('active');
 }
