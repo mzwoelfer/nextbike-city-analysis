@@ -212,9 +212,6 @@ function setSliderTime() {
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
 }
 
-// ++++++++++++++++++ //
-// ++++++++++++++++++ //
-//
 
 // ++++++++++++++++++ //
 // Event Listener
