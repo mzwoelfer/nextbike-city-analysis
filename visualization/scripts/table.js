@@ -21,3 +21,8 @@ export function populateRouteTable() {
         tableBody.appendChild(row);
     });
 }
+
+export function highlightTableRow(index) {
+    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
+    document.querySelector(`[data-index='${index}']`).classList.add('active');
+}

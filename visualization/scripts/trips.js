@@ -2,7 +2,7 @@ import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
-import { populateRouteTable } from './table.js';
+import { populateRouteTable, highlightTableRow } from './table.js';
 
 let map;
 let updateThrottle;
@@ -154,11 +154,6 @@ export function highlightTrip(index) {
     highlightTripOnMap(index);
     highlightTableRow(index);
     updateSlider();
-}
-
-function highlightTableRow(index) {
-    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
-    document.querySelector(`[data-index='${index}']`).classList.add('active');
 }
 
 function highlightTripOnMap(index) {
