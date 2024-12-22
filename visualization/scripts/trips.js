@@ -222,10 +222,8 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
 });
 
 document.getElementById('play-button').addEventListener('click', () => {
-    const { isPlaying, timer } = state;
-
-    if (isPlaying) {
-        clearInterval(timer);
+    if (state.isPlaying) {
+        clearInterval(state.timer);
         state.isPlaying = false;
         document.getElementById('play-button').textContent = 'Play';
     } else {
