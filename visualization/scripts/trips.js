@@ -1,7 +1,7 @@
 import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
 import { togglePlay, updatePlayButtonUI, updateSlider } from './playback.js'; 
-import { formatTime } from './utils.js';
+import { formatTime, minutesSinceMidnight } from './utils.js';
 
 let map;
 let updateThrottle;
@@ -21,7 +21,6 @@ const initializeMap = (lat, lng) => {
 }
 
 
-const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 function plotStationsOnMap() {
     const { stationData } = state;

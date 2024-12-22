@@ -4,3 +4,6 @@ export const formatTime = (minutes) => {
     const mins = minutes % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
+
+
+export const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
