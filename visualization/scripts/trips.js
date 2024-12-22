@@ -221,32 +221,44 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
     updateAllComponents();
 });
 
-document.getElementById('play-button').addEventListener('click', () => {
-    if (state.isPlaying) {
-        clearInterval(state.timer);
-        state.isPlaying = false;
-        document.getElementById('play-button').textContent = 'Play';
+
+function togglePlay(){
+    if(state.isPlaying){
+        stopPlayback();
     } else {
-        const maxTime = parseInt(document.getElementById('time-slider').max, 10);
-
-        state.timer = setInterval(() => {
-            if (state.currentTimeMinutes >= maxTime) {
-                clearInterval(state.timer);
-                state.isPlaying = false;
-                document.getElementById('play-button').textContent = 'Play';
-                return;
-            }
-
-            state.currentTimeMinutes++;
-            document.getElementById('time-slider').value = state.currentTimeMinutes;
-            document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
-            updateAllComponents();
-        }, 100);
-
-        state.isPlaying = true;
-        document.getElementById('play-button').textContent = 'Pause';
+        startPlayback(); 
     }
-});
+}
+
+function stopPlayback(){
+    clearInterval(state.timer);
+    state.isPlaying = false;
+    document.getElementById('play-button').textContent = 'Play';
+}
+
+function startPlayback(){
+    const maxTime = parseInt(document.getElementById('time-slider').max, 10);
+
+    state.timer = setInterval(() => {
+        if (state.currentTimeMinutes >= maxTime) {
+            clearInterval(state.timer);
+            state.isPlaying = false;
+            document.getElementById('play-button').textContent = 'Play';
+            return;
+        }
+
+        state.currentTimeMinutes++;
+        document.getElementById('time-slider').value = state.currentTimeMinutes;
+        document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
+        updateAllComponents();
+    }, 100);
+
+    state.isPlaying = true;
+    document.getElementById('play-button').textContent = 'Pause';
+}
+
+
+document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
 async function loadCityData(city_id) {
     state.city_id = city_id;
