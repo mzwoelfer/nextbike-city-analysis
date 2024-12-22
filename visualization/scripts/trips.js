@@ -11,13 +11,11 @@ const initializeMap = (lat, lng) => {
 
     map = L.map('map', { 
         center: [lat, lng],
-        zoom: 12,
+        zoom: 12.5,
         zoomSnap: 0.2,
         attributionControl: false,
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 }
 
 const formatTime = (minutes) => {
