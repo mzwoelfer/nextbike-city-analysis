@@ -1,16 +1,5 @@
-const state = {
-    city_id: 467,
-    city_lat: 0,
-    city_lng: 0,
-    tripsData: [],
-    activeRoutes: {},
-    stationData: [],
-    stationMarkers: {},
-    markerMap: {},
-    isPlaying: false,
-    timer: null,
-    currentTimeMinutes: 0,
-};
+import state from './state.js';
+import { loadStationData, loadTripsData } from './data.js';
 
 let map;
 let updateThrottle;
@@ -33,42 +22,6 @@ const formatTime = (minutes) => {
 };
 
 const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
-
-async function loadTripsData() {
-    try {
-        const response = await fetch(`data/${state.city_id}_trips_2024-12-20.json`);
-        const data = await response.json();
-
-        state.tripsData = data["trips"];
-        state.city_lat = data["city_info"]["lat"];
-        state.city_lng = data["city_info"]["lng"];
-
-        console.log('Trips data loaded:', state.tripsData);
-
-        initializeMap(state.city_lat, state.city_lng)
-
-        populateRouteTable();
-        updateAllComponents();
-    } catch (err) {
-        console.error('Error loading trip data:', err);
-    }
-}
-
-async function loadStationData() {
-    try {
-        const response = await fetch(`data/${state.city_id}_stations_2024-12-20.json`);
-        state.stationData = await response.json();
-        console.log('Station data loaded:', state.stationData);
-
-        if (map) {
-            plotStationsOnMap();
-        } else {
-            console.error('Map is not initialized. Cannot plot stations.');
-        }
-    } catch (err) {
-        console.error('Error loading station data:', err);
-    }
-}
 
 function plotStationsOnMap() {
     const { stationData } = state;
@@ -157,8 +110,6 @@ function updateMap() {
             }
         }
     });
-
-    updateStationMarkers();
 }
 
 function updateInfoBox() {
@@ -220,9 +171,24 @@ function populateRouteTable() {
     });
 }
 
-function highlightTrip(index) {
+// ++++++++++++++ //
+// HIGHLIGHT TRIP //
+function highlightTrip(index){
+    highlightTripOnMap(index);
+    highlightTableRow(index);
+    setSliderTime();
+}
+
+function highlightTableRow(index){
+    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
+    document.querySelector(`[data-index='${index}']`).classList.add('active');
+}
+
+function highlightTripOnMap(index) {
     const trip = state.tripsData[index];
     if (!trip) return;
+    const tripStartTime = new Date(trip.start_time);
+    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
 
     Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
     state.activeRoutes = {};
@@ -235,18 +201,20 @@ function highlightTrip(index) {
     }
 
     state.activeRoutes[index] = selectedRoute;
+}
 
-    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
-    document.querySelector(`[data-index='${index}']`).classList.add('active');
-
-    const tripStartTime = new Date(trip.start_time);
-    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
-
+function setSliderTime() {
     const slider = document.getElementById('time-slider');
     slider.value = state.currentTimeMinutes;
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
 }
 
+// ++++++++++++++++++ //
+// ++++++++++++++++++ //
+//
+
+// ++++++++++++++++++ //
+// Event Listener
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
@@ -285,7 +253,16 @@ document.getElementById('play-button').addEventListener('click', () => {
 async function loadCityData(city_id) {
     state.city_id = city_id;
     await loadTripsData();
+    initializeMap(state.city_lat, state.city_lng)
+    populateRouteTable();
+    updateAllComponents();
+
     await loadStationData();
+    if (map) {
+        plotStationsOnMap();
+    } else {
+        console.error('Map is not initialized. Cannot plot stations.');
+    }
 }
 
 loadCityData(state.city_id);
