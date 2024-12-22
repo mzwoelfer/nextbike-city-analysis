@@ -1,5 +1,7 @@
 import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
+import { updatePlayButtonUI, updateSlider } from './playback.js'; 
+import { formatTime } from './utils.js';
 
 let map;
 let updateThrottle;
@@ -18,11 +20,6 @@ const initializeMap = (lat, lng) => {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 }
 
-const formatTime = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
 
 const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
@@ -255,15 +252,7 @@ function startPlayback(){
     updatePlayButtonUI();
 }
 
-function updateSlider(){
-    document.getElementById('time-slider').value = state.currentTimeMinutes;
-    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
-}
 
-function updatePlayButtonUI(){
-    const playButton = document.getElementById('play-button'); 
-    playButton.textContent = state.isPlaying ? 'Pause' : 'Play';
-}
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
