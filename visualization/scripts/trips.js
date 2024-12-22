@@ -77,7 +77,7 @@ function updateStationMarkers() {
 }
 
 
-function updateMap() {
+function drawTrips() {
     const { tripsData, currentTimeMinutes, activeRoutes } = state;
 
     if (!tripsData || tripsData.length === 0) return;
@@ -142,7 +142,7 @@ export function updateAllComponents() {
     }
 
     updateThrottle = requestAnimationFrame(() => {
-        updateMap();
+        drawTrips();
         updateStationMarkers();
         updateInfoBox();
     });
