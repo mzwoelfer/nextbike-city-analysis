@@ -233,30 +233,37 @@ function togglePlay(){
 function stopPlayback(){
     clearInterval(state.timer);
     state.isPlaying = false;
-    document.getElementById('play-button').textContent = 'Play';
+    updatePlayButtonUI();
 }
 
 function startPlayback(){
+    playback_interval = 100;
     const maxTime = parseInt(document.getElementById('time-slider').max, 10);
 
     state.timer = setInterval(() => {
         if (state.currentTimeMinutes >= maxTime) {
-            clearInterval(state.timer);
-            state.isPlaying = false;
-            document.getElementById('play-button').textContent = 'Play';
+            stopPlayback();
             return;
         }
 
         state.currentTimeMinutes++;
-        document.getElementById('time-slider').value = state.currentTimeMinutes;
-        document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
+        updateSlider();
         updateAllComponents();
-    }, 100);
+    }, playback_interval);
 
     state.isPlaying = true;
-    document.getElementById('play-button').textContent = 'Pause';
+    updatePlayButtonUI();
 }
 
+function updateSlider(){
+    document.getElementById('time-slider').value = state.currentTimeMinutes;
+    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
+}
+
+function updatePlayButtonUI(){
+    playButton = document.getElementById('play-button'); 
+    playButton.textContent = state.isPlaying ? 'Pause' : 'Play';
+}
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
