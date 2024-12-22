@@ -1,6 +1,6 @@
 import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
-import { updatePlayButtonUI, updateSlider } from './playback.js'; 
+import { togglePlay, updatePlayButtonUI, updateSlider } from './playback.js'; 
 import { formatTime } from './utils.js';
 
 let map;
@@ -138,7 +138,7 @@ function updateInfoBox() {
     document.getElementById('bike-count').textContent = activeBikes.size; // Unique active bikes
 }
 
-function updateAllComponents() {
+export function updateAllComponents() {
     if (updateThrottle) {
         cancelAnimationFrame(updateThrottle);
     }
@@ -176,7 +176,7 @@ function populateRouteTable() {
 function highlightTrip(index){
     highlightTripOnMap(index);
     highlightTableRow(index);
-    setSliderTime();
+    updateSlider();
 }
 
 function highlightTableRow(index){
@@ -203,11 +203,6 @@ function highlightTripOnMap(index) {
     state.activeRoutes[index] = selectedRoute;
 }
 
-function setSliderTime() {
-    const slider = document.getElementById('time-slider');
-    slider.value = state.currentTimeMinutes;
-    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
-}
 
 
 // ++++++++++++++++++ //
@@ -219,38 +214,6 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
 });
 
 
-function togglePlay(){
-    if(state.isPlaying){
-        stopPlayback();
-    } else {
-        startPlayback(); 
-    }
-}
-
-function stopPlayback(){
-    clearInterval(state.timer);
-    state.isPlaying = false;
-    updatePlayButtonUI();
-}
-
-function startPlayback(){
-    const playback_interval_milliseconds = 100;
-    const maxTime = parseInt(document.getElementById('time-slider').max, 10);
-
-    state.timer = setInterval(() => {
-        if (state.currentTimeMinutes >= maxTime) {
-            stopPlayback();
-            return;
-        }
-
-        state.currentTimeMinutes++;
-        updateSlider();
-        updateAllComponents();
-    }, playback_interval_milliseconds);
-
-    state.isPlaying = true;
-    updatePlayButtonUI();
-}
 
 
 
