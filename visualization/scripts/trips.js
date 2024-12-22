@@ -11,7 +11,7 @@ const initializeMap = (lat, lng) => {
 
     map = L.map('map', { 
         center: [lat, lng],
-        zoom: 12.5,
+        zoom: 12.3,
         zoomSnap: 0.2,
         attributionControl: false,
     });
