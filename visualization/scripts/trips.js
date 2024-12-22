@@ -20,8 +20,6 @@ const initializeMap = (lat, lng) => {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 }
 
-
-
 function plotStationsOnMap() {
     const { stationData } = state;
 
@@ -211,10 +209,6 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
     updateAllComponents();
 });
-
-
-
-
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
