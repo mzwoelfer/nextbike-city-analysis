@@ -7,18 +7,23 @@
   <title>Route Visualization</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    * {
+      margin: 0px;
+      padding 0px;
+    }
+
     #map {
       height: 80vh;
       width: 100%;
     }
 
     #back-to-top {
-      position: fixed; 
-      bottom: 20px; 
-      right: 20px; 
-      z-index: 1001; 
-      background-color: #007BFF; 
-      color: white; 
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1001;
+      background-color: #007BFF;
+      color: white;
       border: none;
       border-radius: 50%;
       width: 50px;
@@ -29,13 +34,13 @@
       font-size: 24px;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      opacity: 0; 
+      opacity: 0;
       transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
     #back-to-top:hover {
-      background-color: #0056b3; 
-      transform: scale(1.1); 
+      background-color: #0056b3;
+      transform: scale(1.1);
     }
 
     #back-to-top.visible {
@@ -45,12 +50,13 @@
 
     #control_panel {
       position: absolute;
-      width: 80vw;
+      width: 85vw;
       top: 62vh;
       left: 50%;
+      font-size: 14px;
       transform: translateX(-50%);
       z-index: 1000;
-      background: rgba(255,255,255, 0.8);
+      background: rgba(255, 255, 255, 0.8);
       border-radius: 8px;
       padding: 10px 20px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -63,22 +69,21 @@
       width: 100%;
       margin: 5px;
       display: flex;
-      flex-direction: column;
       align-items: center;
     }
 
     th[data-order="asc"]::after {
-      content: " ▼"; 
+      content: " ▼";
       margin-left: 5px;
     }
 
     th[data-order="desc"]::after {
-        content: " ▲"; 
-        margin-left: 5px;
+      content: " ▲";
+      margin-left: 5px;
     }
-    
+
     th[data-order=""]::after {
-      content: ""; 
+      content: "";
     }
 
     #route-table-container {
@@ -122,10 +127,6 @@
       width: 100%;
     }
 
-    #time-display {
-      font-size: 16px;
-    }
-
     #info-box {
       background: rgba(255, 255, 255, 0.5);
       padding: 10px;
@@ -154,6 +155,8 @@
       font-size: 16px;
     }
 
+
+    /* Stations: How many bikes does a station contain */
     .bike-count-label {
       text-align: center;
       font-size: 10px;
@@ -170,31 +173,38 @@
 </head>
 
 <body>
-    <div id="control_panel">
-      <div id="info-box">
-        <div id="info-date">
-          <div>
-            <strong>Date:</strong> <span id="trip-date">--</span>
-          </div>
-          <div id="time">
-            <span><strong>Time:</strong></span>
-            <span id="time-display">--:--</span>
-          </div>
-        </div>
-        <div id="info-stats">
-          <div id="trips-count">
-            <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
-          </div>
-          <div id="bikes-count">
-            <strong>Current Trips:</strong> <span id="bike-count">0</span>
-          </div>
-        </div>
+  <div id="control_panel">
+    <!-- First Layer -->
+    <div id="info-date">
+      <div id="time">
+        <span><strong>Time:</strong></span>
+        <span id="time-display">--:--</span>
       </div>
-      <div id="controls">
-        <input type="range" id="time-slider" min="0" max="1440" value="0" />
-        <button id="play-button">Play</button>
+      <div>
+        <strong>Date:</strong> <span id="trip-date">--</span>
+      </div>
+      <div id="day-navigation">
+        <button id="previous-day" title="Previous Day">◀</button>
+        <button id="next-day" title="Next Day">▶</button>
       </div>
     </div>
+
+    <!-- Second Layer -->
+    <div id="controls">
+      <button id="play-button">Play</button>
+      <input type="range" id="time-slider" min="0" max="1440" value="0" />
+    </div>
+
+    <!-- Third Layer -->
+    <div id="info-stats">
+      <div id="trips-count">
+        <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
+      </div>
+      <div id="bikes-count">
+        <strong>Current Trips:</strong> <span id="bike-count">0</span>
+      </div>
+    </div>
+  </div>
 
 
   <div id="back-to-top" title="Back to Top">⬆</div>
@@ -229,56 +239,56 @@
       const rows = Array.from(tableBody.querySelectorAll('tr'));
 
       const sortedRows = rows.sort((a, b) => {
-          const aData = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-          const bData = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+        const aData = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
+        const bData = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
 
-          const aValue = isNaN(aData) ? aData : parseFloat(aData);
-          const bValue = isNaN(bData) ? bData : parseFloat(bData);
+        const aValue = isNaN(aData) ? aData : parseFloat(aData);
+        const bValue = isNaN(bData) ? bData : parseFloat(bData);
 
-          if (order === 'asc') {
-              return aValue > bValue ? 1 : -1;
-          } else {
-              return aValue < bValue ? 1 : -1;
-          }
+        if (order === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
       });
 
-          tableBody.innerHTML = '';
-          sortedRows.forEach(row => tableBody.appendChild(row));
+      tableBody.innerHTML = '';
+      sortedRows.forEach(row => tableBody.appendChild(row));
     }
 
     document.querySelectorAll('#route-table th').forEach((header, index) => {
-        header.addEventListener('click', () => {
-            const currentOrder = header.getAttribute('data-order');
-            const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+      header.addEventListener('click', () => {
+        const currentOrder = header.getAttribute('data-order');
+        const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
 
-            document.querySelectorAll('#route-table th').forEach(otherHeader => {
-              otherHeader.setAttribute('data-order', '');
-            })
+        document.querySelectorAll('#route-table th').forEach(otherHeader => {
+          otherHeader.setAttribute('data-order', '');
+        })
 
 
-            header.setAttribute('data-order', newOrder);
-            sortTable(index, newOrder);
-        });
+        header.setAttribute('data-order', newOrder);
+        sortTable(index, newOrder);
+      });
     });
 
-    // Scroll back to top 
+    // Scroll back to top
     document.addEventListener("DOMContentLoaded", () => {
-        const backToTopButton = document.getElementById("back-to-top");
+      const backToTopButton = document.getElementById("back-to-top");
 
-        window.addEventListener("scroll", () => {
-            if (window.scrollY > 200) {
-                backToTopButton.classList.add("visible");
-            } else {
-                backToTopButton.classList.remove("visible");
-            }
-        });
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 200) {
+          backToTopButton.classList.add("visible");
+        } else {
+          backToTopButton.classList.remove("visible");
+        }
+      });
 
-        backToTopButton.addEventListener("click", () => {
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth",
-            });
+      backToTopButton.addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
         });
+      });
     });
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

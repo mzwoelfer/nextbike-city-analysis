@@ -1,5 +1,8 @@
 import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
+import { togglePlay, updateSlider } from './playback.js';
+import { formatTime, minutesSinceMidnight } from './utils.js';
+import { populateRouteTable, highlightTableRow } from './table.js';
 
 let map;
 let updateThrottle;
@@ -9,19 +12,14 @@ const initializeMap = (lat, lng) => {
         map.remove();
     }
 
-    map = L.map('map').setView([lat, lng], 12);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+    map = L.map('map', {
+        center: [lat, lng],
+        zoom: 12.3,
+        zoomSnap: 0.2,
+        attributionControl: false,
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 }
-
-const formatTime = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
-
-const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
 
 function plotStationsOnMap() {
     const { stationData } = state;
@@ -79,7 +77,7 @@ function updateStationMarkers() {
 }
 
 
-function updateMap() {
+function drawTrips() {
     const { tripsData, currentTimeMinutes, activeRoutes } = state;
 
     if (!tripsData || tripsData.length === 0) return;
@@ -138,50 +136,24 @@ function updateInfoBox() {
     document.getElementById('bike-count').textContent = activeBikes.size; // Unique active bikes
 }
 
-function updateAllComponents() {
+export function updateAllComponents() {
     if (updateThrottle) {
         cancelAnimationFrame(updateThrottle);
     }
 
     updateThrottle = requestAnimationFrame(() => {
-        updateMap();
+        drawTrips();
         updateStationMarkers();
         updateInfoBox();
     });
 }
 
-function populateRouteTable() {
-    const tableBody = document.querySelector('#route-table tbody');
-    tableBody.innerHTML = '';
-
-    state.tripsData.forEach((trip, index) => {
-        const row = document.createElement('tr');
-        row.dataset.index = index;
-
-        row.innerHTML = `
-            <td>${trip.bike_number}</td>
-            <td>${new Date(trip.start_time).toLocaleTimeString()}</td>
-            <td>${new Date(trip.end_time).toLocaleTimeString()}</td>
-            <td>${trip.distance.toFixed(2)}</td>
-            <td>${Math.floor(trip.duration / 60)}</td>
-        `;
-
-        row.addEventListener('click', () => highlightTrip(index));
-        tableBody.appendChild(row);
-    });
-}
-
 // ++++++++++++++ //
 // HIGHLIGHT TRIP //
-function highlightTrip(index){
+export function highlightTrip(index) {
     highlightTripOnMap(index);
     highlightTableRow(index);
-    setSliderTime();
-}
-
-function highlightTableRow(index){
-    document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
-    document.querySelector(`[data-index='${index}']`).classList.add('active');
+    updateSlider();
 }
 
 function highlightTripOnMap(index) {
@@ -203,15 +175,7 @@ function highlightTripOnMap(index) {
     state.activeRoutes[index] = selectedRoute;
 }
 
-function setSliderTime() {
-    const slider = document.getElementById('time-slider');
-    slider.value = state.currentTimeMinutes;
-    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
-}
 
-// ++++++++++++++++++ //
-// ++++++++++++++++++ //
-//
 
 // ++++++++++++++++++ //
 // Event Listener
@@ -221,34 +185,7 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
     updateAllComponents();
 });
 
-document.getElementById('play-button').addEventListener('click', () => {
-    const { isPlaying, timer } = state;
-
-    if (isPlaying) {
-        clearInterval(timer);
-        state.isPlaying = false;
-        document.getElementById('play-button').textContent = 'Play';
-    } else {
-        const maxTime = parseInt(document.getElementById('time-slider').max, 10);
-
-        state.timer = setInterval(() => {
-            if (state.currentTimeMinutes >= maxTime) {
-                clearInterval(state.timer);
-                state.isPlaying = false;
-                document.getElementById('play-button').textContent = 'Play';
-                return;
-            }
-
-            state.currentTimeMinutes++;
-            document.getElementById('time-slider').value = state.currentTimeMinutes;
-            document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
-            updateAllComponents();
-        }, 100);
-
-        state.isPlaying = true;
-        document.getElementById('play-button').textContent = 'Pause';
-    }
-});
+document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
 async function loadCityData(city_id) {
     state.city_id = city_id;
