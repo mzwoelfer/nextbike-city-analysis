@@ -237,7 +237,7 @@ function stopPlayback(){
 }
 
 function startPlayback(){
-    playback_interval_milliseconds = 100;
+    const playback_interval_milliseconds = 100;
     const maxTime = parseInt(document.getElementById('time-slider').max, 10);
 
     state.timer = setInterval(() => {
@@ -261,7 +261,7 @@ function updateSlider(){
 }
 
 function updatePlayButtonUI(){
-    playButton = document.getElementById('play-button'); 
+    const playButton = document.getElementById('play-button'); 
     playButton.textContent = state.isPlaying ? 'Pause' : 'Play';
 }
 
