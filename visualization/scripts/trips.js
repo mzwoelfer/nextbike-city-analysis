@@ -2,6 +2,7 @@ import state from './state.js';
 import { loadStationData, loadTripsData } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
+import { populateRouteTable } from './table.js';
 
 let map;
 let updateThrottle;
@@ -147,30 +148,9 @@ export function updateAllComponents() {
     });
 }
 
-function populateRouteTable() {
-    const tableBody = document.querySelector('#route-table tbody');
-    tableBody.innerHTML = '';
-
-    state.tripsData.forEach((trip, index) => {
-        const row = document.createElement('tr');
-        row.dataset.index = index;
-
-        row.innerHTML = `
-            <td>${trip.bike_number}</td>
-            <td>${new Date(trip.start_time).toLocaleTimeString()}</td>
-            <td>${new Date(trip.end_time).toLocaleTimeString()}</td>
-            <td>${trip.distance.toFixed(2)}</td>
-            <td>${Math.floor(trip.duration / 60)}</td>
-        `;
-
-        row.addEventListener('click', () => highlightTrip(index));
-        tableBody.appendChild(row);
-    });
-}
-
 // ++++++++++++++ //
 // HIGHLIGHT TRIP //
-function highlightTrip(index) {
+export function highlightTrip(index) {
     highlightTripOnMap(index);
     highlightTableRow(index);
     updateSlider();
