@@ -2,7 +2,7 @@ import state from './state.js';
 
 export const loadTripsData = async () => {
     try {
-        const response = await fetch(`data/${state.city_id}_trips_2024-12-20.json`);
+        const response = await fetch(`data/${state.city_id}_trips_${state.date}.json`);
         const data = await response.json();
 
         state.tripsData = data.trips;
@@ -10,7 +10,7 @@ export const loadTripsData = async () => {
         state.city_lng = data.city_info.lng;
 
         console.log('Trips data loaded:', state.tripsData);
-        return 
+        return
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
@@ -18,7 +18,7 @@ export const loadTripsData = async () => {
 
 export const loadStationData = async () => {
     try {
-        const response = await fetch(`data/${state.city_id}_stations_2024-12-20.json`);
+        const response = await fetch(`data/${state.city_id}_stations_${state.date}.json`);
         state.stationData = await response.json();
 
         console.log('Station data loaded:', state.stationData);

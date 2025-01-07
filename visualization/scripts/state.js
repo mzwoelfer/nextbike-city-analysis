@@ -10,6 +10,7 @@ const state = {
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
+    date: "2024-12-20",
 };
 
 export default state;
