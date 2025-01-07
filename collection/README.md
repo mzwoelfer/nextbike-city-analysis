@@ -38,5 +38,7 @@ Make sure your system has at least the following resources:
 | Docker                  | Container runtime installed                      |
 
 
+## How does it work?
+🚧 TBD
 
 
