@@ -3,6 +3,9 @@
     <p>NextBike trip analysis for your city. Collect, process and visualize bike trips in your City.</p>
 </div>
 
+This project pulls data from the public Nextbike API and aggreagtes it into "trips". Then the data can be previewed on a map.
+Or you can use the data in csv format to do your own analysis in Excel.
+
 ## Overview
 
 ```SHELL
@@ -51,28 +54,37 @@ docker compose --file docker-compose.yaml up -d
 cd ..
 ```
 
-3. Calculate trips (Wait a few minutes before execution):
+3. Set city_id and date to today as shell variables:
 ```SHELL
-project_address=($PWD)
-image_tag=nb_processing
+# Use format YYYY-MM-DD.
+date='2025-01-07'
+city_id=467
+```
 
+4. Calculate trips (Wait a few minutes before execution):
+```SHELL
 cd data_processing
 
-# Build Image
-nerdctl build --file CONTAINERFILE -t $image_tag .
-
-nerdctl run --rm \
-    -v "$project_address/data/trips_data/:/app/export" \
-    --network data_collection_nextbike_network \
-    --env-file .env \
-    $image_tag \
-    --export /app/export
+python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/trips_data/ --date $date
 
 cd ..
 ```
 
-4. Visualize trips:
-🚧 TBD
+5. Visualize trips:
+
+```SHELL
+# Copy data to visualization data
+cp "data/trips_data/${city_id}_trips_${date}.json" visualization/data/
+cp "data/trips_data/${city_id}_stations_${date}.json" visualization/data/
+```
+
+Change into `visualization/` and sstart the server to display the map:
+```SHELL
+python3 -m http.server 8000
+```
+
+6. Visit `localhost:8000` in your browser.
+
 
 ## Credits
 Inspiration:

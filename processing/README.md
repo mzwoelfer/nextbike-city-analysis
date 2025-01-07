@@ -24,3 +24,24 @@ python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/t
 ```
 
 3. Trips data in `<PROJECT_ROOT>/data/trips_data/`
+
+
+## Get data from postgres server
+If your postgres is running on a server, add the following to your `~/.ssh/config`
+```SHELL
+Host nextbike_postgres
+  HostName <YOUR SERVER IP>
+  user <USER>
+  Port 22
+  IdentityFile <PATH TO SSH KEY>
+```
+
+Should your VMs have restrictions on ports, to pull the data from postgres, use SSH forwarding:
+
+```SHELL
+ssh -f -L 5432:localhost:5432 <USER>@<YOUR SERVER IP> -N
+```
+
+- `-f`: SSH in background after authentication
+- `-L 5432:localhost:5432`: Forwards port 5432 from the remote host to your local machine
+- `-N`: SSH doesn’t execute commands, useful for port forwarding only
