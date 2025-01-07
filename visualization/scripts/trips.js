@@ -187,6 +187,16 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
 
+document.getElementById('previous-day').addEventListener('click', async () => {
+    state.previousDay()
+    await loadCityData(state.city_id)
+})
+
+document.getElementById('next-day').addEventListener('click', async () => {
+    state.nextDay()
+    await loadCityData(state.city_id)
+})
+
 async function loadCityData(city_id) {
     state.city_id = city_id;
     await loadTripsData();

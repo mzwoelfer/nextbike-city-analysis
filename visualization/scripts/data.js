@@ -1,6 +1,9 @@
 import state from './state.js';
 
 export const loadTripsData = async () => {
+    /**
+     * Loads a JSON file with the trips data into the state
+     */
     try {
         const response = await fetch(`data/${state.city_id}_trips_${state.date}.json`);
         const data = await response.json();
@@ -17,6 +20,9 @@ export const loadTripsData = async () => {
 };
 
 export const loadStationData = async () => {
+    /**
+     * Loads a JSON file with the station data into the state
+     */
     try {
         const response = await fetch(`data/${state.city_id}_stations_${state.date}.json`);
         state.stationData = await response.json();
