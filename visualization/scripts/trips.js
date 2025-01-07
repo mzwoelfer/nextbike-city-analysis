@@ -1,5 +1,5 @@
 import state from './state.js';
-import { loadStationData, loadTripsData } from './data.js';
+import { loadStationData, loadTripsData, checkTripsDataExists } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
@@ -178,7 +178,35 @@ function highlightTripOnMap(index) {
 
 
 // ++++++++++++++++++ //
-// Event Listener
+// Previous/Next Day Buttons
+const previousDayButton = document.getElementById('previous-day')
+const nextDayButton = document.getElementById('next-day')
+
+const updateButtonStates = async () => {
+    const prevDate = new Date(state.date);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const nextDate = new Date(state.date);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    const prevExists = await checkTripsDataExists(prevDate.toISOString().split('T')[0]);
+    const nextExists = await checkTripsDataExists(nextDate.toISOString().split('T')[0]);
+
+    previousDayButton.disabled = !prevExists;
+    nextDayButton.disabled = !nextExists;
+};
+
+previousDayButton.addEventListener('click', async () => {
+    state.previousDay()
+    await loadCityData(state.city_id)
+})
+
+nextDayButton.addEventListener('click', async () => {
+    state.nextDay()
+    await loadCityData(state.city_id)
+})
+
+// ++++++++++ //
+// Timeslider
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
     document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
@@ -186,6 +214,8 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
 });
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
+
+
 
 async function loadCityData(city_id) {
     state.city_id = city_id;
@@ -200,6 +230,7 @@ async function loadCityData(city_id) {
     } else {
         console.error('Map is not initialized. Cannot plot stations.');
     }
+    updateButtonStates()
 }
 
 loadCityData(state.city_id);
