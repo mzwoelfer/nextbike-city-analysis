@@ -33,3 +33,18 @@ export const loadStationData = async () => {
         console.error('Error loading station data:', err);
     }
 };
+
+
+export const checkTripsDataExists = async (date) => {
+    /**
+     * True if file exists.
+     * Check if the JSON file for the date exists.
+     */
+    try {
+        const response = await fetch(`data/${state.city_id}_trips_${date}.json`, { method: 'HEAD' });
+        return response.ok;
+    } catch (err) {
+        console.error('Error checking trip data file:', err);
+        return false;
+    }
+}
