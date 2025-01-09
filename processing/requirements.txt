@@ -8,3 +8,4 @@ scikit-learn==1.5.2
 matplotlib==3.9.2
 matplotlib-inline==0.1.7
 python-dotenv==1.0.1
+geopy==2.4.1

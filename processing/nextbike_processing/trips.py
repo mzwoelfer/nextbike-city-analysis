@@ -5,6 +5,7 @@ import networkx as nx
 from nextbike_processing.database import get_connection
 from nextbike_processing.utils import save_json, save_csv
 from nextbike_processing.cities import get_city_coordinates_from_database
+from geopy.distance import geodesic
 
 
 def fetch_trip_data(city_id, date):
@@ -93,11 +94,47 @@ def add_timestamps_to_segments(trips):
     return trips
 
 
+def remove_gps_errors(trips, meter_threshold=50):
+    """
+    Removes trips < 1 minute and moved less than meter_threshold.
+
+    Parameters:
+        trips (pd.DataFrame):
+                Contains trip data with start_latitude, start_longitude,
+                end_latitude, end_longitude, and duration columns.
+        meter_threshold (int):
+                Minimum distance in meters to consider a trip valid.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame with GPS errors removed
+    """
+
+    def is_valid_trip(row):
+        if row["duration"] <= 61:
+            distance = geodesic(
+                (row["start_latitude"], row["start_longitude"]),
+                (row["end_latitude"], row["end_longitude"]),
+            ).meters
+            return distance >= meter_threshold
+        return True
+
+    filtered_trips = trips[trips.apply(is_valid_trip, axis=1)]
+
+    return filtered_trips
+
+
 def process_and_save_trips(city_id, date, folder):
     trips = fetch_trip_data(city_id, date)
     city_lat, city_lng = get_city_coordinates_from_database(city_id)
 
     G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
+
+    trips["date"] = trips["start_time"].dt.date.astype(str)
+    trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    trips["duration"] = trips["duration"].dt.total_seconds()
+
+    trips = remove_gps_errors(trips)
 
     results = trips.apply(
         lambda row: calculate_shortest_path(
@@ -111,10 +148,6 @@ def process_and_save_trips(city_id, date, folder):
     )
 
     trips["distance"], trips["segments"] = zip(*results)
-    trips["date"] = trips["start_time"].dt.date.astype(str)
-    trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    trips["duration"] = trips["duration"].dt.total_seconds()
 
     trips = add_timestamps_to_segments(trips)
 
