@@ -110,7 +110,11 @@ def remove_gps_errors(trips, meter_threshold=60):
     """
 
     def is_valid_trip(row):
-        if row["duration"] <= 61:
+        # more than 60 seconds:
+        # The minutes in teh dataset don't align on a full minute
+        # For example: 01:18:42 --> 01:19:43
+        duration_seconds = 62
+        if row["duration"] <= duration_seconds:
             distance = geodesic(
                 (row["start_latitude"], row["start_longitude"]),
                 (row["end_latitude"], row["end_longitude"]),
