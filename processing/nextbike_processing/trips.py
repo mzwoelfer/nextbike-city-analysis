@@ -94,7 +94,7 @@ def add_timestamps_to_segments(trips):
     return trips
 
 
-def remove_gps_errors(trips, meter_threshold=50):
+def remove_gps_errors(trips, meter_threshold=60):
     """
     Removes trips < 1 minute and moved less than meter_threshold.
 
