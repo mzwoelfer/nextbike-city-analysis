@@ -65,6 +65,20 @@
       align-items: center;
     }
 
+    #city-selection {
+      position: absolute;
+      top: 2vh;
+      right: 2vh;
+      font-size: 14px;
+      display: flex;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      padding: 10px 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      align-items: center;
+    }
+
     #controls {
       width: 100%;
       margin: 5px;
@@ -173,6 +187,10 @@
 </head>
 
 <body>
+  <div id="city-selection">
+    <label for="city-selector">Choose a city:</label>
+    <select name="city" id="city-selector"></select>
+  </div>
   <div id="control_panel">
     <!-- First Layer -->
     <div id="info-date">

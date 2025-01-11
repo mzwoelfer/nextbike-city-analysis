@@ -175,12 +175,45 @@ function highlightTripOnMap(index) {
     state.activeRoutes[index] = selectedRoute;
 }
 
+// +++++++++++++++++++++++ //
+// City selection dropdown
+function populateCityDropdown() {
+    console.log("CITY DROPDOWN")
+    const citySelector = document.getElementById('city-selector');
+    citySelector.innerHTML = "";
+
+    Object.entries(state.cities).forEach(([cityName, cityId]) => {
+        const option = document.createElement("option");
+        option.value = cityId;
+        option.textContent = cityName;
+        if (parseInt(cityId, 10) === state.city_id) {
+            console.log("CITYID:", cityId)
+            option.selected = true;
+        }
+        citySelector.appendChild(option);
+    })
+}
+
+// ++++++++++++++++++++++++++ //
+// City selection
+async function handleCityChange(event) {
+    const cityId = parseInt(event.target.value, 10);
+    const cityName = Object.keys(state.cities).find(key => state.cities[key] === cityId);
+
+    loadCityData(cityId);
+}
+
+
 
 
 // ++++++++++++++++++ //
 // Previous/Next Day Buttons
 const previousDayButton = document.getElementById('previous-day')
 const nextDayButton = document.getElementById('next-day')
+const citySelector = document.getElementById('city-selector')
+
+citySelector.addEventListener('change', handleCityChange);
+
 
 const updateButtonStates = async () => {
     const prevDate = new Date(state.date);
@@ -205,6 +238,7 @@ nextDayButton.addEventListener('click', async () => {
     await loadCityData(state.city_id)
 })
 
+
 // ++++++++++ //
 // Timeslider
 document.getElementById('time-slider').addEventListener('input', (event) => {
@@ -214,8 +248,6 @@ document.getElementById('time-slider').addEventListener('input', (event) => {
 });
 
 document.getElementById('play-button').addEventListener('click', () => togglePlay());
-
-
 
 async function loadCityData(city_id) {
     state.city_id = city_id;
@@ -233,4 +265,5 @@ async function loadCityData(city_id) {
     updateButtonStates()
 }
 
+populateCityDropdown();
 loadCityData(state.city_id);
