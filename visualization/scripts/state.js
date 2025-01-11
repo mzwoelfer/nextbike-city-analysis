@@ -14,7 +14,7 @@ const state = {
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
-    date: "2024-12-20",
+    date: "2025-01-01",
 
     nextDay() {
         const currentDate = new Date(this.date);
