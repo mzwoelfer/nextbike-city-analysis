@@ -2,6 +2,10 @@ const state = {
     city_id: 467,
     city_lat: 0,
     city_lng: 0,
+    cities: {
+        "Gießen": 467,
+        "Marburg": 438
+    },
     tripsData: [],
     activeRoutes: {},
     stationData: [],
