@@ -1,5 +1,5 @@
 import state from "./state.js";
-import { highlightTrip } from "./trips.js";
+import { highlightTrip } from "./main.js";
 
 export function populateRouteTable() {
     const tableBody = document.querySelector('#route-table tbody');

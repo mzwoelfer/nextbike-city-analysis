@@ -1,6 +1,6 @@
 import state from './state.js';
 import { formatTime } from './utils.js';
-import { updateAllComponents } from './trips.js';
+import { updateAllComponents } from './main.js';
 
 export function updatePlayButtonUI() {
     const playButton = document.getElementById('play-button');
