@@ -6,184 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Route Visualization</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    * {
-      margin: 0px;
-      padding 0px;
-    }
-
-    #map {
-      height: 80vh;
-      width: 100%;
-    }
-
-    #back-to-top {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1001;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 24px;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-
-    #back-to-top:hover {
-      background-color: #0056b3;
-      transform: scale(1.1);
-    }
-
-    #back-to-top.visible {
-      opacity: 1;
-    }
-
-
-    #control_panel {
-      position: absolute;
-      width: 85vw;
-      top: 62vh;
-      left: 50%;
-      font-size: 14px;
-      transform: translateX(-50%);
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 8px;
-      padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    #city-selection {
-      position: absolute;
-      top: 2vh;
-      right: 2vh;
-      font-size: 14px;
-      display: flex;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 8px;
-      padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      align-items: center;
-    }
-
-    #controls {
-      width: 100%;
-      margin: 5px;
-      display: flex;
-      align-items: center;
-    }
-
-    th[data-order="asc"]::after {
-      content: " ▼";
-      margin-left: 5px;
-    }
-
-    th[data-order="desc"]::after {
-      content: " ▲";
-      margin-left: 5px;
-    }
-
-    th[data-order=""]::after {
-      content: "";
-    }
-
-    #route-table-container {
-      margin: 20px;
-      width: 90%;
-      overflow-x: auto;
-    }
-
-    #route-table {
-      border-collapse: collapse;
-      width: 100%;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-    }
-
-    #route-table th,
-    #route-table td {
-      border: 1px solid #ddd;
-      text-align: left;
-      padding: 8px;
-    }
-
-    #route-table th {
-      background-color: #f2f2f2;
-    }
-
-    #route-table tr:hover {
-      background-color: #f5f5f5;
-    }
-
-    #route-table tr.active {
-      background-color: #e6f7ff;
-      font-weight: bold;
-    }
-
-    #time {
-      display: flex;
-    }
-
-    #time-slider {
-      width: 100%;
-    }
-
-    #info-box {
-      background: rgba(255, 255, 255, 0.5);
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-      width: 100%;
-    }
-
-    #info-date {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    #info-stats {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    #play-button {
-      padding: 5px;
-      font-size: 16px;
-    }
-
-
-    /* Stations: How many bikes does a station contain */
-    .bike-count-label {
-      text-align: center;
-      font-size: 10px;
-      font-weight: bold;
-      color: #fff5bc;
-      pointer-events: none;
-    }
-
-    .bike-count-text {
-      position: relative;
-      top: -2px;
-    }
-  </style>
+  <link rel="stylesheet" href="main.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="scripts/main.js"></script>
 </head>
 
 <body>
@@ -227,10 +52,92 @@
 
   <div id="back-to-top" title="Back to Top">⬆</div>
 
-  <div id="map">
+  <div id="map"></div>
 
+  <div id="faq-section">
+    <h2>FAQ</h2>
+
+    <div class="faq-item">
+      <h3>What is this?</h3>
+      <p>
+        This project visualizes all trips in your city's Nextbike network.
+        Each trip is inferred from bike availability data collected every minute.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How is the data collected?</h3>
+      <p>
+        The data is updated every minute. A bike is recorded as part of a trip if it disappears from the dataset and
+        reappears at a different location later. The route is calculated by connecting these points using
+        OpenStreetMap's bike network.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Why do some trips look wrong?</h3>
+      <p>
+        Some trips may seem unrealistic due to GPS inaccuracies, faulty time data, or route calculation errors. For
+        example:
+      </p>
+      <ul>
+        <li><strong>1-minute trips:</strong> These could be due to delayed data updates or an error on Nextbikes part.
+        </li>
+        <li><strong>Weird routes:</strong> OpenStreetMap may not always provide the shortest or most realistic path,
+          especially in pedestrianized areas.</li>
+      </ul>
+    </div>
+
+    <div class="faq-item">
+      <h3>Why don’t you remove incorrect trips?</h3>
+      <p>
+        Filtering “incorrect” trips is tricky.
+        Some 1-minute trips are valid, like short hops between stations.
+        Somestimes the trips are valid, but the time data didn't update.
+        Deleting those trips based on general rules removes real data.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Where is my city?</h3>
+      <p>
+        This is a sample visualization for the cities of Gießen and Marburg.
+      </p>
+
+      <p>
+        You want your city analysed?
+      </p>
+      <p>
+        Make it happen:
+        Get someone with technical knowledge to set up tracking for your city's Nextbike network by following the
+        instructions in the GitHub Repository <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
+          target="_blank">Nextbike City Analysis Project</a>.
+      </p>
+      <p>
+        The project uses open data from Nextbike and OpenStreetMap, making it easy to expand
+        to new locations.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Where do you get the data from?</h3>
+      <p>
+        Nextbikes publicly available data endpoint.<br>
+        The endpoint for the data for the city of <a href="https://maps.nextbike.net/maps/nextbike-live.json?city=467"
+          target="_blank">Gießen</a>.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Looks cool - Can I use this?</h3>
+      <p>
+        Sure. It's public for a reason.
+        Either link to this page.
+        Or for people with technical knowledge to the <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
+          target="_blank">Nextbike City Analysis Project</a>.
+      </p>
+    </div>
   </div>
-
 
 
   <div id="route-table-container">
@@ -250,67 +157,7 @@
     </table>
   </div>
 
-  <script>
-    // sort table
-    function sortTable(column, order) {
-      const tableBody = document.querySelector('#route-table tbody');
-      const rows = Array.from(tableBody.querySelectorAll('tr'));
 
-      const sortedRows = rows.sort((a, b) => {
-        const aData = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-        const bData = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-
-        const aValue = isNaN(aData) ? aData : parseFloat(aData);
-        const bValue = isNaN(bData) ? bData : parseFloat(bData);
-
-        if (order === 'asc') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
-
-      tableBody.innerHTML = '';
-      sortedRows.forEach(row => tableBody.appendChild(row));
-    }
-
-    document.querySelectorAll('#route-table th').forEach((header, index) => {
-      header.addEventListener('click', () => {
-        const currentOrder = header.getAttribute('data-order');
-        const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
-
-        document.querySelectorAll('#route-table th').forEach(otherHeader => {
-          otherHeader.setAttribute('data-order', '');
-        })
-
-
-        header.setAttribute('data-order', newOrder);
-        sortTable(index, newOrder);
-      });
-    });
-
-    // Scroll back to top
-    document.addEventListener("DOMContentLoaded", () => {
-      const backToTopButton = document.getElementById("back-to-top");
-
-      window.addEventListener("scroll", () => {
-        if (window.scrollY > 200) {
-          backToTopButton.classList.add("visible");
-        } else {
-          backToTopButton.classList.remove("visible");
-        }
-      });
-
-      backToTopButton.addEventListener("click", () => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-      });
-    });
-  </script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="scripts/trips.js"></script>
 </body>
 
 </html>
