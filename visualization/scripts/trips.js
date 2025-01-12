@@ -95,11 +95,32 @@ function drawTrips() {
                 .filter(([_, __, timestamp]) => new Date(timestamp) <= currentTime)
                 .map(([lat, lon]) => [lat, lon]);
 
-            if (pathCoordinates.length > 0) {
+            if (pathCoordinates.length > 1) {
+                // Remove existing previous routes
                 if (activeRoutes[index]) {
                     map.removeLayer(activeRoutes[index]);
                 }
-                activeRoutes[index] = L.polyline(pathCoordinates, { color: '#91785D', weight: 3 }).addTo(map);
+
+                // polylines for fading effect
+                const fadingLayers = [];
+                const totalSegments = pathCoordinates.length - 1;
+
+                for (let i = 0; i < totalSegments; i++) {
+                    const start = pathCoordinates[i];
+                    const end = pathCoordinates[i + 1];
+                    const opacity = (i + 1) / totalSegments;
+
+                    const polyline = L.polyline([start, end], {
+                        color: '#91785D',
+                        weight: 3,
+                        opacity: opacity,
+                    });
+
+                    polyline.addTo(map);
+                    fadingLayers.push(polyline);
+                }
+
+                activeRoutes[index] = L.layerGroup(fadingLayers).addTo(map);
             }
         } else {
             if (activeRoutes[index]) {
