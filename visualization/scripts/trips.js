@@ -5,6 +5,8 @@ import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
+import { initializeBackToTop } from './navigation.js';
+
 
 let updateThrottle;
 
@@ -219,3 +221,4 @@ async function loadCityData(city_id) {
 
 populateCityDropdown();
 loadCityData(state.city_id);
+initializeBackToTop();
