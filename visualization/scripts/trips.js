@@ -199,7 +199,6 @@ function highlightTripOnMap(index) {
 // +++++++++++++++++++++++ //
 // City selection dropdown
 function populateCityDropdown() {
-    console.log("CITY DROPDOWN")
     const citySelector = document.getElementById('city-selector');
     citySelector.innerHTML = "";
 
@@ -208,7 +207,6 @@ function populateCityDropdown() {
         option.value = cityId;
         option.textContent = cityName;
         if (parseInt(cityId, 10) === state.city_id) {
-            console.log("CITYID:", cityId)
             option.selected = true;
         }
         citySelector.appendChild(option);
