@@ -4,40 +4,9 @@ import { loadStationData, loadTripsData, checkTripsDataExists } from './data.js'
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
-import { plotStationsOnMap } from './stations.js';
+import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 
 let updateThrottle;
-
-function updateStationMarkers() {
-    const { stationData, currentTimeMinutes, markerMap } = state;
-
-    if (!stationData || stationData.length === 0 || !markerMap) return;
-
-    const latestStationData = {};
-
-    stationData.forEach((station) => {
-        const stationTime = minutesSinceMidnight(new Date(station.minute));
-        if (stationTime <= currentTimeMinutes) {
-            if (!latestStationData[station.id] || stationTime > latestStationData[station.id].time) {
-                latestStationData[station.id] = { ...station, time: stationTime };
-            }
-        }
-    });
-
-    requestAnimationFrame(() => {
-        Object.values(latestStationData).forEach((latestEntry) => {
-            const { id, bike_count } = latestEntry;
-            const stationMarkers = markerMap[id];
-
-            if (stationMarkers && stationMarkers.labelMarker) {
-                const labelElement = stationMarkers.labelMarker.getElement().querySelector('.bike-count-text');
-                if (labelElement) {
-                    labelElement.textContent = bike_count;
-                }
-            }
-        });
-    });
-}
 
 
 function drawTrips() {
