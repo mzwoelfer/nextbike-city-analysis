@@ -1,5 +1,7 @@
 import { getMap } from './map.js';
 import state from './state.js';
+import { minutesSinceMidnight } from './utils.js';
+
 
 export function createFadingPolyline(pathCoordinates) {
     const map = getMap();
@@ -59,4 +61,25 @@ export function drawTrips() {
             }
         }
     });
+}
+
+
+export function highlightTripOnMap(index) {
+    const map = getMap();
+    const trip = state.tripsData[index];
+    if (!trip) return;
+    const tripStartTime = new Date(trip.start_time);
+    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
+
+    Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
+    state.activeRoutes = {};
+
+    const pathCoordinates = trip.segments.map(([lat, lon]) => [lat, lon]);
+    const selectedRoute = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
+
+    if (pathCoordinates.length > 0) {
+        map.panTo(pathCoordinates[0]);
+    }
+
+    state.activeRoutes[index] = selectedRoute;
 }

@@ -1,12 +1,12 @@
 import state from './state.js';
-import { initializeMap, getMap } from './map.js';
+import { initializeMap } from './map.js';
 import { loadStationData, loadTripsData, checkTripsDataExists } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
-import { drawTrips } from './trips.js';
+import { drawTrips, highlightTripOnMap } from './trips.js';
 
 let updateThrottle;
 
@@ -56,25 +56,7 @@ export function highlightTrip(index) {
     updateSlider();
 }
 
-function highlightTripOnMap(index) {
-    const map = getMap();
-    const trip = state.tripsData[index];
-    if (!trip) return;
-    const tripStartTime = new Date(trip.start_time);
-    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
 
-    Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
-    state.activeRoutes = {};
-
-    const pathCoordinates = trip.segments.map(([lat, lon]) => [lat, lon]);
-    const selectedRoute = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
-
-    if (pathCoordinates.length > 0) {
-        map.panTo(pathCoordinates[0]);
-    }
-
-    state.activeRoutes[index] = selectedRoute;
-}
 
 // +++++++++++++++++++++++ //
 // City selection dropdown
