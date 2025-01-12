@@ -57,6 +57,7 @@ export function highlightTrip(index) {
 }
 
 function highlightTripOnMap(index) {
+    const map = getMap();
     const trip = state.tripsData[index];
     if (!trip) return;
     const tripStartTime = new Date(trip.start_time);
