@@ -1,27 +1,15 @@
 import state from './state.js';
+import { initializeMap, getMap } from './map.js';
 import { loadStationData, loadTripsData, checkTripsDataExists } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 
-let map;
 let updateThrottle;
 
-const initializeMap = (lat, lng) => {
-    if (map) {
-        map.remove();
-    }
-
-    map = L.map('map', {
-        center: [lat, lng],
-        zoom: 13,
-        zoomSnap: 0.2,
-        attributionControl: false,
-    });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-}
 
 function plotStationsOnMap() {
+    const map = getMap();
     const { stationData } = state;
 
     stationData.forEach((station) => {
@@ -78,6 +66,7 @@ function updateStationMarkers() {
 
 
 function drawTrips() {
+    const map = getMap();
     const { tripsData, currentTimeMinutes, activeRoutes } = state;
 
     if (!tripsData || tripsData.length === 0) return;
