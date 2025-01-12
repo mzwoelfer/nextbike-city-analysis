@@ -183,6 +183,43 @@
       position: relative;
       top: -2px;
     }
+
+    #faq-section {
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 800px;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    #faq-section h2 {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .faq-item {
+      margin-bottom: 20px;
+    }
+
+    .faq-item h3 {
+      margin-bottom: 10px;
+      font-size: 22px;
+      color: #252525;
+    }
+
+    .faq-item p {
+      margin: 0;
+    }
+
+    .faq-item ul {
+      margin: 10px 0 0 20px;
+      padding: 0;
+      list-style-type: disc;
+    }
+
+    .faq-item ul li {
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 
@@ -227,10 +264,92 @@
 
   <div id="back-to-top" title="Back to Top">⬆</div>
 
-  <div id="map">
+  <div id="map"></div>
 
+  <div id="faq-section">
+    <h2>FAQ</h2>
+
+    <div class="faq-item">
+      <h3>What is this?</h3>
+      <p>
+        This project visualizes all trips in your city's Nextbike network.
+        Each trip is inferred from bike availability data collected every minute.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How is the data collected?</h3>
+      <p>
+        The data is updated every minute. A bike is recorded as part of a trip if it disappears from the dataset and
+        reappears at a different location later. The route is calculated by connecting these points using
+        OpenStreetMap's bike network.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Why do some trips look wrong?</h3>
+      <p>
+        Some trips may seem unrealistic due to GPS inaccuracies, faulty time data, or route calculation errors. For
+        example:
+      </p>
+      <ul>
+        <li><strong>1-minute trips:</strong> These could be due to delayed data updates or an error on Nextbikes part.
+        </li>
+        <li><strong>Weird routes:</strong> OpenStreetMap may not always provide the shortest or most realistic path,
+          especially in pedestrianized areas.</li>
+      </ul>
+    </div>
+
+    <div class="faq-item">
+      <h3>Why don’t you remove incorrect trips?</h3>
+      <p>
+        Filtering “incorrect” trips is tricky.
+        Some 1-minute trips are valid, like short hops between stations.
+        Somestimes the trips are valid, but the time data didn't update.
+        Deleting those trips based on general rules removes real data.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Where is my city?</h3>
+      <p>
+        This is a sample visualization for the cities of Gießen and Marburg.
+      </p>
+
+      <p>
+        You want your city analysed?
+      </p>
+      <p>
+        Make it happen:
+        Get someone with technical knowledge to set up tracking for your city's Nextbike network by following the
+        instructions in the GitHub Repository <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
+          target="_blank">Nextbike City Analysis Project</a>.
+      </p>
+      <p>
+        The project uses open data from Nextbike and OpenStreetMap, making it easy to expand
+        to new locations.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Where do you get the data from?</h3>
+      <p>
+        Nextbikes publicly available data endpoint.<br>
+        The endpoint for the data for the city of <a href="https://maps.nextbike.net/maps/nextbike-live.json?city=467"
+          target="_blank">Gießen</a>.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Looks cool - Can I use this?</h3>
+      <p>
+        Sure. It's public for a reason.
+        Either link to this page.
+        Or for people with technical knowledge to the <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
+          target="_blank">Nextbike City Analysis Project</a>.
+      </p>
+    </div>
   </div>
-
 
 
   <div id="route-table-container">
