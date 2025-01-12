@@ -56,8 +56,6 @@ export function highlightTrip(index) {
     updateSlider();
 }
 
-
-
 // +++++++++++++++++++++++ //
 // City selection dropdown
 function populateCityDropdown() {
@@ -83,9 +81,6 @@ async function handleCityChange(event) {
 
     loadCityData(cityId);
 }
-
-
-
 
 // ++++++++++++++++++ //
 // Previous/Next Day Buttons
