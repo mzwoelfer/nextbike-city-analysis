@@ -1,11 +1,8 @@
 const state = {
-    city_id: 467,
+    city_id: 0,
     city_lat: 0,
     city_lng: 0,
-    cities: {
-        "Gießen": 467,
-        "Marburg": 438
-    },
+    cities: {},
     tripsData: [],
     activeRoutes: {},
     stationData: [],
@@ -14,7 +11,8 @@ const state = {
     isPlaying: false,
     timer: null,
     currentTimeMinutes: 0,
-    date: "2025-01-01",
+    date: "",
+    availableFiles: {},
 
     nextDay() {
         const currentDate = new Date(this.date);
