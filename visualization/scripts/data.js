@@ -3,20 +3,19 @@ import state from './state.js';
 
 export const loadAvailableFiles = async () => {
     /**
-     * Load available files in the `data/` directory and group them by city and date.
+     * Load available files either from:
+     * - manifest.json file (if it exists)
+     * - or the directory listing from the server.
      */
+    let groupedFiles = {};
+
     try {
-        const response = await fetch('data/');
-        const html = await response.text();
+        const response = await fetch('data/manifest.json');
+        if (!response.ok) {
+            throw new Error("Manifest file not found");
+        }
+        const files = await response.json();
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const files = Array.from(doc.querySelectorAll('a'))
-            .map(link => link.getAttribute('href'))
-            .filter(file => file.endsWith('.json'));
-
-        const groupedFiles = {};
         files.forEach(file => {
             const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.json/);
             if (match) {
@@ -28,12 +27,40 @@ export const loadAvailableFiles = async () => {
             }
         });
 
-        console.log('Available files:', groupedFiles);
+        console.log('Loaded files from manifest:', groupedFiles);
         return groupedFiles;
     } catch (err) {
-        console.error('Error loading available files:', err);
-        return {};
+        console.warn('Manifest.json not found or failed to load. Falling back to server-based file fetching:', err);
+
+        try {
+            const response = await fetch('data/');
+            const html = await response.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const files = Array.from(doc.querySelectorAll('a'))
+                .map(link => link.getAttribute('href'))
+                .filter(file => file.endsWith('.json'));
+
+            files.forEach(file => {
+                const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.json/);
+                if (match) {
+                    const [_, cityId, date] = match;
+                    if (!groupedFiles[cityId]) {
+                        groupedFiles[cityId] = [];
+                    }
+                    groupedFiles[cityId].push(date);
+                }
+            });
+
+            console.log('Loaded files from server directory:', groupedFiles);
+        } catch (dirErr) {
+            console.error('Failed to fetch directory listing as fallback:', dirErr);
+        }
     }
+
+    return groupedFiles;
 };
 
 export const loadFirstAvailableData = async () => {
