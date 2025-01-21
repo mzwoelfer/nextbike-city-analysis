@@ -1,6 +1,6 @@
 import state from './state.js';
 import { initializeMap } from './map.js';
-import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles } from './data.js';
+import { loadStationData, loadTripsData, checkTripsDataExists } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
@@ -62,7 +62,6 @@ function populateCityDropdown() {
     const citySelector = document.getElementById('city-selector');
     citySelector.innerHTML = "";
 
-    console.log("CITIES IN DROPDOWN", Object.keys(state.cities))
     Object.entries(state.cities).forEach(([cityName, cityId]) => {
         const option = document.createElement("option");
         option.value = cityId;
@@ -142,8 +141,6 @@ async function loadCityData(city_id) {
     updateButtonStates()
 }
 
-state.availableFiles = await loadAvailableFiles();
-await loadFirstAvailableData();
 populateCityDropdown();
 loadCityData(state.city_id);
 initializeBackToTop();
