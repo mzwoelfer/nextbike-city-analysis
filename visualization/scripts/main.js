@@ -37,6 +37,7 @@ function updateInfoBox() {
 }
 
 export function updateAllComponents() {
+    updateSlider()
     if (updateThrottle) {
         cancelAnimationFrame(updateThrottle);
     }
@@ -120,7 +121,6 @@ nextDayButton.addEventListener('click', async () => {
 // Timeslider
 document.getElementById('time-slider').addEventListener('input', (event) => {
     state.currentTimeMinutes = parseInt(event.target.value, 10);
-    document.getElementById('time-display').textContent = `${formatTime(state.currentTimeMinutes)}`;
     updateAllComponents();
 });
 
