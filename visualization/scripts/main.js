@@ -131,7 +131,6 @@ async function loadCityData(city_id) {
     await loadTripsData();
     initializeMap(state.city_lat, state.city_lng)
     populateRouteTable();
-    updateAllComponents();
 
     await loadStationData();
     if (map) {
@@ -139,7 +138,9 @@ async function loadCityData(city_id) {
     } else {
         console.error('Map is not initialized. Cannot plot stations.');
     }
-    updateButtonStates()
+    updateButtonStates();
+    updateAllComponents();
+
 }
 
 state.availableFiles = await loadAvailableFiles();
