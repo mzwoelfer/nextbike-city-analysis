@@ -11,7 +11,7 @@ db_port = os.getenv("DB_PORT")
 db_name = os.getenv("DB_NAME")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
-city_id = os.getenv("CITY_ID")
+city_ids = os.getenv("CITY_IDS", "").split(",")
 
 
 def fetch_data(city_id):
@@ -104,8 +104,6 @@ def write_to_database(bike_entries, station_entries):
 
 def main():
     last_updated = datetime.datetime.now()
-
-    city_ids = [467, 438]
 
     for city_id in city_ids:
         print(f"Collecting nextbike data from city: {city_id}")

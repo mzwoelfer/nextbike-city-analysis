@@ -24,6 +24,22 @@ docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
 docker compose --file docker-compose.yaml up -d
 ```
 
+## Update to new collection version
+Build the collection image:
+```SHELL
+docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
+```
+
+Restart the service: Restarting the `data_collector` service to use the latest changes:
+```SHELL
+docker compose up -d --no-deps --build data_collector
+```
+
+- `-d` starts the service detached (in the background)
+- `--no-deps` prevents restarting dependencies (the database)
+- `--build` ensures the updated image is used 
+
+
 ## Server requirements
 
 Make sure your system has at least the following resources:
