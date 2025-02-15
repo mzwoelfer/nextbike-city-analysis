@@ -31,7 +31,8 @@ For proper setup of data collection and processing, refer to the README files in
    ```sh
    cd collection
    cp .env.example .env 
-   docker compose up -d 
+   docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
+   docker compose --file docker-compose.yaml up -d
    cd ..
    ```
 3. Define city and date:
