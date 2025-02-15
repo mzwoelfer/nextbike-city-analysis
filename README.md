@@ -44,13 +44,21 @@ For proper setup of data collection and processing, refer to the README files in
 4. Process trips:
    ```sh
    cd processing
-   python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/trips_data/ --date $date
+   cp .env.example .env 
+   docker build --file CONTAINERFILE -t nextbike-processing:latest .
+   docker run --rm --env-file .env \
+      -e DB_HOST=nextbike_postgres \
+      --network collection_nextbike_network \
+      -v "$(pwd)/../data/:/app/data" \
+      nextbike-processing:latest \
+      --city-id $city_id --export-folder /app/data --date $date
+
    cd ..
    ```
 5. Visualize trips:
    ```sh
-   cp "data/trips_data/${city_id}_trips_${date}.json" visualization/data/
-   cp "data/trips_data/${city_id}_stations_${date}.json" visualization/data/
+   cp "data/${city_id}_trips_${date}.json" visualization/data/
+   cp "data/${city_id}_stations_${date}.json" visualization/data/
    cd visualization && python3 -m http.server 8000
    ```
 6. Open `localhost:8000` in your browser.
