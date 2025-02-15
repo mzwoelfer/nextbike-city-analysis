@@ -57,9 +57,8 @@ For proper setup of data collection and processing, refer to the README files in
    ```
 5. Visualize trips:
    ```sh
-   cp "data/${city_id}_trips_${date}.json" visualization/data/
-   cp "data/${city_id}_stations_${date}.json" visualization/data/
-   cd visualization && python3 -m http.server 8000
+   cd visualization 
+   python3 -m http.server 8000
    ```
 6. Open `localhost:8000` in your browser.
 
