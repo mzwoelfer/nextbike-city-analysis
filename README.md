@@ -85,6 +85,11 @@ python3 -m http.server 8000
 
 6. Visit `localhost:8000` in your browser.
 
+## Deploy to Github Pages
+1. Update the data in the `data/` directory.
+2. Run the `update-gh-pages.sh` script
+
+Changes will sync with master. Only the `data/` directory will be pushed to the gh-pages branch. Not the master branch.
 
 ## Credits
 Inspiration:
