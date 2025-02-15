@@ -43,7 +43,7 @@ For proper setup of data collection and processing, refer to the README files in
    ```
 4. Process trips:
    ```sh
-   cd data_processing
+   cd processing
    python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/trips_data/ --date $date
    cd ..
    ```
