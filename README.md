@@ -17,10 +17,10 @@
 - Docker ([Install Docker](https://docs.docker.com/engine/install/))
 - Python 3.12
 
-## 🚀 Validation setup (Not for production)
+## 🚀 Dockerized validation setup (Not for production)
 
-This setup is only for local validation that the project works.
-For proper setup of data collection and processing, refer to the README files in `collection/` and `processing/` directories.
+Validates the project locally.
+To properly setup data collection and processing, refer to the README files in `collection/` and `processing/` directories.
 
 1. Clone repository:
    ```sh
