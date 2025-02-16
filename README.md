@@ -42,6 +42,8 @@ To properly setup data collection and processing, refer to the README files in `
    city_id=467
    ```
 4. Process trips:
+   > ⚠ Wait a few minutes. As trips have to accumulate first. Otherwise you will encounter errors.
+
    ```sh
    cd processing
    cp .env.example .env 
