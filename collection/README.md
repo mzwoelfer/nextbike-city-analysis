@@ -64,9 +64,6 @@ Make sure your system has at least the following resources:
 | Docker                  | Container runtime installed                      |
 
 
-## How does it work?
-🚧 TBD
-
 ## Useful stuff
 Create the city_ids list markdown file.
 Pulls the latest Nextbike API JSON endpoint.
