@@ -62,6 +62,12 @@ To properly setup data collection and processing, refer to the README files in `
    ```
 6. Open `localhost:8000` in your browser.
 
+## Deploy to Github Pages
+1. Update the data in the `data/` directory.
+2. Run the `update-gh-pages.sh` script
+
+Changes will sync with master. Only the `data/` directory will be pushed to the gh-pages branch. Not the master branch.
+
 ## Credits
 Inspired by [36c3 - Verkehrswende selber hacken](https://www.youtube.com/watch?v=WhgRRpA3b2c) by [ubahnverleih](https://github.com/ubahnverleih) & [robbie5](https://github.com/robbi5).
 
