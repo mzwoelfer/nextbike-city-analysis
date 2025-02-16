@@ -8,6 +8,15 @@ For production, run on a dedicated server (only tested with Debian12).
 
 Uses Postgres as a database, and a Python3 script to pull the data.
 
+## How to collect data from my city?
+Find your city ID in [this document](../city_ids_2025_02_15.md).
+
+Alternatively:
+Find your city_id in this output from the Nextbike API:
+```SHELL
+curl https://api.nextbike.net/maps/nextbike-live.json | jq '.countries[] | "|\(.country)|\(.cities[0].name)|\(.name)|\(.cities[0].uid)|"' | tr -d '"' | grep -v null | sort | less
+```
+
 ## Demo Install
 
 ```SHELL
@@ -24,14 +33,6 @@ docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
 docker compose --file docker-compose.yaml up -d
 ```
 
-## How to collect data from my city?
-Find your city ID in [this document](../city_ids_2025_02_15.md).
-
-Alternatively:
-Find your city_id in this output from the Nextbike API:
-```SHELL
-curl https://api.nextbike.net/maps/nextbike-live.json | jq '.countries[] | "|\(.country)|\(.cities[0].name)|\(.name)|\(.cities[0].uid)|"' | tr -d '"' | grep -v null | sort | less
-```
 
 ## Update to new collection version
 Build the collection image:
