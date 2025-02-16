@@ -20,7 +20,7 @@ curl https://api.nextbike.net/maps/nextbike-live.json | jq '.countries[] | "|\(.
 ## Demo Install
 
 ```SHELL
-# Clone rpeo
+# Clone repo
 git clone https://github.com/zwoefler/nextbike-city-analysis.git
 cd nextbike-city-analysis/data_collection
 
