@@ -1,78 +1,74 @@
-# Nextbike Data collection setup
+# Nextbike Data Collection
 
-Continuously collect and store data from the Nextbike API, every minute, ready for analysis.
+Collect and store data from the Nextbike API every minute using a PostgreSQL database and a Python script.
 
-> Run the collection setup locally (for testing purposes).
-For production, run on a dedicated server (only tested with Debian12).
-[Server requirements](#server-requirements) are listed below.
+## 🚀 Quick Demo Installation (For Validation Only)
 
-Uses Postgres as a database, and a Python3 script to pull the data.
-
-## How to collect data from my city?
-Find your city ID in [this document](../city_ids_2025_02_15.md).
-
-Alternatively:
-Find your city_id in this output from the Nextbike API:
-```SHELL
-curl https://api.nextbike.net/maps/nextbike-live.json | jq '.countries[] | "|\(.country)|\(.cities[0].name)|\(.name)|\(.cities[0].uid)|"' | tr -d '"' | grep -v null | sort | less
-```
-
-## Demo Install
-
-```SHELL
+```sh
 # Clone repo
 git clone https://github.com/zwoefler/nextbike-city-analysis.git
 cd nextbike-city-analysis/data_collection
 
-# Copy the fake env vars
+# Copy example environment file
 cp .env.example .env
 
-docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
-
-# Pulls & builds the images and starts the collection in the background
-docker compose --file docker-compose.yaml up -d
+# Build and run the collection service
+docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
+docker compose -f docker-compose.yaml up -d
 ```
 
+## 📌 Production Setup
 
-## Update to new collection version
-Build the collection image:
-```SHELL
-docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
+### 1. Install Dependencies
+Ensure your system meets the following requirements:
+- **IPv4 support** (GitHub & Nextbike do not support IPv6)
+- **Docker & Docker Compose** installed
+
+
+### 2. Set your city id
+1. Find your city ID in [this document](../city_ids_2025_02_15.md). For Alternatives see end of [document]()
+
+2. Copy and update environment variables:
+   ```SHELL
+   cp .env.example .env
+   ```
+3. Update the `.env` file with your city id:
+   ```ini
+   DB_HOST=postgres
+   DB_PORT=5432
+   DB_NAME=nextbike_data
+   DB_USER=bike_admin
+   DB_PASSWORD=mybike
+   CITY_IDS=467
+   ```
+
+### 3. Build and start the collection service
+```sh
+docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
+docker compose -f docker-compose.yaml up -d
 ```
 
-Restart the service: Restarting the `data_collector` service to use the latest changes:
-```SHELL
+## 🔄 Updating the Collection Service
+```sh
+# Rebuild the image
+docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
+
+# Restart the service without restarting dependencies
 docker compose up -d --no-deps --build data_collector
 ```
 
-- `-d` starts the service detached (in the background)
-- `--no-deps` prevents restarting dependencies (the database)
-- `--build` ensures the updated image is used 
-
-
-## Server requirements
-
-Make sure your system has at least the following resources:
-> Note: Your server requires IPv4.
-> GitHub and Nextbike do not support IPv6!
-
-| Resource                | Minimal Requirement                              |
-| ----------------------- | ------------------------------------------------ |
-| Network                 | Support IPv4                                     |
-| RAM                     | 1 GiB                                            |
-| Disk                    | 25 GiB (per 500 bikes, good for ~6 months)       |
-| Docker                  | Container runtime installed                      |
-
-
-## Useful stuff
-Create the city_ids list markdown file.
-Pulls the latest Nextbike API JSON endpoint.
+## 📌 Generate City ID List
+To find your city's Nextbike ID. 
 Requires:
 - jq
 - curl
-```SHELL
-echo '|Country Code|City Name|Bikeshare Name|City ID|' > city_ids_$(date +%Y_%m_%d).md && echo '|----|----|----|---|' >> city_ids_$(date +%Y_%m_%d).md && curl -s https://api.nextbike.net/maps/nextbike-live.json | jq -r '.countries[] | select(.cities[0].uid) | "| \(.country) | \(.cities[0].name) | \(.name) | \(.cities[0].uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).md
+
+```sh
+echo '|Country Code|City Name|Bikeshare Name|City ID|' > city_ids_$(date +%Y_%m_%d).md && \
+echo '|----|----|----|---|' >> city_ids_$(date +%Y_%m_%d).md && \
+curl -s https://api.nextbike.net/maps/nextbike-live.json | \
+jq -r '.countries[] | select(.cities[0].uid) | "| \(.country) | \(.cities[0].name) | \(.name) | \(.cities[0].uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).csv
 ```
 
 ## 📚 Sources
-[Find city ID from Nextbike API](https://github.com/ubahnverleih/WoBike/blob/master/Nextbike.md). 
+- [Nextbike API City IDs](https://github.com/ubahnverleih/WoBike/blob/master/Nextbike.md)
