@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+COPY nextbike_processing/ ./nextbike_processing/
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV PYTHONPATH="/app"
+
+ENTRYPOINT ["python", "-m", "nextbike_processing.main"]
