@@ -6,8 +6,8 @@ Extract Nextbike trips from the postgres databases.
 1. Setup your environment
 ```SHELL
 # Set variables
+date=$(date +%Y-%m-%d)
 city_id=467
-date='2024-12-21'
 
 # Install requirements
 python3 -m venv Env
@@ -20,10 +20,10 @@ cp .env.example .env
 
 2. Get your trips data
 ```SHELL
-python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/trips_data/ --date $date
+python3 -m nextbike_processing.main --city-id $city_id --export-folder ../data/ --date $date
 ```
 
-3. Trips data in `<PROJECT_ROOT>/data/trips_data/`
+3. Trips data in `<PROJECT_ROOT>/data/`
 
 
 ## Get data from postgres server
