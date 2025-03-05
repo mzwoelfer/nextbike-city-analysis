@@ -3,7 +3,7 @@ import pandas as pd
 import osmnx as ox
 import networkx as nx
 from nextbike_processing.database import get_connection
-from nextbike_processing.utils import save_json, save_csv
+from nextbike_processing.utils import save_gzipped_csv, save_json, save_csv
 from nextbike_processing.cities import get_city_coordinates_from_database
 from geopy.distance import geodesic
 
@@ -155,14 +155,4 @@ def process_and_save_trips(city_id, date, folder):
 
     trips = add_timestamps_to_segments(trips)
 
-    trips_json = trips.to_dict(orient="records")
-    city_and_trips_json = {
-        "city_info": {"lat": city_lat, "lng": city_lng},
-        "trips": trips_json,
-    }
-
-    save_json(
-        os.path.join(folder, f"{city_id}_trips_{date}.json"),
-        city_and_trips_json,
-    )
-    save_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv"), trips)
+    save_gzipped_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv"), trips)
