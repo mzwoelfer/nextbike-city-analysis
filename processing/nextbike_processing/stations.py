@@ -151,4 +151,4 @@ def fetch_station_data(city_id, date):
 
 def process_and_save_stations(city_id, date, folder):
     df = fetch_station_data(city_id, date)
-    save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv"), df)
+    save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv.gz"), df)

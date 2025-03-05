@@ -155,4 +155,4 @@ def process_and_save_trips(city_id, date, folder):
 
     trips = add_timestamps_to_segments(trips)
 
-    save_gzipped_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv"), trips)
+    save_gzipped_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), trips)
