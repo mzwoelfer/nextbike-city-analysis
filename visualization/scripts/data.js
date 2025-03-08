@@ -41,10 +41,10 @@ export const loadAvailableFiles = async () => {
 
             const files = Array.from(doc.querySelectorAll('a'))
                 .map(link => link.getAttribute('href'))
-                .filter(file => file.endsWith('.json'));
+                .filter(file => file.endsWith('.csv.gz'));
 
             files.forEach(file => {
-                const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.json/);
+                const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.csv.gz/);
                 if (match) {
                     const [_, cityId, date] = match;
                     if (!groupedFiles[cityId]) {
@@ -63,6 +63,36 @@ export const loadAvailableFiles = async () => {
     return groupedFiles;
 };
 
+const parseCSV = async (csvText) => {
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(',');
+
+    return lines.slice(1).map(line => {
+        const values = line.split(',');
+        return headers.reduce((acc, header, index) => {
+            acc[header] = values[index];
+            return acc;
+        }, {});
+    });
+};
+
+const fetchAndParseGzipCSV = async (filePath) => {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error (`Failed to load ${filePath}`)
+        
+        const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
+        const text = await new Response(decompressedStream).text();
+        console.log("TEXT:", text)
+        const parsedCSV = await parseCSV(text);
+        console.log("PARSED", parsedCSV);
+        return parsedCSV;
+    } catch (err) {
+        console.error(`ERROR: Loading CSV file ${filePath}`, err);
+        return [];
+    }
+}
+
 export const loadFirstAvailableData = async () => {
     const city_ids = Object.keys(state.availableFiles);
     const first_city_id = city_ids[0];
@@ -70,10 +100,11 @@ export const loadFirstAvailableData = async () => {
     state.date = state.availableFiles[first_city_id][0];
 
     const cityPromises = city_ids.map(async (city_id) => {
-        const response = await fetch(`data/${city_id}_stations_${state.date}.json`);
-        const stationData = await response.json();
-        const city_name = stationData[0]["city_name"]
-        return { city_name, city_id };
+        const response = await fetchAndParseGzipCSV(`data/${city_id}_stations_${state.date}.csv.gz`);
+        console.log(`RESPONSE: ${response}`)
+        // const stationData = await response.json();
+        // const city_name = stationData[0]["city_name"]
+        // return { city_name, city_id };
     })
 
     const cities = await Promise.all(cityPromises);
