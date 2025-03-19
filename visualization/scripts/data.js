@@ -164,6 +164,11 @@ export const loadTripsData = async () => {
             distance: Number(row.distance),
             segments: JSON.parse(row.segments.replace(/'/g, '"')), // Convert stringified array to object
         }));
+        
+        // Centers on these city coordinates....
+        // Get cities lat and long from somewhere else.
+        state.city_lat = state.tripsData[0].start_latitude;
+        state.city_lng = state.tripsData[0].start_longitude;
 
         console.log('Trips data loaded:', state.tripsData);
         return
