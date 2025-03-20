@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from nextbike_processing.database import get_connection
-from nextbike_processing.utils import save_csv, save_json
+from nextbike_processing.utils import save_csv, save_gzipped_csv, save_json
 
 
 def fetch_station_data(city_id, date):
@@ -151,8 +151,4 @@ def fetch_station_data(city_id, date):
 
 def process_and_save_stations(city_id, date, folder):
     df = fetch_station_data(city_id, date)
-    save_json(
-        os.path.join(folder, f"{city_id}_stations_{date}.json"),
-        df.to_dict(orient="records"),
-    )
-    save_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv"), df)
+    save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv.gz"), df)

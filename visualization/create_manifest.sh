@@ -1,7 +1,7 @@
 #!/bin/bash
 cd data
 echo "[" > manifest.json
-for file in *.json; do
+for file in *.csv.gz; do
     if [ "$file" != "manifest.json" ]; then
         echo "\"$file\"," >> manifest.json
     fi
