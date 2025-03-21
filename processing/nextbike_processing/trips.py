@@ -140,18 +140,20 @@ def process_and_save_trips(city_id, date, folder):
 
     trips = remove_gps_errors(trips)
 
-    results = trips.apply(
-        lambda row: calculate_shortest_path(
-            G,
-            row["start_latitude"],
-            row["start_longitude"],
-            row["end_latitude"],
-            row["end_longitude"],
-        ),
-        axis=1,
-    )
+    calculated_routes = trips.groupby(["start_latitude", "start_longitude", "end_latitude", "end_longitude"]).apply(
+        lambda group: pd.Series(
+            calculate_shortest_path(
+                G,
+                group.name[0],
+                group.name[1],
+                group.name[2],
+                group.name[3],
+            ),
+            index=["distance", "segments"]
+        )
+    ).reset_index()
 
-    trips["distance"], trips["segments"] = zip(*results)
+    trips = trips.merge(calculated_routes, on=["start_latitude", "start_longitude", "end_latitude", "end_longitude"], how="left")
 
     trips = add_timestamps_to_segments(trips)
 
