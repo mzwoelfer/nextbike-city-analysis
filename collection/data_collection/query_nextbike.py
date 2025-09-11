@@ -26,7 +26,7 @@ def fetch_data(city_id):
     return response.json()
 
 
-def get_places(data):
+def extract_places(data):
     try:
         # Access countries[0]["cities"][0]["places"] safely
         places = data.get("countries", [{}])[0].get("cities", [{}])[0].get("places", [])
@@ -113,7 +113,7 @@ def main():
         city_name = (
             data.get("countries", [{}])[0].get("cities", [{}])[0].get("name", "Unknown")
         )
-        places = get_places(data)
+        places = extract_places(data)
 
         bike_entries = []
         station_entries = []
