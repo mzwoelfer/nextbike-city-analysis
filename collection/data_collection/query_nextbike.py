@@ -1,4 +1,6 @@
+from typing import NoReturn
 import requests
+import argparse
 import datetime
 import psycopg
 import os
@@ -11,46 +13,60 @@ db_port = os.getenv("DB_PORT")
 db_name = os.getenv("DB_NAME")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
-city_ids = os.getenv("CITY_IDS", "").split(",")
 
 
-def fetch_data(city_id):
-    """
-    Fetch Nextbike data for a specific city by it's city ID.
-    Using Nextbike GPFS API v2
-    """
-    url = "https://maps.nextbike.net/maps/nextbike-live.json"
-    params = {"city": city_id}
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
+class NextbikeAPI:
+    """INteract with Nextbike API"""
 
+    BASE_URL = "https://maps.nextbike.net/maps/nextbike-live.json"
 
-def extract_places(data):
-    try:
-        # Access countries[0]["cities"][0]["places"] safely
-        places = data.get("countries", [{}])[0].get("cities", [{}])[0].get("places", [])
-    except (IndexError, KeyError):
-        places = []
-    return places
+    def __init__(self, city_id: str):
+        self.city_id = city_id
 
+    def fetch_data(self) -> dict:
+        """
+        Fetch Nextbike data for a specific city by it's city ID.
+        Using Nextbike GPFS API v2
+        """
+        params = {"city": self.city_id}
+        response = requests.get(self.BASE_URL, params=params)
+        response.raise_for_status()
+        return response.json()
 
-def get_city_info(data):
-    try:
-        city = data.get("countries", [{}])[0]
-        city_info = {
-            "city_id": city.get("cities", [{}])[0].get("uid", 0),
-            "city_name": city.get("cities", [{}])[0].get("name", "Unknown"),
-            "timezone": city.get("timezone", "Unknown"),
-            "latitude": city.get("lat", 0),
-            "longitude": city.get("lng", 0),
-            "set_point_bikes": city.get("set_point_bikes", 0),
-            "available_bikes": city.get("available_bikes", 0),
-            "last_updated": datetime.datetime.now(),
-        }
-    except (IndexError, KeyError):
-        city_info = {}
-    return city_info
+    @staticmethod
+    def extract_places(data: dict) -> list[dict]:
+        """
+        Places in Nextbike can be stations AND bikes.
+        Some bikes might not be returned to stations.
+        Some bikes pile up at one location and make a new 'place'.
+        """
+        try:
+            # Access countries[0]["cities"][0]["places"] safely
+            places = (
+                data.get("countries", [{}])[0].get("cities", [{}])[0].get("places", [])
+            )
+        except (IndexError, KeyError):
+            places = []
+        return places
+
+    @staticmethod
+    def get_city_info(data: dict) -> dict:
+        try:
+            city = data.get("countries", [{}])[0]
+            city_info = {
+                "city_id": city.get("cities", [{}])[0].get("uid", 0),
+                "city_name": city.get("cities", [{}])[0].get("name", "Unknown"),
+                "timezone": city.get("timezone", "Unknown"),
+                "latitude": city.get("lat", 0),
+                "longitude": city.get("lng", 0),
+                "set_point_bikes": city.get("set_point_bikes", 0),
+                "available_bikes": city.get("available_bikes", 0),
+                "last_updated": datetime.datetime.now(),
+            }
+        except (IndexError, KeyError):
+            city_info = {}
+
+        return city_info
 
 
 def write_city_info_to_database(city_info):
@@ -152,26 +168,42 @@ def build_station_entries(
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
+    parser.add_argument(
+        "--city-id", type=str, help="City ID to collect Nextbike data from"
+    )
+    args = parser.parse_args()
+
+    if args.city_id:
+        city_ids = [args.city_id]
+    else:
+        city_ids = os.getenv("CITY_IDS", "").split(",")
+
     last_updated = datetime.datetime.now()
 
     for city_id in city_ids:
         print(f"Collecting nextbike data from city: {city_id}")
-
-        data = fetch_data(city_id)
+        api = NextbikeAPI(city_id)
+        data = api.fetch_data()
+        city_info = api.get_city_info(data)
+        places = api.extract_places(data)
 
         city_name = (
             data.get("countries", [{}])[0].get("cities", [{}])[0].get("name", "Unknown")
         )
-        places = extract_places(data)
 
         bike_entries = build_bike_entries(places, city_id, city_name, last_updated)
         station_entries = build_station_entries(
             places, city_id, city_name, last_updated
         )
+        print("City info:", city_info)
+        print(
+            f"Bike entries: {len(bike_entries)}, Station entries: {len(station_entries)}"
+        )
+        print("-" * 40)
 
-        city_info = get_city_info(data)
-        write_to_database(bike_entries, station_entries)
-        write_city_info_to_database(city_info)
+        # write_to_database(bike_entries, station_entries)
+        # write_city_info_to_database(city_info)
 
 
 if __name__ == "__main__":
