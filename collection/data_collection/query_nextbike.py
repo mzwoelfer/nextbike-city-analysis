@@ -167,12 +167,32 @@ def build_station_entries(
     return station_entries
 
 
-def main():
+# ---------- Console output ----------
+class ConsolePrinter:
+    """Print nextbike info to console"""
+
+    @staticmethod
+    def print_summary(city_info: dict, bike_entries: list, station_entries: list):
+        print("City info:", city_info)
+        print(
+            f"Bike entries: {len(bike_entries)}, Station entries: {len(station_entries)}"
+        )
+        print("-" * 40)
+
+
+# ---------- CLI parser ----------
+def cli():
     parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
     parser.add_argument(
         "--city-id", type=str, help="City ID to collect Nextbike data from"
     )
     args = parser.parse_args()
+
+    return args
+
+
+def main():
+    args = cli()
 
     if args.city_id:
         city_ids = [args.city_id]
@@ -196,12 +216,8 @@ def main():
         station_entries = build_station_entries(
             places, city_id, city_name, last_updated
         )
-        print("City info:", city_info)
-        print(
-            f"Bike entries: {len(bike_entries)}, Station entries: {len(station_entries)}"
-        )
-        print("-" * 40)
 
+        ConsolePrinter.print_summary(city_info, bike_entries, station_entries)
         # write_to_database(bike_entries, station_entries)
         # write_city_info_to_database(city_info)
 
