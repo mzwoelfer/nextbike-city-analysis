@@ -24,6 +24,14 @@ class TestNextbikeCLI(unittest.TestCase):
         expected_ids = [123, 456]
         self.assertEqual(cli.city_ids, expected_ids)
 
+    def test_no_city_id_and_no_envprovides_error_message(self):
+        cli = NextbikeCLI(env_city_ids=[])
+        with self.assertRaisesRegex(
+            ValueError,
+            "No city ID provided. Use --city-ids or set CITY_IDS in .env.",
+        ):
+            cli.parse_args([])
+
 
 if __name__ == "__main__":
     unittest.main()

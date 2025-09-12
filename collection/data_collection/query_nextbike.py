@@ -201,8 +201,12 @@ class NextbikeCLI:
 
         if parsed.city_ids:
             self.city_ids = parsed.city_ids
-        else:
+        elif self.env_city_ids:
             self.city_ids = self.env_city_ids
+        else:
+            raise ValueError(
+                "No city ID provided. Use --city-ids or set CITY_IDS in .env."
+            )
 
         return parsed
 
