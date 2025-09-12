@@ -10,6 +10,13 @@ class TestNextbikeCLI(unittest.TestCase):
         expected_ids = [467]
         self.assertEqual(cli.city_ids, expected_ids)
 
+    def test_multiple_city_ids(self):
+        cli = NextbikeCLI(env_city_ids=[])
+        args = cli.parse_args(["--city-id", "467", "123"])
+
+        expected_ids = [467, 123]
+        self.assertEqual(cli.city_ids, expected_ids)
+
 
 if __name__ == "__main__":
     unittest.main()
