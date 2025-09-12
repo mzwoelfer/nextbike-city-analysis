@@ -1,4 +1,3 @@
-from typing import NoReturn
 import requests
 import argparse
 import datetime
@@ -181,14 +180,31 @@ class ConsolePrinter:
 
 
 # ---------- CLI parser ----------
-def cli():
-    parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
-    parser.add_argument(
-        "--city-id", type=str, help="City ID to collect Nextbike data from"
-    )
-    args = parser.parse_args()
+class NextbikeCLI:
+    def __init__(self, env_city_ids=None):
+        self.env_city_ids = env_city_ids or []
+        self.city_ids = []
 
-    return args
+    def parse_args(self, args=None):
+        parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
+        parser.add_argument(
+            "--city-ids",
+            type=int,
+            nargs="+",
+            default=None,
+            help="City ID(s) to fetch. Defaults to .env CITY_IDS.",
+        )
+        parser.add_argument(
+            "--save", action="store_true", help="Save fetched Nextbike data to database"
+        )
+        parsed = parser.parse_args(args)
+
+        if parsed.city_ids:
+            self.city_ids = parsed.city_ids
+        else:
+            self.city_ids = self.env_city_ids
+
+        return parsed
 
 
 def main():
@@ -218,8 +234,11 @@ def main():
         )
 
         ConsolePrinter.print_summary(city_info, bike_entries, station_entries)
-        # write_to_database(bike_entries, station_entries)
-        # write_city_info_to_database(city_info)
+
+        if args.save:
+            write_to_database(bike_entries, station_entries)
+            write_city_info_to_database(city_info)
+            print(f"Data saed for city {city_info['city_name']}.")
 
 
 if __name__ == "__main__":
