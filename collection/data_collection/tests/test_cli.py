@@ -17,6 +17,13 @@ class TestNextbikeCLI(unittest.TestCase):
         expected_ids = [467, 123]
         self.assertEqual(cli.city_ids, expected_ids)
 
+    def test_fallback_to_env(self):
+        cli = NextbikeCLI(env_city_ids=[123, 456])
+        args = cli.parse_args([])
+
+        expected_ids = [123, 456]
+        self.assertEqual(cli.city_ids, expected_ids)
+
 
 if __name__ == "__main__":
     unittest.main()
