@@ -212,15 +212,12 @@ class NextbikeCLI:
 
 
 def main():
-    args = cli()
-
-    if args.city_id:
-        city_ids = [args.city_id]
-    else:
-        city_ids = os.getenv("CITY_IDS", "").split(",")
+    environment_city_ids = os.getenv("CITY_IDS", "").split(",")
+    cli = NextbikeCLI(environment_city_ids)
 
     last_updated = datetime.datetime.now()
 
+    city_ids = cli.city_ids
     for city_id in city_ids:
         print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
