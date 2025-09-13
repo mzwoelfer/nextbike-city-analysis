@@ -6,13 +6,6 @@ import os
 from dotenv import load_dotenv
 
 
-db_host = os.getenv("DB_HOST")
-db_port = os.getenv("DB_PORT")
-db_name = os.getenv("DB_NAME")
-db_user = os.getenv("DB_USER")
-db_password = os.getenv("DB_PASSWORD")
-
-
 class NextbikeAPI:
     """INteract with Nextbike API"""
 
@@ -65,55 +58,6 @@ class NextbikeAPI:
             city_info = {}
 
         return city_info
-
-
-def write_city_info_to_database(city_info):
-    conn_str: str = (
-        f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
-    )
-    with psycopg.connect(conn_str) as conn:
-        with conn.cursor() as cur:
-            city_sql = """
-            INSERT INTO public.cities (
-                city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING;
-            """
-            cur.execute(city_sql, tuple(city_info.values()))
-
-        conn.commit()
-
-    return
-
-
-def write_to_database(bike_entries, station_entries):
-    conn_str: str = (
-        f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
-    )
-    with psycopg.connect(conn_str) as conn:
-        with conn.cursor() as cur:
-            bike_sql = """
-            INSERT INTO public.bikes (
-                bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated, city_id, city_name
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING;
-            """
-            cur.executemany(bike_sql, bike_entries)
-
-            station_sql = """
-            INSERT INTO public.stations (
-                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated, city_id, city_name
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING;
-            """
-            cur.executemany(station_sql, station_entries)
-
-        conn.commit()
-
-    return
 
 
 def build_bike_entries(
@@ -208,6 +152,12 @@ class AppConfig:
         environment_city_ids = []
 
         load_dotenv()
+        self.db_host = os.getenv("DB_HOST")
+        self.db_port = os.getenv("DB_PORT")
+        self.db_name = os.getenv("DB_NAME")
+        self.db_user = os.getenv("DB_USER")
+        self.db_password = os.getenv("DB_PASSWORD")
+
         env_city_ids = os.getenv("CITY_IDS", None)
 
         if cli_city_ids:
@@ -222,11 +172,81 @@ class AppConfig:
             )
 
 
+# ---------- DATABASE STUFF ----------
+class PostgresClient:
+    """Handle database entries"""
+
+    def __init__(
+        self, db_host=None, db_port=None, db_name=None, db_user=None, db_password=None
+    ):
+        self.db_host = db_host
+        self.db_port = db_port
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_password = db_password
+
+        self.connection_string = (
+            f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
+        )
+
+    def insert_city_information(self, city_info: dict):
+        city_sql = """
+        INSERT INTO public.cities (
+            city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING;
+        """
+        with (
+            psycopg.connect(self.connection_string) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.execute(city_sql, tuple(city_info.values()))
+            connection.commit()
+
+    def insert_bike_entries(self, bike_entries):
+        sql_statement = """
+        INSERT INTO public.bikes (
+            bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated, city_id, city_name
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING;
+        """
+        with (
+            psycopg.connect(self.connection_string) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.executemany(sql_statement, bike_entries)
+            connection.commit()
+
+    def insert_station_entries(self, station_entries: list[tuple]):
+        sql_statement = """
+        INSERT INTO public.stations (
+                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated, city_id, city_name
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING;
+        """
+        with (
+            psycopg.connect(self.connection_string) as connection,
+            connection.cursor() as cursor,
+        ):
+            cursor.executemany(sql_statement, station_entries)
+            connection.commit()
+
+
 def main():
     cli = NextbikeCLI()
     config = AppConfig(cli.city_ids)
 
     last_updated = datetime.datetime.now()
+    postgres_client = PostgresClient(
+        config.db_host,
+        config.db_port,
+        config.db_name,
+        config.db_user,
+        config.db_password,
+    )
 
     city_ids = config.city_ids
     for city_id in city_ids:
@@ -248,8 +268,9 @@ def main():
         ConsolePrinter.print_summary(city_info, bike_entries, station_entries)
 
         if cli.save:
-            write_to_database(bike_entries, station_entries)
-            write_city_info_to_database(city_info)
+            postgres_client.insert_city_information(city_info)
+            postgres_client.insert_bike_entries(bike_entries)
+            postgres_client.insert_station_entries(station_entries)
             print(f"Data saed for city {city_info['city_name']}.")
 
 
