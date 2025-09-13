@@ -5,7 +5,6 @@ import psycopg
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
 
 db_host = os.getenv("DB_HOST")
 db_port = os.getenv("DB_PORT")
@@ -199,21 +198,35 @@ class NextbikeCLI:
         )
         parsed = parser.parse_args(args)
 
-        if parsed.city_ids:
-            self.city_ids = parsed.city_ids
-        elif self.env_city_ids:
-            self.city_ids = self.env_city_ids
-        else:
-            raise ValueError(
-                "No city ID provided. Use --city-ids or set CITY_IDS in .env."
-            )
+        self.city_ids = parsed.city_ids
 
         return parsed
 
 
+class AppConfig:
+    def __init__(self, cli_city_ids=[]):
+        self.city_ids = []
+        environment_city_ids = []
+
+        load_dotenv()
+        env_city_ids = os.getenv("CITY_IDS", None)
+
+        if cli_city_ids:
+            self.city_ids = cli_city_ids
+        elif env_city_ids:
+            for city_id in env_city_ids.split(","):
+                environment_city_ids.append(int(city_id))
+            self.city_ids = environment_city_ids
+        else:
+            raise ValueError(
+                "No city ID provided. Use --city-ids or set CITY_IDS in .env."
+            )
+        return
+
+
 def main():
-    environment_city_ids = os.getenv("CITY_IDS", "").split(",")
-    cli = NextbikeCLI(environment_city_ids)
+    cli = NextbikeCLI()
+    config = AppConfig(cli.city_ids)
 
     last_updated = datetime.datetime.now()
 
