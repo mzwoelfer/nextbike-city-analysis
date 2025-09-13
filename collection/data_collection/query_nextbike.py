@@ -180,11 +180,11 @@ class ConsolePrinter:
 
 # ---------- CLI parser ----------
 class NextbikeCLI:
-    def __init__(self, env_city_ids=None):
-        self.env_city_ids = env_city_ids or []
+    def __init__(self, args=None):
         self.city_ids = []
+        self._parse_args(args=args)
 
-    def parse_args(self, args=None):
+    def _parse_args(self, args=None):
         parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
         parser.add_argument(
             "--city-ids",
@@ -249,7 +249,7 @@ def main():
 
         ConsolePrinter.print_summary(city_info, bike_entries, station_entries)
 
-        if args.save:
+        if cli.save:
             write_to_database(bike_entries, station_entries)
             write_city_info_to_database(city_info)
             print(f"Data saed for city {city_info['city_name']}.")

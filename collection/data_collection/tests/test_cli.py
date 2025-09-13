@@ -5,15 +5,13 @@ from query_nextbike import NextbikeCLI, AppConfig
 
 class TestNextbikeCLI(unittest.TestCase):
     def test_single_city_id(self):
-        cli = NextbikeCLI(env_city_ids=[])
-        args = cli.parse_args(["--city-ids", "467"])
+        cli = NextbikeCLI(["--city-ids", "467"])
 
         expected_ids = [467]
         self.assertEqual(cli.city_ids, expected_ids)
 
     def test_multiple_city_ids(self):
-        cli = NextbikeCLI(env_city_ids=[])
-        args = cli.parse_args(["--city-id", "467", "123"])
+        cli = NextbikeCLI(["--city-id", "467", "123"])
 
         expected_ids = [467, 123]
         self.assertEqual(cli.city_ids, expected_ids)
