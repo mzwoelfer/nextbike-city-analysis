@@ -1,9 +1,169 @@
+from dataclasses import dataclass
 import requests
 import argparse
 import datetime
 import psycopg
 import os
 from dotenv import load_dotenv
+
+
+# ---------- DATA CLASSES ----------
+@dataclass
+class City:
+    city_id: int
+    city_name: str
+    timezone: str
+    latitude: float
+    longitude: float
+    set_point_bikes: int
+    available_bikes: int
+    last_updated: datetime.datetime
+
+    @classmethod
+    def from_api_data(cls, data: dict):
+        country = data.get("countries", [{}])[0]
+        city_data = country.get("cities", [{}])[0]
+        return cls(
+            city_id=city_data.get("uid", 0),
+            city_name=city_data.get("name", "Unknown"),
+            timezone=country.get("timezone", "Unknown"),
+            latitude=country.get("lat", 0),
+            longitude=country.get("lng", 0),
+            set_point_bikes=country.get("set_point_bikes", 0),
+            available_bikes=country.get("available_bikes", 0),
+            last_updated=datetime.datetime.now(),
+        )
+
+    def as_tuple(self) -> tuple:
+        return (
+            self.city_id,
+            self.city_name,
+            self.timezone,
+            self.latitude,
+            self.longitude,
+            self.set_point_bikes,
+            self.available_bikes,
+            self.last_updated,
+        )
+
+
+@dataclass
+class Bike:
+    bike_number: str
+    latitude: float
+    longitude: float
+    active: bool
+    state: str
+    bike_type: str
+    station_number: int
+    station_uid: int
+    last_updated: datetime.datetime
+    city_id: int
+    city_name: str
+
+    def as_tuple(self) -> tuple:
+        """Convert this Bike to a tuple"""
+        return (
+            self.bike_number,
+            self.latitude,
+            self.longitude,
+            self.active,
+            self.state,
+            self.bike_type,
+            self.station_number,
+            self.station_uid,
+            self.last_updated,
+            self.city_id,
+            self.city_name,
+        )
+
+    @classmethod
+    def bike_entries_from_place(
+        cls,
+        places: list[dict],
+        city_id: int,
+        city_name: str,
+        timestamp: datetime.datetime,
+    ):
+        bikes = []
+        for place in places:
+            for bike in place.get("bike_list", []):
+                bikes.append(
+                    cls(
+                        bike_number=bike.get("number", ""),
+                        latitude=place.get("lat", 0),
+                        longitude=place.get("lat", 0),
+                        active=bike.get("active", None),
+                        state=bike.get("state", ""),
+                        bike_type=bike.get("bike_type", ""),
+                        station_number=place.get("number", 0),
+                        station_uid=place.get("uid", 0),
+                        last_updated=timestamp,
+                        city_id=city_id,
+                        city_name=city_name,
+                    )
+                )
+        return bikes
+
+
+@dataclass
+class Station:
+    uid: int
+    latitude: float
+    longitude: float
+    name: str
+    spot: bool
+    station_number: int
+    maintenance: bool
+    terminal_type: str
+    last_updated: datetime.datetime
+    city_id: int
+    city_name: str
+
+    def as_tuple(self) -> tuple:
+        """Convert this Station to a tuple"""
+        return (
+            self.uid,
+            self.latitude,
+            self.longitude,
+            self.name,
+            self.spot,
+            self.station_number,
+            self.maintenance,
+            self.terminal_type,
+            self.last_updated,
+            self.city_id,
+            self.city_name,
+        )
+
+    @classmethod
+    def build_station_entries(
+        cls,
+        places: list[dict],
+        city_id: int,
+        city_name: str,
+        timestamp: datetime.datetime,
+    ) -> list[tuple]:
+        station_entries = []
+        for place in places:
+            if place.get("bike") is False:
+                station_entries.append(
+                    cls(
+                        uid=place.get("uid", 0),
+                        latitude=place.get("lat", 0),
+                        longitude=place.get("lng", 0),
+                        name=place.get("name", "Unknown"),
+                        spot=place.get("spot", None),
+                        station_number=place.get("number", 0),
+                        maintenance=place.get("maintenance", None),
+                        terminal_type=place.get("terminal_type", "Unknown"),
+                        last_updated=timestamp,
+                        city_id=city_id,
+                        city_name=city_name,
+                    )
+                )
+
+        return station_entries
 
 
 class NextbikeAPI:
@@ -60,62 +220,13 @@ class NextbikeAPI:
         return city_info
 
 
-def build_bike_entries(
-    places: list[dict], city_id: str, city_name: str, timestamp: datetime.datetime
-) -> list[tuple]:
-    bike_entries = []
-    for place in places:
-        for bike in place.get("bike_list", []):
-            bike_entries.append(
-                (
-                    bike.get("number", ""),
-                    place.get("lat", 0),
-                    place.get("lng", 0),
-                    bike.get("active", None),
-                    bike.get("state", ""),
-                    bike.get("bike_type", ""),
-                    place.get("number", 0),
-                    place.get("uid", 0),
-                    timestamp,
-                    city_id,
-                    city_name,
-                )
-            )
-    return bike_entries
-
-
-def build_station_entries(
-    places: list[dict], city_id: str, city_name: str, timestamp: datetime.datetime
-) -> list[tuple]:
-    station_entries = []
-    for place in places:
-        if place.get("bike") is False:
-            station_entries.append(
-                (
-                    place.get("uid", 0),
-                    place.get("lat", 0),
-                    place.get("lng", 0),
-                    place.get("name", "Unknown"),
-                    place.get("spot", None),
-                    place.get("number", 0),
-                    place.get("maintenance", None),
-                    place.get("terminal_type", "Unknown"),
-                    timestamp,
-                    city_id,
-                    city_name,
-                )
-            )
-
-    return station_entries
-
-
 # ---------- Console output ----------
 class ConsolePrinter:
     """Print nextbike info to console"""
 
     @staticmethod
-    def print_summary(city_info: dict, bike_entries: list, station_entries: list):
-        print("City info:", city_info)
+    def print_summary(city: City, bike_entries: list, station_entries: list):
+        print("City info:", city)
         print(
             f"Bike entries: {len(bike_entries)}, Station entries: {len(station_entries)}"
         )
@@ -189,7 +300,7 @@ class PostgresClient:
             f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
         )
 
-    def insert_city_information(self, city_info: dict):
+    def insert_city_information(self, city: City):
         city_sql = """
         INSERT INTO public.cities (
             city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
@@ -201,7 +312,7 @@ class PostgresClient:
             psycopg.connect(self.connection_string) as connection,
             connection.cursor() as cursor,
         ):
-            cursor.execute(city_sql, tuple(city_info.values()))
+            cursor.execute(city_sql, city.as_tuple())
             connection.commit()
 
     def insert_bike_entries(self, bike_entries):
@@ -212,11 +323,13 @@ class PostgresClient:
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT DO NOTHING;
         """
+
+        bikes = [bike.as_tuple() for bike in bike_entries]
         with (
             psycopg.connect(self.connection_string) as connection,
             connection.cursor() as cursor,
         ):
-            cursor.executemany(sql_statement, bike_entries)
+            cursor.executemany(sql_statement, bikes)
             connection.commit()
 
     def insert_station_entries(self, station_entries: list[tuple]):
@@ -227,11 +340,13 @@ class PostgresClient:
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING;
         """
+
+        stations = [station.as_tuple() for station in station_entries]
         with (
             psycopg.connect(self.connection_string) as connection,
             connection.cursor() as cursor,
         ):
-            cursor.executemany(sql_statement, station_entries)
+            cursor.executemany(sql_statement, stations)
             connection.commit()
 
 
@@ -253,25 +368,23 @@ def main():
         print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
         data = api.fetch_data()
-        city_info = api.get_city_info(data)
+        city = City.from_api_data(data)
         places = api.extract_places(data)
 
-        city_name = (
-            data.get("countries", [{}])[0].get("cities", [{}])[0].get("name", "Unknown")
+        bike_entries = Bike.bike_entries_from_place(
+            places, city.city_id, city.city_name, last_updated
+        )
+        station_entries = Station.build_station_entries(
+            places, city.city_id, city.city_name, last_updated
         )
 
-        bike_entries = build_bike_entries(places, city_id, city_name, last_updated)
-        station_entries = build_station_entries(
-            places, city_id, city_name, last_updated
-        )
-
-        ConsolePrinter.print_summary(city_info, bike_entries, station_entries)
+        ConsolePrinter.print_summary(city, bike_entries, station_entries)
 
         if cli.save:
-            postgres_client.insert_city_information(city_info)
+            postgres_client.insert_city_information(city)
             postgres_client.insert_bike_entries(bike_entries)
             postgres_client.insert_station_entries(station_entries)
-            print(f"Data saed for city {city_info['city_name']}.")
+            print(f"Data saed for city {city.city_name}.")
 
 
 if __name__ == "__main__":
