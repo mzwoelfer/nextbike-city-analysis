@@ -181,8 +181,9 @@ class ConsolePrinter:
 # ---------- CLI parser ----------
 class NextbikeCLI:
     def __init__(self, args=None):
-        self.city_ids = []
-        self._parse_args(args=args)
+        parsed = self._parse_args(args=args)
+        self.city_ids = parsed.city_ids
+        self.save = parsed.save
 
     def _parse_args(self, args=None):
         parser = argparse.ArgumentParser(description="Nextbike data collector CLI")
@@ -197,8 +198,6 @@ class NextbikeCLI:
             "--save", action="store_true", help="Save fetched Nextbike data to database"
         )
         parsed = parser.parse_args(args)
-
-        self.city_ids = parsed.city_ids
 
         return parsed
 
@@ -221,7 +220,6 @@ class AppConfig:
             raise ValueError(
                 "No city ID provided. Use --city-ids or set CITY_IDS in .env."
             )
-        return
 
 
 def main():
@@ -230,7 +228,7 @@ def main():
 
     last_updated = datetime.datetime.now()
 
-    city_ids = cli.city_ids
+    city_ids = config.city_ids
     for city_id in city_ids:
         print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
