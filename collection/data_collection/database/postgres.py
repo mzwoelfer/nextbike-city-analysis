@@ -5,13 +5,13 @@ from database.base import AbstractDatabaseClient, register_backend
 class PostgresClient(AbstractDatabaseClient):
     """Handle postgres entries"""
 
-    def __init__(self, config: AppConfig):
+    def __init__(self, config):
 
         self.connection_string = (
             f"host={config.db_host} dbname={config.db_name} user={config.db_user} password={config.db_password}"
         )
 
-    def insert_city_information(self, city: City):
+    def insert_city_information(self, city):
         city_sql = """
         INSERT INTO public.cities (
             city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated

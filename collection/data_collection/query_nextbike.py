@@ -1,4 +1,4 @@
-from database.client import DatabaseClient
+from database.base import DatabaseClient
 from dataclasses import dataclass
 import requests
 import argparse

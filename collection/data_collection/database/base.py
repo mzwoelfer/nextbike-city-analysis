@@ -32,7 +32,7 @@ class AbstractDatabaseClient(ABC):
 
 
 class DatabaseClient:
-    def __init__(self, config: AppConfig):
+    def __init__(self, config):
         backend_cls = get_backend(config.db_type)
         self.client: AbstractDatabaseClient = backend_cls(config)
 
