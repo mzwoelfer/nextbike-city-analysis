@@ -18,6 +18,4 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY data_collection /app
 
-CMD ["python", "query_nextbike.py"]
-
-
+CMD ["python", "query_nextbike.py", "--save"]
