@@ -353,15 +353,9 @@ class PostgresClient:
 def main():
     cli = NextbikeCLI()
     config = AppConfig(cli.city_ids)
-
     last_updated = datetime.datetime.now()
-    postgres_client = PostgresClient(
-        config.db_host,
-        config.db_port,
-        config.db_name,
-        config.db_user,
-        config.db_password,
-    )
+
+    db = DatabaseClient(config)
 
     city_ids = config.city_ids
     for city_id in city_ids:
@@ -381,9 +375,9 @@ def main():
         ConsolePrinter.print_summary(city, bike_entries, station_entries)
 
         if cli.save:
-            postgres_client.insert_city_information(city)
-            postgres_client.insert_bike_entries(bike_entries)
-            postgres_client.insert_station_entries(station_entries)
+            db.insert_city_information(city)
+            db.insert_bike_entries(bike_entries)
+            db.insert_station_entries(station_entries)
             print(f"Data saed for city {city.city_name}.")
 
 
