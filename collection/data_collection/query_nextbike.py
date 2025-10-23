@@ -1,8 +1,8 @@
+from database.client import DatabaseClient
 from dataclasses import dataclass
 import requests
 import argparse
 import datetime
-import psycopg
 import os
 from dotenv import load_dotenv
 
@@ -282,107 +282,6 @@ class AppConfig:
             raise ValueError(
                 "No city ID provided. Use --city-ids or set CITY_IDS in .env."
             )
-
-
-from abc import ABC, abstractmethod
-
-class AbstractDatabaseClient(ABC):
-    @abstractmethod
-    def insert_city_information(self, city):
-        pass
-
-    @abstractmethod
-    def insert_bike_entries(self, bike_entries):
-        pass
-
-    @abstractmethod
-    def insert_station_entries(self, station_entries):
-        pass
-
-
-_DATABASE_BACKENDS = {}
-
-def register_backend(name):
-    def wrapper(cls):
-        _DATABASE_BACKENDS[name] = cls
-        return cls
-
-    return wrapper
-
-def get_backend(name):
-    try:
-        return _DATABASE_BACKENDS[name]
-    except KeyError:
-        raise ValueError(f"Unknown database backend: {name}")
-
-# ---------- DATABASE STUFF ----------
-@register_backend("postgres")
-class PostgresClient(AbstractDatabaseClient):
-    """Handle postgres entries"""
-
-    def __init__(self, config: AppConfig):
-
-        self.connection_string = (
-            f"host={config.db_host} dbname={config.db_name} user={config.db_user} password={config.db_password}"
-        )
-
-    def insert_city_information(self, city: City):
-        city_sql = """
-        INSERT INTO public.cities (
-            city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT DO NOTHING;
-        """
-        with (
-            psycopg.connect(self.connection_string) as connection,
-            connection.cursor() as cursor,
-        ):
-            cursor.execute(city_sql, city.as_tuple())
-            connection.commit()
-
-    def insert_bike_entries(self, bike_entries):
-        sql_statement = """
-        INSERT INTO public.bikes (
-            bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated, city_id, city_name
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT DO NOTHING;
-        """
-
-        bikes = [bike.as_tuple() for bike in bike_entries]
-        with (
-            psycopg.connect(self.connection_string) as connection,
-            connection.cursor() as cursor,
-        ):
-            cursor.executemany(sql_statement, bikes)
-            connection.commit()
-
-    def insert_station_entries(self, station_entries: list[tuple]):
-        sql_statement = """
-        INSERT INTO public.stations (
-                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated, city_id, city_name
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING;
-        """
-
-        stations = [station.as_tuple() for station in station_entries]
-        with (
-            psycopg.connect(self.connection_string) as connection,
-            connection.cursor() as cursor,
-        ):
-            cursor.executemany(sql_statement, stations)
-            connection.commit()
-
-# ---------- Database Factory ---------
-class DatabaseClient:
-    def __init__(self, config: AppConfig):
-        backend_cls = get_backend(config.db_type)
-        self.client: AbstractDatabaseClient = backend_cls(config)
-
-    def __getattr__(self, name):
-        return getattr(self.client, name)
 
 def main():
     cli = NextbikeCLI()
