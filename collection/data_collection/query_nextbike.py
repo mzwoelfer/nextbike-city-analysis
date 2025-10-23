@@ -349,6 +349,11 @@ class PostgresClient:
             cursor.executemany(sql_statement, stations)
             connection.commit()
 
+# ---------- Database Factory ---------
+class DatabaseClient:
+    def __init__(self, config: AppConfig):
+        backend_cls = get_backend(config.db_type)
+        self.client: AbstractDatabaseClient = backend_cls(config)
 
 def main():
     cli = NextbikeCLI()
