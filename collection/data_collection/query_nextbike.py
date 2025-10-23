@@ -263,6 +263,7 @@ class AppConfig:
         environment_city_ids = []
 
         load_dotenv()
+        self.db_type = os.getenv("DB_TYPE", "postgres").lower()
         self.db_host = os.getenv("DB_HOST")
         self.db_port = os.getenv("DB_PORT")
         self.db_name = os.getenv("DB_NAME")
@@ -283,21 +284,46 @@ class AppConfig:
             )
 
 
-# ---------- DATABASE STUFF ----------
-class PostgresClient:
-    """Handle database entries"""
+from abc import ABC, abstractmethod
 
-    def __init__(
-        self, db_host=None, db_port=None, db_name=None, db_user=None, db_password=None
-    ):
-        self.db_host = db_host
-        self.db_port = db_port
-        self.db_name = db_name
-        self.db_user = db_user
-        self.db_password = db_password
+class AbstractDatabaseClient(ABC):
+    @abstractmethod
+    def insert_city_information(self, city):
+        pass
+
+    @abstractmethod
+    def insert_bike_entries(self, bike_entries):
+        pass
+
+    @abstractmethod
+    def insert_station_entries(self, station_entries):
+        pass
+
+
+_DATABASE_BACKENDS = {}
+
+def register_backend(name):
+    def wrapper(cls):
+        _DATABASE_BACKENDS[name] = cls
+        return cls
+
+    return wrapper
+
+def get_backend(name):
+    try:
+        return _DATABASE_BACKENDS[name]
+    except KeyError:
+        raise ValueError(f"Unknown database backend: {name}")
+
+# ---------- DATABASE STUFF ----------
+@register_backend("postgres")
+class PostgresClient(AbstractDatabaseClient):
+    """Handle postgres entries"""
+
+    def __init__(self, config: AppConfig):
 
         self.connection_string = (
-            f"host={db_host} dbname={db_name} user={db_user} password={db_password}"
+            f"host={config.db_host} dbname={config.db_name} user={config.db_user} password={config.db_password}"
         )
 
     def insert_city_information(self, city: City):
@@ -354,6 +380,9 @@ class DatabaseClient:
     def __init__(self, config: AppConfig):
         backend_cls = get_backend(config.db_type)
         self.client: AbstractDatabaseClient = backend_cls(config)
+
+    def __getattr__(self, name):
+        return getattr(self.client, name)
 
 def main():
     cli = NextbikeCLI()
