@@ -9,7 +9,7 @@ class PostgresClient(AbstractDatabaseClient):
         
         self.config = config
         self.connection_string = (
-            f"host={config.db_host} dbname={config.db_name} user={config.db_user} password={config.db_password}"
+            f"host={self.config.db_host} port={self.config.db_port} dbname={self.config.db_name} user={self.config.db_user} password={self.config.db_password}"
         )
 
     def insert_city_information(self, city):
