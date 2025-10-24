@@ -34,12 +34,18 @@ Ensure your system meets the following requirements:
    ```
 3. Update the `.env` file with your city id:
    ```ini
+   DB_TYPE=postgres
    DB_HOST=postgres
    DB_PORT=5432
    DB_NAME=nextbike_data
    DB_USER=bike_admin
    DB_PASSWORD=mybike
    CITY_IDS=467
+   
+   # Custom table names
+   DB_CITIES_TABLE=public.cities
+   DB_BIKES_TABLE=public.bikes
+   DB_STATIONS_TABLE=public.stations
    ```
 
 ### 3. Build and start the collection service
