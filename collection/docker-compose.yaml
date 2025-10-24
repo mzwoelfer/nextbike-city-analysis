@@ -3,7 +3,6 @@
 #   Stop:           docker compose --file docker-compose.yaml down
 #   Destroy:        docker compose --file docker-compose.yaml down -v --remove-orphans
 
-version: "3.9"
 services:
   postgres:
     image: postgres:15
@@ -38,7 +37,7 @@ services:
     command: >
       sh -c "
       while true; do
-        python query_nextbike.py;
+        python query_nextbike.py --save;
         sleep 60;
       done"
     volumes:
