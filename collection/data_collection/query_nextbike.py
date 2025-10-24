@@ -268,19 +268,19 @@ class AppConfig:
         self.db_name = os.getenv("DB_NAME")
         self.db_user = os.getenv("DB_USER")
         self.db_password = os.getenv("DB_PASSWORD")
+        self.db_cities_table = os.getenv("DB_CITIES_TABLE")
+        self.db_bikes_table = os.getenv("DB_BIKES_TABLE")
+        self.db_stations_table = os.getenv("DB_STATIONS_TABLE")
 
         env_city_ids = os.getenv("CITY_IDS", None)
+        self.city_ids = self._parse_city_ids(cli_city_ids, env_city_ids)
 
+    def _parse_city_ids(self, cli_city_ids, env_city_ids):
         if cli_city_ids:
-            self.city_ids = cli_city_ids
-        elif env_city_ids:
-            for city_id in env_city_ids.split(","):
-                environment_city_ids.append(int(city_id))
-            self.city_ids = environment_city_ids
-        else:
-            raise ValueError(
-                "No city ID provided. Use --city-ids or set CITY_IDS in .env."
-            )
+            return cli_city_ids
+        if env_city_ids:
+            return [int(city_id) for city_id in env_city_ids.split(",")]
+        raise ValueError("No city ID provided. Use --city-ids or set CITY_IDS in .env.")
 
 def main():
     cli = NextbikeCLI()
