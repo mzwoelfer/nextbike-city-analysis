@@ -25,6 +25,11 @@ DB_NAME=nextbike_data
 DB_USER=bike_admin
 DB_PASSWORD=mybike
 CITY_IDS=467
+
+# Table names (defaults shown)
+DB_CITIES_TABLE=public.cities
+DB_BIKES_TABLE=public.bikes
+DB_STATIONS_TABLE=public.stations
 ```
 
 Then run without arguments:

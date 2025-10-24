@@ -268,6 +268,12 @@ class AppConfig:
         self.db_name = os.getenv("DB_NAME")
         self.db_user = os.getenv("DB_USER")
         self.db_password = os.getenv("DB_PASSWORD")
+        
+        # Configurable schema and table names
+        self.db_schema = os.getenv("DB_SCHEMA", "public")
+        self.cities_table = os.getenv("CITIES_TABLE", "cities")
+        self.bikes_table = os.getenv("BIKES_TABLE", "bikes")
+        self.stations_table = os.getenv("STATIONS_TABLE", "stations")
 
         env_city_ids = os.getenv("CITY_IDS", None)
 
