@@ -263,6 +263,11 @@ class AppConfig:
 
         load_dotenv()
         self.db_type = os.getenv("DB_TYPE", "postgres").lower()
+        self.db_host = os.getenv("DB_HOST")
+        self.db_port = os.getenv("DB_PORT")
+        self.db_name = os.getenv("DB_NAME")
+        self.db_user = os.getenv("DB_USER")
+        self.db_password = os.getenv("DB_PASSWORD")
 
         env_city_ids = os.getenv("CITY_IDS", None)
 
