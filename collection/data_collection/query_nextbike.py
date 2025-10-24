@@ -191,10 +191,9 @@ class NextbikeAPI:
         Some bikes pile up at one location and make a new 'place'.
         """
         try:
-            # Access countries[0]["cities"][0]["places"] safely
-            places = (
-                data.get("countries", [{}])[0].get("cities", [{}])[0].get("places", [])
-            )
+            countries_data = data.get("countries", [{}])[0]
+            cities_data = countries_data.get("cities", [{}])[0]
+            places = cities_data.get("places", [])
         except (IndexError, KeyError):
             places = []
         return places
@@ -203,9 +202,10 @@ class NextbikeAPI:
     def get_city_info(data: dict) -> dict:
         try:
             city = data.get("countries", [{}])[0]
+            cities = city.get("cities", [{}])[0]
             city_info = {
-                "city_id": city.get("cities", [{}])[0].get("uid", 0),
-                "city_name": city.get("cities", [{}])[0].get("name", "Unknown"),
+                "city_id": cities.get("uid", 0),
+                "city_name": cities.get.get("name", "Unknown"),
                 "timezone": city.get("timezone", "Unknown"),
                 "latitude": city.get("lat", 0),
                 "longitude": city.get("lng", 0),
