@@ -6,6 +6,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 
+
 # ---------- DATA CLASSES ----------
 @dataclass
 class City:
@@ -282,6 +283,24 @@ class AppConfig:
             return [int(city_id) for city_id in env_city_ids.split(",")]
         raise ValueError("No city ID provided. Use --city-ids or set CITY_IDS in .env.")
 
+
+def process_nextbike_data(nextbike_api: NextbikeAPI, last_updated):
+    data = nextbike_api.fetch_data()
+    city = City.from_api_data(data)
+    places = nextbike_api.extract_places(data)
+
+    bike_entries = Bike.bike_entries_from_place(
+        places, city.city_id, city.city_name, last_updated
+    )
+    station_entries = Station.build_station_entries(
+        places, city.city_id, city.city_name, last_updated
+    )
+
+    ConsolePrinter.print_summary(city, bike_entries, station_entries)
+
+    return city, bike_entries, station_entries
+
+
 def main():
     cli = NextbikeCLI()
     config = AppConfig(cli.city_ids)
@@ -293,18 +312,7 @@ def main():
     for city_id in city_ids:
         print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
-        data = api.fetch_data()
-        city = City.from_api_data(data)
-        places = api.extract_places(data)
-
-        bike_entries = Bike.bike_entries_from_place(
-            places, city.city_id, city.city_name, last_updated
-        )
-        station_entries = Station.build_station_entries(
-            places, city.city_id, city.city_name, last_updated
-        )
-
-        ConsolePrinter.print_summary(city, bike_entries, station_entries)
+        city, bike_entries, station_entries = process_nextbike_data(api, last_updated)
 
         if cli.save:
             db.insert_city_information(city)
