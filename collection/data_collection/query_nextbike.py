@@ -310,7 +310,6 @@ def main():
 
     city_ids = config.city_ids
     for city_id in city_ids:
-        print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
         city, bike_entries, station_entries = process_nextbike_data(api, last_updated)
 
@@ -318,7 +317,6 @@ def main():
             db.insert_city_information(city)
             db.insert_bike_entries(bike_entries)
             db.insert_station_entries(station_entries)
-            print(f"Data saed for city {city.city_name}.")
 
 
 if __name__ == "__main__":
