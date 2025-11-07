@@ -171,7 +171,7 @@ class NextbikeAPI:
 
     BASE_URL = "https://maps.nextbike.net/maps/nextbike-live.json"
 
-    def __init__(self, city_id: str):
+    def __init__(self, city_id: int):
         self.city_id = city_id
 
     def fetch_data(self) -> dict:
