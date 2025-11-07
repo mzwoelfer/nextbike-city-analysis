@@ -260,7 +260,7 @@ class NextbikeCLI:
 class AppConfig:
     def __init__(self, cli_city_ids=[]):
         self.city_ids = []
-        environment_city_ids = []
+        env_city_ids = []
 
         load_dotenv()
         self.db_type = os.getenv("DB_TYPE", "postgres").lower()
