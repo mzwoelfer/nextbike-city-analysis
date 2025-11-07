@@ -6,6 +6,7 @@ import datetime
 import os
 from dotenv import load_dotenv
 
+
 # ---------- DATA CLASSES ----------
 @dataclass
 class City:
@@ -170,7 +171,7 @@ class NextbikeAPI:
 
     BASE_URL = "https://maps.nextbike.net/maps/nextbike-live.json"
 
-    def __init__(self, city_id: str):
+    def __init__(self, city_id: int):
         self.city_id = city_id
 
     def fetch_data(self) -> dict:
@@ -259,7 +260,7 @@ class NextbikeCLI:
 class AppConfig:
     def __init__(self, cli_city_ids=[]):
         self.city_ids = []
-        environment_city_ids = []
+        env_city_ids = []
 
         load_dotenv()
         self.db_type = os.getenv("DB_TYPE", "postgres").lower()
@@ -282,6 +283,24 @@ class AppConfig:
             return [int(city_id) for city_id in env_city_ids.split(",")]
         raise ValueError("No city ID provided. Use --city-ids or set CITY_IDS in .env.")
 
+
+def process_nextbike_data(nextbike_api: NextbikeAPI, last_updated):
+    data = nextbike_api.fetch_data()
+    city = City.from_api_data(data)
+    places = nextbike_api.extract_places(data)
+
+    bike_entries = Bike.bike_entries_from_place(
+        places, city.city_id, city.city_name, last_updated
+    )
+    station_entries = Station.build_station_entries(
+        places, city.city_id, city.city_name, last_updated
+    )
+
+    ConsolePrinter.print_summary(city, bike_entries, station_entries)
+
+    return city, bike_entries, station_entries
+
+
 def main():
     cli = NextbikeCLI()
     config = AppConfig(cli.city_ids)
@@ -291,26 +310,13 @@ def main():
 
     city_ids = config.city_ids
     for city_id in city_ids:
-        print(f"Collecting nextbike data from city: {city_id}")
         api = NextbikeAPI(city_id)
-        data = api.fetch_data()
-        city = City.from_api_data(data)
-        places = api.extract_places(data)
-
-        bike_entries = Bike.bike_entries_from_place(
-            places, city.city_id, city.city_name, last_updated
-        )
-        station_entries = Station.build_station_entries(
-            places, city.city_id, city.city_name, last_updated
-        )
-
-        ConsolePrinter.print_summary(city, bike_entries, station_entries)
+        city, bike_entries, station_entries = process_nextbike_data(api, last_updated)
 
         if cli.save:
             db.insert_city_information(city)
             db.insert_bike_entries(bike_entries)
             db.insert_station_entries(station_entries)
-            print(f"Data saed for city {city.city_name}.")
 
 
 if __name__ == "__main__":
