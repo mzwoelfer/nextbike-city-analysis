@@ -36,7 +36,12 @@ class TestCityDataClass(unittest.TestCase):
         )
         self.assertIsInstance(city, City)
 
-    def test_create_City_from_api_data(self):
+    def test_City_from_api_data_has_city_id(self):
         city = City.from_api_data(self.api_data)
 
         self.assertEqual(city.city_id, 773)
+
+    def test_City_from_api_data_has_city_name(self):
+        city = City.from_api_data(self.api_data)
+
+        self.assertEqual(city.city_name, "Kufstein")
