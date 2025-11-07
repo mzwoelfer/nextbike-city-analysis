@@ -31,7 +31,7 @@ class TestCityDataClass(unittest.TestCase):
         city = City(
             city_id=1,
             city_name="test_city",
-            timezone="some timezone",
+            timezone="Europe/Berlin",
             latitude=50.8,
             longitude=50.8,
             set_point_bikes=1,
@@ -63,3 +63,46 @@ class TestCityDataClass(unittest.TestCase):
 
     def test_City_from_api_data_last_updated_is_timestamp_of_execution(self):
         self.assertTrue(self.before <= self.city.last_updated <= self.after)
+
+
+class TestCity_as_tuple(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime.datetime.now()
+        self.city = City(
+            city_id=1,
+            city_name="TestTown",
+            timezone="Europe/Berlin",
+            latitude=10.5,
+            longitude=20.5,
+            set_point_bikes=50,
+            available_bikes=40,
+            last_updated=self.now,
+        )
+        self.as_tuple_result = self.city.as_tuple()
+
+    def test_tuple_length(self):
+        self.assertEqual(len(self.as_tuple_result), 8)
+
+    def test_tuple_city_id(self):
+        self.assertEqual(self.as_tuple_result[0], 1)
+
+    def test_tuple_city_name(self):
+        self.assertEqual(self.as_tuple_result[1], "TestTown")
+
+    def test_tuple_timezone(self):
+        self.assertEqual(self.as_tuple_result[2], "Europe/Berlin")
+
+    def test_tuple_latitude(self):
+        self.assertEqual(self.as_tuple_result[3], 10.5)
+
+    def test_tuple_longitude(self):
+        self.assertEqual(self.as_tuple_result[4], 20.5)
+
+    def test_tuple_set_point_bikes(self):
+        self.assertEqual(self.as_tuple_result[5], 50)
+
+    def test_tuple_available_bikes(self):
+        self.assertEqual(self.as_tuple_result[6], 40)
+
+    def test_tuple_last_updated(self):
+        self.assertEqual(self.as_tuple_result[7], self.now)
