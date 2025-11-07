@@ -61,5 +61,5 @@ class TestCityDataClass(unittest.TestCase):
     def test_City_from_api_data_has_available_bikes(self):
         self.assertEqual(self.city.available_bikes, 87)
 
-    def test_City_from_api_data_has_last_updated(self):
+    def test_City_from_api_data_last_updated_is_timestamp_of_execution(self):
         self.assertTrue(self.before <= self.city.last_updated <= self.after)
