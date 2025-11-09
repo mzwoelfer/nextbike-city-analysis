@@ -8,7 +8,6 @@ on:
 
 jobs:
   test_data_classes:
-    needs: [ test_preparation ]
     name: Test Data classes
     runs-on: ubuntu-latest
     defaults:
