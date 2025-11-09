@@ -3,7 +3,7 @@ import datetime
 from query_nextbike import Bike
 
 
-class TestBikeClass(unittest.TestCase):
+class TestBikeClass_as_tuple(unittest.TestCase):
     def setUp(self):
         self.now = datetime.datetime.now()
         self.bike = Bike(
