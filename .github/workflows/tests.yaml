@@ -33,4 +33,4 @@ jobs:
         run: |
           python -m unittest tests/test_city_class.py
           python -m unittest tests/test_bike_class.py
-          python -m unittest tests/test_stations_class.py
+          python -m unittest tests/test_station_class.py
