@@ -3,6 +3,56 @@ import datetime
 from query_nextbike import Station
 
 
+class TestBuildStationEntries(unittest.TestCase):
+    def setUp(self):
+        self.timestamp = datetime.datetime.now()
+        self.city_id = 773
+        self.city_name = "Kufstein"
+
+        self.places = [
+            {
+                "uid": 1001,
+                "lat": 47.5,
+                "lng": 12.2,
+                "name": "Hauptplatz",
+                "spot": True,
+                "number": 111,
+                "maintenance": False,
+                "terminal_type": "sign",
+                "bike": False,  # station
+            },
+            {
+                "uid": 1002,
+                "lat": 48.0,
+                "lng": 13.0,
+                "name": "Somewhere",
+                "bike": True,  # skip, cause bike
+            },
+        ]
+
+        self.stations = Station.build_station_entries(
+            self.places, self.city_id, self.city_name, self.timestamp
+        )
+
+    def test_number_of_station_entries(self):
+        self.assertEqual(len(self.stations), 1)
+
+    def test_station_uid(self):
+        self.assertEqual(self.stations[0].uid, 1001)
+
+    def test_station_city_id(self):
+        self.assertEqual(self.stations[0].city_id, 773)
+
+    def test_station_name(self):
+        self.assertEqual(self.stations[0].name, "Hauptplatz")
+
+    def test_station_longitude(self):
+        self.assertEqual(self.stations[0].longitude, 12.2)
+
+    def test_station_last_updated(self):
+        self.assertEqual(self.stations[0].last_updated, self.timestamp)
+
+
 class TestStationExist(unittest.TestCase):
     def setUp(self):
         self.now = datetime.datetime.now()
