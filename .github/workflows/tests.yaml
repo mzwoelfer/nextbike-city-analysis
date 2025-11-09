@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  collection:
+  test_preparation:
     name: Test Collection
     runs-on: ubuntu-latest
     defaults:
@@ -28,6 +28,30 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run unittests
-        run: |
-          python -m unittest discover . -v
+  test_data_classes:
+    needs: [ test_preparation ]
+    name: Test Data classes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collection/data_collection
+    steps:
+      - name: Dataclass City
+        run: python -m unittest tests/test_city_class.py
+
+      - name: Dataclass Bike
+        run: python -m unittest tests/test_bike_class.py
+
+      - name: Dataclass Stations
+        run: python -m unittest tests/test_stations_class.py
+
+  test_cli:
+    needs: [ test_preparation ]
+    name: Test CLI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collection/data_collection
+    steps:
+      - name: CLI test 
+        run: python -m unittest tests/test_cli.py
