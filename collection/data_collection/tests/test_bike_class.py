@@ -154,3 +154,49 @@ class TestBikeClass_as_tuple(unittest.TestCase):
 
     def test_tuple_city_name(self):
         self.assertEqual(self.result[10], "Kufstein")
+
+
+class TestBikeDefaults(unittest.TestCase):
+    def setUp(self):
+        # minimal viable input: empty bike_list entry with no fields
+        self.timestamp = datetime.datetime.now()
+        bikes = Bike.bike_entries_from_place(
+            places=[{"bike_list": [{}]}],
+            city_id=1,
+            city_name="X",
+            timestamp=self.timestamp,
+        )
+        self.bike = bikes[0]
+
+    def test_default_bike_number(self):
+        self.assertEqual(self.bike.bike_number, "")
+
+    def test_default_latitude(self):
+        self.assertEqual(self.bike.latitude, 0)
+
+    def test_default_longitude(self):
+        self.assertEqual(self.bike.longitude, 0)
+
+    def test_default_active(self):
+        self.assertIsNone(self.bike.active)
+
+    def test_default_state(self):
+        self.assertEqual(self.bike.state, "")
+
+    def test_default_bike_type(self):
+        self.assertEqual(self.bike.bike_type, "")
+
+    def test_default_station_number(self):
+        self.assertEqual(self.bike.station_number, 0)
+
+    def test_default_station_uid(self):
+        self.assertEqual(self.bike.station_uid, 0)
+
+    def test_default_last_updated(self):
+        self.assertEqual(self.bike.last_updated, self.timestamp)
+
+    def test_default_city_id(self):
+        self.assertEqual(self.bike.city_id, 1)
+
+    def test_default_city_name(self):
+        self.assertEqual(self.bike.city_name, "X")
