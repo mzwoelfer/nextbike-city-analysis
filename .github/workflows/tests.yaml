@@ -7,18 +7,16 @@ on:
     branches: [ master ]
 
 jobs:
-  test_data_classes:
-    name: Test Data classes
+  .base-test: &base-test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: collection/data_collection
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -27,8 +25,13 @@ jobs:
       - name: Install dependencies (cached)
         run: |
           pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
 
+  test_data_classes:
+    name: Test Data classes
+    <<: *base-test
+    steps:
+      <<: *base-test.steps
       - name: Run Dataclass tests
         run: |
           python -m unittest tests/test_city_class.py
