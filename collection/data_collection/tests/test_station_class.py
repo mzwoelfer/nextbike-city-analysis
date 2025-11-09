@@ -121,3 +121,47 @@ class TestStationExist(unittest.TestCase):
 
     def test_tuple_city_name(self):
         self.assertEqual(self.result[10], "Kufstein")
+
+
+class TestStationDefaults(unittest.TestCase):
+    def setUp(self):
+        self.timestamp = datetime.datetime.now()
+        self.station = Station.build_station_entries(
+            places=[{"bike": False}],  # minimal valid "station"
+            city_id=1,
+            city_name="X",
+            timestamp=self.timestamp,
+        )[0]
+
+    def test_default_uid(self):
+        self.assertEqual(self.station.uid, 0)
+
+    def test_default_latitude(self):
+        self.assertEqual(self.station.latitude, 0)
+
+    def test_default_longitude(self):
+        self.assertEqual(self.station.longitude, 0)
+
+    def test_default_name(self):
+        self.assertEqual(self.station.name, "Unknown")
+
+    def test_default_spot(self):
+        self.assertIsNone(self.station.spot)
+
+    def test_default_station_number(self):
+        self.assertEqual(self.station.station_number, 0)
+
+    def test_default_maintenance(self):
+        self.assertIsNone(self.station.maintenance)
+
+    def test_default_terminal_type(self):
+        self.assertEqual(self.station.terminal_type, "Unknown")
+
+    def test_default_last_updated(self):
+        self.assertEqual(self.station.last_updated, self.timestamp)
+
+    def test_default_city_id(self):
+        self.assertEqual(self.station.city_id, 1)
+
+    def test_default_city_name(self):
+        self.assertEqual(self.station.city_name, "X")
