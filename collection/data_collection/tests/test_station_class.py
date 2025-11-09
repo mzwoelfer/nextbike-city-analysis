@@ -14,6 +14,17 @@ class TestStationEmptyPlaces(unittest.TestCase):
         self.assertEqual(stations, [])
 
 
+class TestStationNoFalseBikeEntries(unittest.TestCase):
+    def test_skip_bikes_in_stations(self):
+        stations = Station.build_station_entries(
+            places=[{"bike": True}, {"bike": True}],
+            city_id=1,
+            city_name="X",
+            timestamp=datetime.datetime.now(),
+        )
+        self.assertEqual(len(stations), 0)
+
+
 class TestBuildStationEntries(unittest.TestCase):
     def setUp(self):
         self.timestamp = datetime.datetime.now()
@@ -31,28 +42,12 @@ class TestBuildStationEntries(unittest.TestCase):
                 "maintenance": False,
                 "terminal_type": "sign",
                 "bike": False,  # station
-            },
-            {
-                "uid": 1002,
-                "lat": 48.0,
-                "lng": 13.0,
-                "name": "Somewhere",
-                "bike": True,  # skip, cause bike
-            },
+            }
         ]
 
         self.stations = Station.build_station_entries(
             self.places, self.city_id, self.city_name, self.timestamp
         )
-
-    def test_skips_bikes_in_station_entries(self):
-        self.places[-1] = {"bike": True}
-
-        self.stations = Station.build_station_entries(
-            self.places, self.city_id, self.city_name, self.timestamp
-        )
-
-        self.assertEqual(len(self.stations), 1)
 
     def test_station_uid(self):
         self.assertEqual(self.stations[0].uid, 1001)
