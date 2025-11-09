@@ -8,7 +8,7 @@ on:
 
 jobs:
   test_preparation:
-    name: Test Collection
+    name: Prepare venv & Collect Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,10 +23,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Create venv & Install dependencies
         run: |
+          python -m venv venv
+          source venv/bin/activate
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Upload virtual environment
+        uses: actions/upload-artifact@v4
+        with:
+          name: venv
+          path: collection/data_collection/venv
+          retention-days: 3
 
   test_data_classes:
     needs: [ test_preparation ]
@@ -36,22 +45,18 @@ jobs:
       run:
         working-directory: collection/data_collection
     steps:
-      - name: Dataclass City
-        run: python -m unittest tests/test_city_class.py
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Dataclass Bike
-        run: python -m unittest tests/test_bike_class.py
+      - name: Download venv
+        uses: actions/download-artifact@v4
+        with:
+          name: venv
+          path: collection/data_collection/venv
 
-      - name: Dataclass Stations
-        run: python -m unittest tests/test_stations_class.py
-
-  test_cli:
-    needs: [ test_preparation ]
-    name: Test CLI
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: collection/data_collection
-    steps:
-      - name: CLI test 
-        run: python -m unittest tests/test_cli.py
+      - name: Run Dataclass tests
+        run: |
+          source venv/bin/activate
+          python -m unittest tests/test_city_class.py
+          python -m unittest tests/test_bike_class.py
+          python -m unittest tests/test_stations_class.py
