@@ -3,6 +3,17 @@ import datetime
 from query_nextbike import Station
 
 
+class TestStationEmptyPlaces(unittest.TestCase):
+    def test_empty_places_returns_empty_list(self):
+        stations = Station.build_station_entries(
+            places=[],
+            city_id=1,
+            city_name="X",
+            timestamp=datetime.datetime.now(),
+        )
+        self.assertEqual(stations, [])
+
+
 class TestBuildStationEntries(unittest.TestCase):
     def setUp(self):
         self.timestamp = datetime.datetime.now()
@@ -34,7 +45,13 @@ class TestBuildStationEntries(unittest.TestCase):
             self.places, self.city_id, self.city_name, self.timestamp
         )
 
-    def test_number_of_station_entries(self):
+    def test_skips_bikes_in_station_entries(self):
+        self.places[-1] = {"bike": True}
+
+        self.stations = Station.build_station_entries(
+            self.places, self.city_id, self.city_name, self.timestamp
+        )
+
         self.assertEqual(len(self.stations), 1)
 
     def test_station_uid(self):
