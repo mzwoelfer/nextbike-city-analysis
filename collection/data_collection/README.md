@@ -40,3 +40,12 @@ python3 query_nextbike.py --save
 ## CLI Options
 - `--city-ids`: Space-separated city IDs to fetch (overrides .env CITY_IDS)
 - `--save`: Save data to database 
+
+## Run tests
+Change directory to `collection/data_collection`:
+
+- Enable vitual environment: `source Env/bin/activate`
+- run tests: `python3 -m unittest discover .`
+
+Run specific tests:
+- `python3 -m unittest tests/test_city_class.py`

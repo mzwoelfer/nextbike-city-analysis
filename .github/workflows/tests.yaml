@@ -7,27 +7,98 @@ on:
     branches: [ master ]
 
 jobs:
-  collection:
-    name: Test Collection
+  test_data_classes:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: collection/data_collection
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: collection/data_collection/requirements.txt
 
-      - name: Install dependencies
+      - name: Install dependencies (cached)
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run unittests
+      - name: "[TEST] CITY CLASS"
         run: |
-          python -m unittest discover . -v
+          python -m unittest tests/test_city_class.py
+
+  test_bike_class:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collection/data_collection
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: collection/data_collection/requirements.txt
+
+      - name: Install dependencies (cached)
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: "[TEST] CLI"
+        run: |
+          python -m unittest tests/test_bike_class.py
+
+  test_station_class:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collection/data_collection
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: collection/data_collection/requirements.txt
+
+      - name: Install dependencies (cached)
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: "[TEST] STATION"
+        run: |
+          python -m unittest tests/test_station_class.py
+
+  test_cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collection/data_collection
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: collection/data_collection/requirements.txt
+
+      - name: Install dependencies (cached)
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: "[TEST] CLI"
+        run: |
+          python -m unittest tests/test_cli.py

@@ -92,7 +92,7 @@ class Bike:
                     cls(
                         bike_number=bike.get("number", ""),
                         latitude=place.get("lat", 0),
-                        longitude=place.get("lat", 0),
+                        longitude=place.get("lng", 0),
                         active=bike.get("active", None),
                         state=bike.get("state", ""),
                         bike_type=bike.get("bike_type", ""),
