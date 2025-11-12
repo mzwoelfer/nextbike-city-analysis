@@ -27,6 +27,31 @@ class TestCityDataClass(unittest.TestCase):
         self.city = City.from_api_data(self.api_data)
         self.after = datetime.datetime.now()
 
+    def test_city_class_as_dict(self):
+        last_updated = datetime.datetime.now()
+        city = City(
+            city_id=1,
+            city_name="test_city",
+            timezone="Europe/Berlin",
+            latitude=10.1,
+            longitude=20.2,
+            set_point_bikes=2,
+            available_bikes=3,
+            last_updated=last_updated,
+        )
+
+        expected_output = {
+            "city_id": 1,
+            "city_name": "test_city",
+            "timezone": "Europe/Berlin",
+            "latitude": 10.1,
+            "longitude": 20.2,
+            "set_point_bikes": 2,
+            "available_bikes": 3,
+            "last_updated": last_updated,
+        }
+        self.assertEqual(city.__dict__, expected_output)
+
     def test_city_class_exists(self):
         city = City(
             city_id=1,
