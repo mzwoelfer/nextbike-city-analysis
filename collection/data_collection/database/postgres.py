@@ -6,6 +6,9 @@ from database.base import AbstractDatabaseClient, register_backend
 class PostgresClient(AbstractDatabaseClient):
     """Handle postgres entries"""
 
+    # TODO: static methods are duplicated....
+    # unify: 3 list with db columns, take data model to generate values
+
     def __init__(self, config):
         self.config = config
         self.connection_string = f"host={self.config.db_host} port={self.config.db_port} dbname={self.config.db_name} user={self.config.db_user} password={self.config.db_password}"
