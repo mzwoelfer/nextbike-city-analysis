@@ -10,14 +10,21 @@ class PostgresClient(AbstractDatabaseClient):
         self.config = config
         self.connection_string = f"host={self.config.db_host} port={self.config.db_port} dbname={self.config.db_name} user={self.config.db_user} password={self.config.db_password}"
 
-    def insert_city_information(self, city):
+    @staticmethod
+    def city_sql_insert_statement(table_name):
         city_sql = f"""
-        INSERT INTO {self.config.db_cities_table} (
+        INSERT INTO {table_name} (
             city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
         )
         VALUES (%(city_id)s, %(city_name)s, %(timezone)s, %(latitude)s, %(longitude)s, %(set_point_bikes)s, %(available_bikes)s, %(last_updated)s)
         ON CONFLICT DO NOTHING;
         """
+
+        return city_sql
+
+    def insert_city_information(self, city):
+        city_sql = self.city_sql_insert_statement(self.config.db_cities_table)
+
         with (
             psycopg.connect(self.connection_string) as connection,
             connection.cursor() as cursor,
