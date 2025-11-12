@@ -98,6 +98,39 @@ class TestBikeClass_Entries_from_place(unittest.TestCase):
         self.assertEqual(self.bikes[0].longitude, 12.0)
 
 
+class TestBikeClass_as_dict(unittest.TestCase):
+    def test_Bike_dict(self):
+        self.now = datetime.datetime.now()
+        self.bike = Bike(
+            bike_number="12345",
+            latitude=47.1,
+            longitude=11.2,
+            active=True,
+            state="ok",
+            bike_type="150",
+            station_number=999,
+            station_uid=555,
+            last_updated=self.now,
+            city_id=773,
+            city_name="Kufstein",
+        )
+
+        expected_output = {
+            "bike_number": "12345",
+            "latitude": 47.1,
+            "longitude": 11.2,
+            "active": True,
+            "state": "ok",
+            "bike_type": "150",
+            "station_number": 999,
+            "station_uid": 555,
+            "last_updated": self.now,
+            "city_id": 773,
+            "city_name": "Kufstein",
+        }
+        self.assertEqual(self.bike.__dict__, expected_output)
+
+
 class TestBikeClass_as_tuple(unittest.TestCase):
     def setUp(self):
         self.now = datetime.datetime.now()
