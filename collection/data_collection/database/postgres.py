@@ -22,6 +22,18 @@ class PostgresClient(AbstractDatabaseClient):
 
         return city_sql
 
+    @staticmethod
+    def bike_sql_insert_statement(table_name):
+        bike_sql = f"""
+        INSERT INTO {table_name} (
+            bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated, city_id, city_name
+        )
+        VALUES (%(bike_number)s, %(latitude)s, %(longitude)s, %(active)s, %(state)s, %(bike_type)s, %(station_number)s, %(station_uid)s, %(last_updated)s, %(city_id)s, %(city_name)s)
+        ON CONFLICT DO NOTHING;
+        """
+
+        return bike_sql
+
     def insert_city_information(self, city):
         city_sql = self.city_sql_insert_statement(self.config.db_cities_table)
 
