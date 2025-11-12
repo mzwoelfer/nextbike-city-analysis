@@ -1,4 +1,6 @@
 import unittest
+from query_nextbike import NextbikeAPI
+
 
 class TestNextbikeAPI(unittest.TestCase):
     def setUp(self):
