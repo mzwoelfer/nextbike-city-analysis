@@ -83,6 +83,22 @@ class TestStationExist(unittest.TestCase):
         )
         self.result = self.station.as_tuple()
 
+    def test_Station_as_dict(self):
+        expected_output = {
+            "uid": 1001,
+            "latitude": 47.1,
+            "longitude": 11.2,
+            "name": "Bahnhof",
+            "spot": True,
+            "station_number": 12345,
+            "maintenance": False,
+            "terminal_type": "sign",
+            "last_updated": self.now,
+            "city_id": 773,
+            "city_name": "Kufstein",
+        }
+        self.assertEqual(self.station.__dict__, expected_output)
+
     def test_Station_exists(self):
         self.assertIsInstance(self.station, Station)
 
