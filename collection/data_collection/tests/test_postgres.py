@@ -2,7 +2,7 @@ import re
 import unittest
 import datetime
 from database.postgres import PostgresClient
-from query_nextbike import City, Bike
+from query_nextbike import City, Bike, Station
 
 
 class TestCityInsertSQL(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestCityInsertSQL(unittest.TestCase):
 
 class TestBikesInsertStatement(unittest.TestCase):
     def setUp(self):
-        self.table_name = "cities"
+        self.table_name = "bikes"
         self.sql_statement = PostgresClient.bike_sql_insert_statement(self.table_name)
 
         now = datetime.datetime.now()
@@ -54,6 +54,38 @@ class TestBikesInsertStatement(unittest.TestCase):
 
     def test_bike_keys_Present_in_sql_statement(self):
         for bike_key in self.bike.__dict__.keys():
+            self.assertIn(f"%({bike_key})s", self.sql_statement)
+
+    def test_no_unknown_placeholders(self):
+        placeholders = re.findall(r"$\((.*?)\)s", self.sql_statement)
+        for placeholder in placeholders:
+            self.assertIn(placeholder, self.bike.__dict__)
+
+
+class TestStationInsertStatement(unittest.TestCase):
+    def setUp(self):
+        self.table_name = "stations"
+        self.sql_statement = PostgresClient.station_sql_insert_statement(
+            self.table_name
+        )
+
+        self.now = datetime.datetime.now()
+        self.station = Station(
+            uid=1001,
+            latitude=47.1,
+            longitude=11.2,
+            name="Bahnhof",
+            spot=True,
+            station_number=12345,
+            maintenance=False,
+            terminal_type="sign",
+            last_updated=self.now,
+            city_id=773,
+            city_name="Kufstein",
+        )
+
+    def test_bike_keys_Present_in_sql_statement(self):
+        for bike_key in self.station.__dict__.keys():
             self.assertIn(f"%({bike_key})s", self.sql_statement)
 
     def test_no_unknown_placeholders(self):
