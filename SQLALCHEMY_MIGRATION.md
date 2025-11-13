@@ -47,6 +47,7 @@ Das Projekt wurde von einer eigenen SQL-Klasse (mit psycopg) auf SQLAlchemy ORM 
 ### 4. **Bulk-Operationen**
    - `bulk_insert_mappings()` für schnellere Inserts
    - Effizientere Batch-Operationen
+   - Vereinfacht durch dataclass `__dict__`
 
 ### 5. **Datenbankagnostisch**
    - Einfacher Wechsel zu anderen Datenbanken (MySQL, SQLite, etc.)
@@ -70,7 +71,14 @@ cursor.execute(
 
 ### Neue Implementierung (SQLAlchemy)
 ```python
-# ORM-basiert
+# ORM-basiert mit dataclass unpacking
+city_dict = city.__dict__
+stmt = insert(CityModel).values(**city_dict)
+session.execute(stmt)
+session.commit()
+
+# Bulk-Insert mit __dict__
+bike_data = [bike.__dict__ for bike in bike_entries]
 session.bulk_insert_mappings(BikeModel, bike_data)
 session.commit()
 ```

@@ -27,24 +27,15 @@ class PostgresClient(AbstractDatabaseClient):
         # Create session factory
         self.Session = sessionmaker(bind=self.engine)
 
-        # Create tables if they don't exist
-        Base.metadata.create_all(self.engine)
 
     def insert_city_information(self, city):
         """Insert or update city information using SQLAlchemy"""
         session = self.Session()
         try:
             # Use INSERT ... ON CONFLICT DO NOTHING pattern
-            stmt = insert(CityModel).values(
-                city_id=city.city_id,
-                city_name=city.city_name,
-                timezone=city.timezone,
-                latitude=city.latitude,
-                longitude=city.longitude,
-                set_point_bikes=city.set_point_bikes,
-                available_bikes=city.available_bikes,
-                last_updated=city.last_updated
-            )
+            # Use dataclass fields directly via __dict__
+            city_dict = {k: v for k, v in city.__dict__.items()}
+            stmt = insert(CityModel).values(**city_dict)
 
             # ON CONFLICT DO NOTHING
             stmt = stmt.on_conflict_do_nothing(index_elements=['city_id'])
@@ -64,23 +55,8 @@ class PostgresClient(AbstractDatabaseClient):
 
         session = self.Session()
         try:
-            # Prepare data for bulk insert
-            bike_data = [
-                {
-                    'bike_number': bike.bike_number,
-                    'latitude': bike.latitude,
-                    'longitude': bike.longitude,
-                    'active': bike.active,
-                    'state': bike.state,
-                    'bike_type': bike.bike_type,
-                    'station_number': bike.station_number,
-                    'station_uid': bike.station_uid,
-                    'last_updated': bike.last_updated,
-                    'city_id': bike.city_id,
-                    'city_name': bike.city_name
-                }
-                for bike in bike_entries
-            ]
+            # Prepare data for bulk insert using dataclass __dict__
+            bike_data = [bike.__dict__ for bike in bike_entries]
 
             # Bulk insert with SQLAlchemy
             session.bulk_insert_mappings(BikeModel, bike_data)
@@ -98,23 +74,8 @@ class PostgresClient(AbstractDatabaseClient):
 
         session = self.Session()
         try:
-            # Prepare data for bulk insert
-            station_data = [
-                {
-                    'uid': station.uid,
-                    'latitude': station.latitude,
-                    'longitude': station.longitude,
-                    'name': station.name,
-                    'spot': station.spot,
-                    'station_number': station.station_number,
-                    'maintenance': station.maintenance,
-                    'terminal_type': station.terminal_type,
-                    'last_updated': station.last_updated,
-                    'city_id': station.city_id,
-                    'city_name': station.city_name
-                }
-                for station in station_entries
-            ]
+            # Prepare data for bulk insert using dataclass __dict__
+            station_data = [station.__dict__ for station in station_entries]
 
             # Bulk insert with SQLAlchemy
             session.bulk_insert_mappings(StationModel, station_data)

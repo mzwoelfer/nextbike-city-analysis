@@ -561,12 +561,15 @@ engine = create_engine(
 Für hohe Performance bei vielen Inserts:
 
 ```python
+# Verwendet dataclass __dict__ für einfaches unpacking
+bike_data = [bike.__dict__ for bike in bike_entries]
 session.bulk_insert_mappings(BikeModel, bike_data)
 ```
 
 **Performance**:
 - ~10x schneller als einzelne Inserts
 - Optimiert für Zeitreihen-Daten (jede Minute neue Bike-Positionen)
+- Vereinfacht durch direktes dataclass unpacking
 
 ### Transaction-Management
 
