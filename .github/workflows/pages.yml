@@ -30,8 +30,8 @@ jobs:
         run: |
           mkdir -p _site/data
 
-          # Copy visualization as the site root
-          cp -r visualization/. _site/
+          # Copy visualization as the site root, excluding its data/ symlink/folder
+          rsync -a --exclude='data' visualization/. _site/
 
           # Copy sample data into data/
           cp sample-data/*.csv.gz _site/data/
