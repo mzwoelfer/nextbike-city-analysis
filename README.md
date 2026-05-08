@@ -1,6 +1,7 @@
 <div align="center" width="100%">
     <h2>Nextbike City Analysis</h2>
     <p>Analyze NextBike trips in your city: collect, process, and visualize bike trips.</p>
+    <p><a href="https://mzwoelfer.github.io/nextbike-city-analysis/">🔴 Live Preview</a></p>
 </div>
 
 ## Overview
