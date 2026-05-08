@@ -1,0 +1,65 @@
+name: Deploy GitHub Pages Preview
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one concurrent deployment; skip in-progress runs but finish the active one
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Pages artifact
+        run: |
+          mkdir -p _site/data
+
+          # Copy visualization as the site root
+          cp -r visualization/. _site/
+
+          # Copy sample data into data/
+          cp sample-data/*.csv.gz _site/data/
+
+          # Generate manifest.json
+          cd _site/data
+          files=$(ls *.csv.gz 2>/dev/null | sort)
+          echo "[" > manifest.json
+          count=$(echo "$files" | wc -l)
+          i=0
+          for f in $files; do
+            i=$((i + 1))
+            if [ $i -lt $count ]; then
+              echo "  \"$f\"," >> manifest.json
+            else
+              echo "  \"$f\"" >> manifest.json
+            fi
+          done
+          echo "]" >> manifest.json
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
