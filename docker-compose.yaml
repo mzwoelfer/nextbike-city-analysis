@@ -1,0 +1,94 @@
+# Usage:
+#   Start:    docker compose up -d
+#   Stop:     docker compose down
+#   Destroy:  docker compose down -v --remove-orphans
+#
+# Copy .env.example to .env and adjust values before starting.
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: nextbike_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./collection/create_bike_and_stations_db.sql:/docker-entrypoint-initdb.d/create_bike_and_stations_db.sql
+    ports:
+      - "${DB_PORT}:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nextbike_network
+
+  collector:
+    build:
+      context: ./collection
+      dockerfile: CONTAINERFILE
+    container_name: nextbike_collector
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "while true; do python query_nextbike.py --save; sleep 60; done"
+    networks:
+      - nextbike_network
+
+  processor:
+    build:
+      context: ./processing
+      dockerfile: CONTAINERFILE
+    container_name: nextbike_processor
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Runs at midnight every day for each city in CITY_IDS
+    command: >
+      sh -c "
+      while true; do
+        sleep \$(( \$(date -d 'tomorrow 00:00' +%s) - \$(date +%s) ));
+        YESTERDAY=\$(date -d 'yesterday' +%Y-%m-%d);
+        for city_id in \$(echo \$CITY_IDS | tr ',' ' '); do
+          python -m nextbike_processing.main --city-id \$city_id --export-folder \${EXPORT_DIR:-/data} --date \$YESTERDAY;
+        done;
+      done"
+    volumes:
+      - trip_data:/data
+    networks:
+      - nextbike_network
+
+  visualization:
+    image: python:3.11-alpine
+    container_name: nextbike_visualization
+    restart: always
+    ports:
+      - "${VISUALIZATION_PORT:-8080}:8080"
+    volumes:
+      - ./visualization:/app:ro
+      - trip_data:/app/data:ro
+    working_dir: /app
+    command: python -m http.server 8080
+    networks:
+      - nextbike_network
+
+volumes:
+  postgres_data:
+  trip_data:
+
+networks:
+  nextbike_network:
+    driver: bridge

@@ -15,61 +15,64 @@
 ```
 
 ## Prerequisites
-- Docker ([Install Docker](https://docs.docker.com/engine/install/))
-- Python 3.12
+- Docker with Compose ([Install Docker](https://docs.docker.com/engine/install/))
 
-## 🚀 Dockerized validation setup (Not for production)
+## 🚀 Install
 
-Validates the project locally.
-To properly setup data collection and processing, refer to the README files in `collection/` and `processing/` directories.
-
-1. Clone repository:
+1. Clone the repository:
    ```sh
    git clone https://github.com/zwoefler/nextbike-city-analysis.git
    cd nextbike-city-analysis
    ```
-2. Setup data collection:
-   ```sh
-   cd collection
-   cp .env.example .env 
-   docker build --file CONTAINERFILE -t nextbike_collector:multiple_cities .
-   docker compose --file docker-compose.yaml up -d
-   cd ..
-   ```
-3. Define city and date:
-   ```sh
-   # Sets todays date
-   date=$(date +%Y-%m-%d)
-   city_id=467
-   ```
-4. Process trips:
-   > ⚠ Wait a few minutes. As trips have to accumulate first. Otherwise you will encounter errors.
 
+2. Create your `.env` file:
    ```sh
-   cd processing
-   cp .env.example .env 
-   docker build --file CONTAINERFILE -t nextbike-processing:latest .
-   docker run --rm --env-file .env \
-      -e DB_HOST=nextbike_postgres \
-      --network collection_nextbike_network \
-      -v "$(pwd)/../data/:/app/data" \
-      nextbike-processing:latest \
-      --city-id $city_id --export-folder /app/data --date $date
-
-   cd ..
+   cp .env.example .env
    ```
-5. Visualize trips:
+   Edit `.env` and set your values:
+
+   | Variable | Description |
+   |---|---|
+   | `DB_USER` | Postgres username |
+   | `DB_PASSWORD` | Postgres password |
+   | `DB_NAME` | Postgres database name |
+   | `DB_HOST` | Postgres host (`nextbike_postgres` when using compose) |
+   | `DB_PORT` | Postgres port (default: `5432`) |
+   | `DB_BIKES_TABLE` | Table name for raw bike data |
+   | `DB_STATIONS_TABLE` | Table name for station data |
+   | `DB_CITIES_TABLE` | Table name for city data |
+   | `CITY_IDS` | Comma-separated Nextbike city IDs to collect, e.g. `467,210` |
+   | `STATIONS_SYNC_INTERVAL_HOURS` | How often to sync stations |
+   | `CITIES_SYNC_INTERVAL_HOURS` | How often to sync city metadata |
+   | `EXPORT_DIR` | Output folder for processed trip files (default: `/data`) |
+   | `VISUALIZATION_PORT` | Port for the web UI (default: `8080`) |
+
+   Find your city ID in [`city_ids_2025_02_15.md`](city_ids_2025_02_15.md).
+
+3. Start everything:
    ```sh
-   cd visualization 
-   python3 -m http.server 8000
+   docker compose up -d
    ```
-6. Open `localhost:8000` in your browser.
 
-## Deploy to Github Pages
-1. Update the data in the `data/` directory.
-2. Run the `update-gh-pages.sh` script
+   This starts four services:
+   - **postgres** - database for raw bike and station data
+   - **collector** - polls the Nextbike API every 60 seconds and writes to postgres
+   - **processor** - runs at midnight, calculates trips for each city in `CITY_IDS` and writes to `/data`
+   - **visualization** - serves the web UI at `http://localhost:${VISUALIZATION_PORT}`
 
-Changes will sync with master. Only the `data/` directory will be pushed to the gh-pages branch. Not the master branch.
+4. Open `http://localhost:8080` (or your configured `VISUALIZATION_PORT`) in your browser.
+
+   > ⚠ Trip data appears the day after collection starts - the processor runs at midnight on yesterday's data. To trigger processing manually, see [docs/manual-processing.md](docs/manual-processing.md).
+
+## Stop / destroy
+
+```sh
+# Stop containers
+docker compose down
+
+# Stop and delete all data (including the database volume)
+docker compose down -v --remove-orphans
+```
 
 ## Credits
 Inspired by [36c3 - Verkehrswende selber hacken](https://www.youtube.com/watch?v=WhgRRpA3b2c) by [ubahnverleih](https://github.com/ubahnverleih) & [robbie5](https://github.com/robbi5).
