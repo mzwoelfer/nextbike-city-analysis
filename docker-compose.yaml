@@ -72,16 +72,24 @@ services:
       - nextbike_network
 
   visualization:
-    image: python:3.11-alpine
+    build:
+      context: ./visualization
+      dockerfile: CONTAINERFILE
     container_name: nextbike_visualization
     restart: always
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
     ports:
       - "${VISUALIZATION_PORT:-8080}:8080"
     volumes:
       - ./visualization:/app:ro
       - trip_data:/app/data
-    working_dir: /app
-    command: python -m http.server 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn api:app --host 0.0.0.0 --port 8080
     networks:
       - nextbike_network
 

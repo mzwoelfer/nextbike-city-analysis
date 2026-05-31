@@ -13,6 +13,7 @@ const state = {
     currentTimeMinutes: 0,
     date: "",
     availableFiles: {},
+    useApi: false,
 
     nextDay() {
         const currentDate = new Date(this.date);

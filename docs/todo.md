@@ -10,7 +10,7 @@ bike_number,start_time,end_time,duration,segments,...
 "42","2026-05-30T08:14:00","2026-05-30T08:27:00",780.0,"[[52.500,13.400,""2026-05-30T08:14:00""],[52.501,13.401,""2026-05-30T08:18:30""]]",...
 ```
 
-This is sometimes called **M-values** or **4D coordinates** — extending the standard `[lon, lat]` GeoJSON position with a measure value (here: time). It is not part of the GeoJSON standard [1] and requires a hand-rolled CSV parser on the frontend.
+This is sometimes called **M-values** or **4D coordinates** - extending the standard `[lon, lat]` GeoJSON position with a measure value (here: time). It is not part of the GeoJSON standard [1] and requires a hand-rolled CSV parser on the frontend.
 
 ### Target approach
 Switch the processor output to **GeoJSON** (`{city_id}_trips_{date}.geojson.gz`). Each trip becomes a `Feature` with a `LineString` geometry and a parallel `timestamps` array in `properties`:
@@ -46,7 +46,7 @@ Switch the processor output to **GeoJSON** (`{city_id}_trips_{date}.geojson.gz`)
 }
 ```
 
-Note: GeoJSON coordinates are `[longitude, latitude]` (x, y order) — the reverse of Leaflet's `[lat, lon]`. Account for this when reading on the frontend.
+Note: GeoJSON coordinates are `[longitude, latitude]` (x, y order) - the reverse of Leaflet's `[lat, lon]`. Account for this when reading on the frontend.
 
 Leaflet reads `FeatureCollection` natively via `L.geoJSON()`. The custom CSV parser in `visualization/scripts/data.js` can be removed.
 
@@ -55,7 +55,7 @@ Leaflet reads `FeatureCollection` natively via `L.geoJSON()`. The custom CSV par
 ## 2. Rework data storage: trips and routes tables in PostgreSQL
 
 ### Problem
-- Trips and route geometry are only stored as files on a Docker volume — no queryability, no deduplication.
+- Trips and route geometry are only stored as files on a Docker volume - no queryability, no deduplication.
 - The OSM route between two points (A → B) is recalculated from scratch on every run, even if that same origin/destination pair was processed before.
 - Running the processor twice for the same date overwrites the output file; there is no idempotency.
 
@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS public.trips (
 
 ### Processing logic change
 1. For each unique origin/destination pair, check `routes` first.
-2. If found, reuse it — skip the OSMnx call.
+2. If found, reuse it - skip the OSMnx call.
 3. If not found, calculate and insert with `INSERT ... ON CONFLICT DO NOTHING`.
-4. Insert the trip with `INSERT ... ON CONFLICT DO NOTHING` — running the processor twice for the same date is safe.
+4. Insert the trip with `INSERT ... ON CONFLICT DO NOTHING` - running the processor twice for the same date is safe.
 
 This means OSMnx only runs for routes never seen before. Over time the route cache covers most of the city's common paths and processing becomes significantly faster.
 
@@ -117,7 +117,7 @@ POST /api/process?city_id=467&date=2026-05-30   ← manual trigger
 
 The frontend fetches trips as GeoJSON directly from the API. No manifest, no volume, no manual step after processing.
 
-FastAPI runs inside the existing `visualization` container — swap `python:3.11-alpine` for the processor image or a dedicated lightweight image with FastAPI + psycopg installed.
+FastAPI runs inside the existing `visualization` container - swap `python:3.11-alpine` for the processor image or a dedicated lightweight image with FastAPI + psycopg installed.
 
 ---
 
