@@ -79,7 +79,7 @@ services:
       - "${VISUALIZATION_PORT:-8080}:8080"
     volumes:
       - ./visualization:/app:ro
-      - trip_data:/app/data:ro
+      - trip_data:/app/data
     working_dir: /app
     command: python -m http.server 8080
     networks:

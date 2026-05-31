@@ -42,9 +42,8 @@ export function drawTrips() {
         const tripEnd = new Date(trip.end_time);
 
         if (currentTime >= tripStart && currentTime <= tripEnd) {
-            const pathCoordinates = trip.segments
-                .filter(([_, __, timestamp]) => new Date(timestamp) <= currentTime)
-                .map(([lat, lon]) => [lat, lon]);
+            const segmentCount = trip.timestamps.findLastIndex(ts => new Date(ts) <= currentTime) + 1;
+            const pathCoordinates = trip.coordinates.slice(0, Math.max(segmentCount, 0)).map(([lon, lat]) => [lat, lon]);
 
             if (pathCoordinates.length > 1) {
                 // Remove existing previous routes
@@ -74,7 +73,7 @@ export function highlightTripOnMap(index) {
     Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
     state.activeRoutes = {};
 
-    const pathCoordinates = trip.segments.map(([lat, lon]) => [lat, lon]);
+    const pathCoordinates = trip.coordinates.map(([lon, lat]) => [lat, lon]);
     const selectedRoute = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
 
     if (pathCoordinates.length > 0) {

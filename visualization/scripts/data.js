@@ -147,31 +147,29 @@ export const loadFirstAvailableData = async () => {
  */
 export const loadTripsData = async () => {
     try {
-        const filePath = `data/${state.city_id}_trips_${state.date}.csv.gz`;
-        const csvData = await fetchAndParseGzipCSV(filePath);
-        console.log("LOADTRIPSDATA", csvData)
+        const filePath = `data/${state.city_id}_trips_${state.date}.geojson.gz`;
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error(`Failed to load ${filePath}`);
 
-        state.tripsData = csvData.map(row => ({
-            bike_number: row.bike_number,
-            start_latitude: Number(row.start_latitude),
-            start_longitude: Number(row.start_longitude),
-            start_time: row.start_time,
-            end_latitude: Number(row.end_latitude),
-            end_longitude: Number(row.end_longitude),
-            end_time: row.end_time,
-            duration: Number(row.duration),
-            date: row.date,
-            distance: Number(row.distance),
-            segments: JSON.parse(row.segments.replace(/'/g, '"')), // Convert stringified array to object
+        const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
+        const text = await new Response(decompressedStream).text();
+        const geojson = JSON.parse(text);
+
+        state.tripsData = geojson.features.map(feature => ({
+            bike_number: feature.properties.bike_number,
+            start_time: feature.properties.start_time,
+            end_time: feature.properties.end_time,
+            duration: feature.properties.duration,
+            distance: feature.properties.distance,
+            coordinates: feature.geometry.coordinates,  // [[lon, lat], ...]
+            timestamps: feature.properties.timestamps,
         }));
-        
-        // Centers on these city coordinates....
-        // Get cities lat and long from somewhere else.
-        state.city_lat = state.tripsData[0].start_latitude;
-        state.city_lng = state.tripsData[0].start_longitude;
+
+        state.city_lat = state.tripsData[0].coordinates[0][1];
+        state.city_lng = state.tripsData[0].coordinates[0][0];
 
         console.log('Trips data loaded:', state.tripsData);
-        return
+        return;
     } catch (err) {
         console.error('Error loading trip data:', err);
     }
@@ -215,10 +213,10 @@ export const loadStationData = async () => {
 export const checkTripsDataExists = async (date) => {
     /**
      * True if file exists.
-     * Check if the csv.gz file for the date exists.
+     * Check if the geojson.gz file for the date exists.
      */
     try {
-        const response = await fetch(`data/${state.city_id}_trips_${date}.csv.gz`, { method: 'HEAD' });
+        const response = await fetch(`data/${state.city_id}_trips_${date}.geojson.gz`, { method: 'HEAD' });
         return response.ok;
     } catch (err) {
         console.error('Error checking trip data file:', err);

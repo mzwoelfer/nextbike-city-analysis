@@ -1,5 +1,5 @@
 #!/bin/bash
-cd data
+cd /app/data
 echo "[" > manifest.json
 for file in *.csv.gz; do
     if [ "$file" != "manifest.json" ]; then

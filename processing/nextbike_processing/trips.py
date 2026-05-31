@@ -3,7 +3,7 @@ import pandas as pd
 import osmnx as ox
 import networkx as nx
 from nextbike_processing.database import get_connection
-from nextbike_processing.utils import save_gzipped_csv, save_json, save_csv
+from nextbike_processing.utils import save_gzipped_geojson
 from nextbike_processing.cities import get_city_coordinates_from_database
 from geopy.distance import geodesic
 
@@ -70,27 +70,29 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     return shortest_path_length, path_segments
 
 
-def add_timestamps_to_segments(trips):
+def build_coordinates_and_timestamps(trips):
     """
-    Adds timestamps to each segment in the DataFrame's segments column.
-    Uses existing start_time, end_time, and duration.
+    Converts segments into GeoJSON-ordered coordinates [[lon, lat], ...]
+    and a parallel timestamps array [iso_str, ...].
     """
 
-    def add_timestamps(row):
+    def process_row(row):
         start_time = pd.to_datetime(row["start_time"])
         duration = row["duration"]
+        segments = row["segments"]
+        num_segments = len(segments)
+        time_increment = duration / max(num_segments - 1, 1)
 
-        num_segments = len(row["segments"])
-        time_increment = duration / max(num_segments - 1, 1)  # Avoid division by zero
+        coordinates = [[lon, lat] for lat, lon in segments]
+        timestamps = [
+            (start_time + pd.to_timedelta(i * time_increment, unit="s")).isoformat()
+            for i in range(num_segments)
+        ]
+        return pd.Series({"coordinates": coordinates, "timestamps": timestamps})
 
-        segments_with_timestamps = []
-        for i, segment in enumerate(row["segments"]):
-            timestamp = start_time + pd.to_timedelta(i * time_increment, unit="s")
-            segments_with_timestamps.append(segment + [timestamp.isoformat()])
-
-        return segments_with_timestamps
-
-    trips["segments"] = trips.apply(add_timestamps, axis=1)
+    result = trips.apply(process_row, axis=1)
+    trips["coordinates"] = result["coordinates"]
+    trips["timestamps"] = result["timestamps"]
     return trips
 
 
@@ -133,7 +135,6 @@ def process_and_save_trips(city_id, date, folder):
 
     G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
 
-    trips["date"] = trips["start_time"].dt.date.astype(str)
     trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["duration"] = trips["duration"].dt.total_seconds()
@@ -155,6 +156,26 @@ def process_and_save_trips(city_id, date, folder):
 
     trips = trips.merge(calculated_routes, on=["start_latitude", "start_longitude", "end_latitude", "end_longitude"], how="left")
 
-    trips = add_timestamps_to_segments(trips)
+    trips = build_coordinates_and_timestamps(trips)
 
-    save_gzipped_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), trips)
+    features = [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": row["coordinates"],
+            },
+            "properties": {
+                "bike_number": row["bike_number"],
+                "start_time": row["start_time"],
+                "end_time": row["end_time"],
+                "duration": row["duration"],
+                "distance": row["distance"],
+                "timestamps": row["timestamps"],
+            },
+        }
+        for _, row in trips.iterrows()
+    ]
+
+    geojson = {"type": "FeatureCollection", "features": features}
+    save_gzipped_geojson(os.path.join(folder, f"{city_id}_trips_{date}.geojson.gz"), geojson)
