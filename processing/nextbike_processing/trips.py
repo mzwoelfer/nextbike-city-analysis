@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import osmnx as ox
 import networkx as nx
-from nextbike_processing.database import get_connection
+from nextbike_processing.database import get_connection, fetch_cached_routes, insert_routes, insert_trips
 from nextbike_processing.utils import save_gzipped_geojson
 from nextbike_processing.cities import get_city_coordinates_from_database
 from geopy.distance import geodesic
@@ -131,32 +131,66 @@ def remove_gps_errors(trips, meter_threshold=60):
 
 def process_and_save_trips(city_id, date, folder):
     trips = fetch_trip_data(city_id, date)
-    city_lat, city_lng = get_city_coordinates_from_database(city_id)
-
-    G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
-
     trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["duration"] = trips["duration"].dt.total_seconds()
 
     trips = remove_gps_errors(trips)
 
-    calculated_routes = trips.groupby(["start_latitude", "start_longitude", "end_latitude", "end_longitude"]).apply(
-        lambda group: pd.Series(
-            calculate_shortest_path(
-                G,
-                group.name[0],
-                group.name[1],
-                group.name[2],
-                group.name[3],
-            ),
-            index=["distance", "segments"]
-        )
-    ).reset_index()
+    unique_pairs = trips[["start_latitude", "start_longitude", "end_latitude", "end_longitude"]].drop_duplicates()
 
-    trips = trips.merge(calculated_routes, on=["start_latitude", "start_longitude", "end_latitude", "end_longitude"], how="left")
+    with get_connection() as conn:
+        cached_routes = fetch_cached_routes(unique_pairs, conn)
+
+    if cached_routes.empty:
+        uncached_pairs = unique_pairs
+    else:
+        uncached_pairs = unique_pairs.merge(
+            cached_routes[["start_latitude", "start_longitude", "end_latitude", "end_longitude"]],
+            on=["start_latitude", "start_longitude", "end_latitude", "end_longitude"],
+            how="left",
+            indicator=True,
+        ).query('_merge == "left_only"').drop(columns=["_merge"])
+
+    new_routes = pd.DataFrame()
+    if not uncached_pairs.empty:
+        city_lat, city_lng = get_city_coordinates_from_database(city_id)
+        G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
+
+        route_results = []
+        for _, row in uncached_pairs.iterrows():
+            distance, segments = calculate_shortest_path(
+                G, row["start_latitude"], row["start_longitude"],
+                row["end_latitude"], row["end_longitude"]
+            )
+            route_results.append({
+                "start_latitude": row["start_latitude"],
+                "start_longitude": row["start_longitude"],
+                "end_latitude": row["end_latitude"],
+                "end_longitude": row["end_longitude"],
+                "distance": distance,
+                "segments": segments,
+            })
+        new_routes = pd.DataFrame(route_results)
+
+        with get_connection() as conn:
+            insert_routes(new_routes, conn)
+
+    all_routes = pd.concat(
+        [df for df in [cached_routes, new_routes] if not df.empty],
+        ignore_index=True,
+    )
+
+    trips = trips.merge(
+        all_routes[["start_latitude", "start_longitude", "end_latitude", "end_longitude", "distance", "segments"]],
+        on=["start_latitude", "start_longitude", "end_latitude", "end_longitude"],
+        how="left",
+    )
 
     trips = build_coordinates_and_timestamps(trips)
+
+    with get_connection() as conn:
+        insert_trips(trips, city_id, conn)
 
     features = [
         {
