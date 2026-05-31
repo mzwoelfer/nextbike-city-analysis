@@ -129,7 +129,7 @@ def remove_gps_errors(trips, meter_threshold=60):
     return filtered_trips
 
 
-def process_and_save_trips(city_id, date, folder):
+def process_and_save_trips(city_id, date, folder, export_files=False):
     trips = fetch_trip_data(city_id, date)
     trips["start_time"] = trips["start_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
     trips["end_time"] = trips["end_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
@@ -212,4 +212,5 @@ def process_and_save_trips(city_id, date, folder):
     ]
 
     geojson = {"type": "FeatureCollection", "features": features}
-    save_gzipped_geojson(os.path.join(folder, f"{city_id}_trips_{date}.geojson.gz"), geojson)
+    if export_files:
+        save_gzipped_geojson(os.path.join(folder, f"{city_id}_trips_{date}.geojson.gz"), geojson)

@@ -55,14 +55,14 @@
    ```
 
    This starts four services:
-   - **postgres** - database for raw bike and station data
+   - **postgres** - database for raw bike, station, route, and trip data
    - **collector** - polls the Nextbike API every 60 seconds and writes to postgres
-   - **processor** - runs at midnight, calculates trips for each city in `CITY_IDS` and writes to `/data`
-   - **visualization** - serves the web UI at `http://localhost:${VISUALIZATION_PORT}`
+   - **processor** - runs at midnight; calculates trips for each city in `CITY_IDS`, caches OSM routes in the database, and writes `.geojson.gz` files to the `trip_data` volume
+   - **visualization** - FastAPI app at `http://localhost:${VISUALIZATION_PORT}` that serves trip and station data live from the database
 
 4. Open `http://localhost:8080` (or your configured `VISUALIZATION_PORT`) in your browser.
 
-   > ⚠ Trip data appears the day after collection starts - the processor runs at midnight on yesterday's data. To trigger processing manually, see [docs/manual-processing.md](docs/manual-processing.md).
+   > ⚠ To trigger `processing` manually, see [docs/manual-processing.md](docs/manual-processing.md).
 
 ## Stop / destroy
 

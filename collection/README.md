@@ -1,80 +1,69 @@
 # Nextbike Data Collection
 
-Collect and store data from the Nextbike API every minute using a PostgreSQL database and a Python script.
+Collects bike and station data from the Nextbike API every minute. Stores it in PostgreSQL.
 
-## 🚀 Quick Demo Installation (For Validation Only)
+- Runs as part of the root `docker compose` stack. 
+- Standalone `docker-compose.yaml` for isolated testing.
 
+## Database schema
+
+The collection service writes to three tables:
+
+| Table | Description |
+|---|---|
+| `public.cities` | City metadata (id, name, country) |
+| `public.bikes` | One row per bike per poll |
+| `public.stations` | One row per station per poll |
+
+Two additional tables are created by the same init script and used by the processor:
+
+| Table | Description |
+|---|---|
+| `public.routes` | Cached OSM routes between station pairs |
+| `public.trips` | Extracted trips with route references |
+
+The schema is initialised automatically on a fresh container via `create_bike_and_stations_db.sql`.
+
+To apply the schema to an already-running database:
 ```sh
-# Clone repo
-git clone https://github.com/zwoefler/nextbike-city-analysis.git
-cd nextbike-city-analysis/data_collection
+docker exec -i nextbike_postgres psql -U $DB_USER -d $DB_NAME < collection/create_bike_and_stations_db.sql
+```
 
-# Copy example environment file
-cp .env.example .env
+## Production setup
 
-# Build and run the collection service
-docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
+The collector is started automatically as part of the root stack:
+```sh
+# From the project root
+docker compose up -d
+```
+
+See the root [README](../README.md) for the full `.env` variable reference.
+
+## Standalone / demo setup
+
+For testing the collector in isolation:
+```sh
+cd collection/
+cp .env.example .env   # adjust values
 docker compose -f docker-compose.yaml up -d
 ```
 
-## 📌 Production Setup
-
-### 1. Install Dependencies
-Ensure your system meets the following requirements:
-- **IPv4 support** (GitHub & Nextbike do not support IPv6)
-- **Docker & Docker Compose** installed
-
-
-### 2. Set your city id
-1. Find your city ID in [this document](../city_ids_2025_02_15.md). For Alternatives see end of [document]()
-
-2. Copy and update environment variables:
-   ```SHELL
-   cp .env.example .env
-   ```
-3. Update the `.env` file with your city id:
-   ```ini
-   DB_TYPE=postgres
-   DB_HOST=postgres
-   DB_PORT=5432
-   DB_NAME=nextbike_data
-   DB_USER=bike_admin
-   DB_PASSWORD=mybike
-   CITY_IDS=467
-   
-   # Custom table names
-   DB_CITIES_TABLE=public.cities
-   DB_BIKES_TABLE=public.bikes
-   DB_STATIONS_TABLE=public.stations
-   ```
-
-### 3. Build and start the collection service
+## Updating the collector image
 ```sh
-docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
-docker compose -f docker-compose.yaml up -d
+docker compose up -d --no-deps --build collector
 ```
 
-## 🔄 Updating the Collection Service
-```sh
-# Rebuild the image
-docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
+## Finding your city ID
 
-# Restart the service without restarting dependencies
-docker compose up -d --no-deps --build data_collector
-```
-
-## 📌 Generate City ID List
-To find your city's Nextbike ID. 
-Requires:
-- jq
-- curl
-
+Requires `curl` and `jq`:
 ```sh
 echo '|Country Code|City Name|Bikeshare Name|City ID|' > city_ids_$(date +%Y_%m_%d).md && \
 echo '|----|----|----|---|' >> city_ids_$(date +%Y_%m_%d).md && \
 curl -s https://api.nextbike.net/maps/nextbike-live.json | \
-jq -r '.countries[] | select(.cities[0].uid) | "| \(.country) | \(.cities[0].name) | \(.name) | \(.cities[0].uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).csv
+jq -r '.countries[] | select(.cities[0].uid) | "| \(.country) | \(.cities[0].name) | \(.name) | \(.cities[0].uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).md
 ```
 
-## 📚 Sources
+A pre-generated list is available at [city_ids_2025_02_15.md](../city_ids_2025_02_15.md).
+
+## Sources
 - [Nextbike API City IDs](https://github.com/ubahnverleih/WoBike/blob/master/Nextbike.md)

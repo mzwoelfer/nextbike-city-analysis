@@ -1,32 +1,60 @@
-# Visualize Nextbike data
+# Nextbike Visualization
 
-🚧 WORK IN PROGRESS
+Interactive map. VIzualizes trips for Nextbike data. 
+- FastAPI. port 8080.
 
-## Prerequisites
+## Architecture
 
-1. Run http-server locally:
-```SHELL
-cd visualization/
+```
+Browser → FastAPI (api.py) → PostgreSQL
+                ↓
+         /app (static files: index.html, CSS, JS)
+         /app/data (trip_data volume: .geojson.gz fallback files)
 ```
 
-2. Populated `data/` folder
-Each JSON-file contains trips per day.
-See the format at the end of this README.
+The frontend detects if the PAI is available:
 
-# Start http server
-```SHELL
+- **API mode** (production): queries trip and station data from database via `/api/*` endpoints.
+- **Static mode** (GitHub Pages / local dev): loads pre-generated `.geojson.gz` and `.csv.gz` data files in the `data/` directory.
+
+## API endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/available` | List of `{city_id, dates}` with processed data |
+| `GET /api/trips?city_id=X&date=Y` | GeoJSON FeatureCollection of trips for a given city and date |
+| `GET /api/stations?city_id=X&date=Y` | Station bike-count timeline (one row per station per change) |
+
+## Production
+
+Starts automatically with the root compose stack:
+```sh
+docker compose up -d
+```
+
+Visit `http://localhost:8080` (or the port set by `VISUALIZATION_PORT` in `.env`).
+
+## Updating the visualization container
+```sh
+docker compose up -d --no-deps --build visualization
+```
+
+## Local development (static mode, no Docker)
+
+```sh
+cd visualization/
 python3 -m http.server 8000
 ```
 
-3. Visit `localhost:8000` in your browser
+Open `http://localhost:8000`. 
+Trip data must be present in `visualization/data/` as `.geojson.gz` files. 
+Generate a manifest so the file listing works without directory listing support:
+```sh
+bash create_manifest.sh
+```
 
 ## Deployment on GitHub Pages
-GitHub Pages does not support directory listing, but pre-generating a manifest reference to the files in the `visualization/data` directory.
 
-Use the `create_manifest.json` file to create a `manifest.json` file inside the `visualization/data` directory, listing all data JSON files.
-This allows your client-side code to work seamlessly on GitHub Pages.
+GitHub Pages does not support directory listing. Therefore `manifest.json` in `visualization/data/` lists available data files for the frontend to discover.
 
-This step is automated in the [workflow to publish to Github Pages](../.github/workflows/static.yml)
-
-## Credits
-Incorporation features and concepts from [Bikesharing Vis](https://github.com/technologiestiftung/bikesharing-vis) by [Technologiestiftung Berlin](https://github.com/technologiestiftung)
+The manifest is generated automatically in the GitHub Actions workflow that publishes to GitHub Pages.
