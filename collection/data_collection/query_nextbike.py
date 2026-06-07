@@ -199,27 +199,6 @@ class NextbikeAPI:
             places = []
         return places
 
-    @staticmethod
-    def get_city_info(data: dict) -> dict:
-        try:
-            city = data.get("countries", [{}])[0]
-            cities = city.get("cities", [{}])[0]
-            city_info = {
-                "city_id": cities.get("uid", 0),
-                "city_name": cities.get.get("name", "Unknown"),
-                "timezone": city.get("timezone", "Unknown"),
-                "latitude": city.get("lat", 0),
-                "longitude": city.get("lng", 0),
-                "set_point_bikes": city.get("set_point_bikes", 0),
-                "available_bikes": city.get("available_bikes", 0),
-                "last_updated": datetime.datetime.now(),
-            }
-        except (IndexError, KeyError):
-            city_info = {}
-
-        return city_info
-
-
 # ---------- Console output ----------
 class ConsolePrinter:
     """Print nextbike info to console"""

@@ -5,7 +5,7 @@ from nextbike_processing.utils import save_csv, save_gzipped_csv, save_json
 
 
 def fetch_station_data(city_id, date):
-    query = f"""
+    query = """
     WITH station_data AS (
             SELECT
                 id,
@@ -24,8 +24,8 @@ def fetch_station_data(city_id, date):
                     ORDER BY last_updated DESC
                 ) AS rn
             FROM public.stations
-            WHERE city_id = {city_id}
-            AND DATE(last_updated) = '{date}'
+            WHERE city_id = %s
+            AND DATE(last_updated) = %s
         ),
         filtered_stations AS (
             SELECT
@@ -52,8 +52,8 @@ def fetch_station_data(city_id, date):
             FROM
                 public.bikes b
             WHERE
-                city_id = {city_id}
-                AND DATE(b.last_updated) = '{date}'
+                city_id = %s
+                AND DATE(b.last_updated) = %s
             GROUP BY
                 DATE_TRUNC('minute', b.last_updated), b.station_number
         ),
@@ -61,8 +61,8 @@ def fetch_station_data(city_id, date):
             SELECT DISTINCT DATE_TRUNC('minute', b.last_updated) AS minute
             FROM public.bikes b
             WHERE
-                city_id = {city_id}
-                AND DATE(b.last_updated) = '{date}'
+                city_id = %s
+                AND DATE(b.last_updated) = %s
         ),
         station_minute_combinations AS (
             SELECT
@@ -144,11 +144,12 @@ def fetch_station_data(city_id, date):
 
     """
     with get_connection() as conn:
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(city_id, date, city_id, date, city_id, date))
     df["minute"] = pd.to_datetime(df["minute"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
     return df
 
 
-def process_and_save_stations(city_id, date, folder):
+def process_and_save_stations(city_id, date, folder, export_files=False):
     df = fetch_station_data(city_id, date)
-    save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv.gz"), df)
+    if export_files:
+        save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv.gz"), df)

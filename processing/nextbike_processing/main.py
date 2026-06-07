@@ -12,7 +12,10 @@ def main():
         "--city-id", type=int, required=True, help="City ID to process."
     )
     parser.add_argument(
-        "--export-folder", type=str, required=True, help="Folder to save data."
+        "--export-folder", type=str, default=None, help="Folder to save static files. Required when --export-files is set."
+    )
+    parser.add_argument(
+        "--export-files", action="store_true", help="Also write .geojson.gz and .csv.gz files to --export-folder."
     )
     parser.add_argument(
         "--date",
@@ -22,7 +25,11 @@ def main():
     )
     args = parser.parse_args()
 
-    ensure_directory_exists(args.export_folder)
+    if args.export_files and not args.export_folder:
+        parser.error("--export-files requires --export-folder to be set.")
+
+    if args.export_folder:
+        ensure_directory_exists(args.export_folder)
 
     date = args.date
     if (
@@ -31,8 +38,8 @@ def main():
         or len(args.date) != 10
     ):
         raise ValueError("Invalid date format. Please use YYYY-MM-DD format.")
-    process_and_save_stations(args.city_id, str(date), args.export_folder)
-    process_and_save_trips(args.city_id, str(date), args.export_folder)
+    process_and_save_stations(args.city_id, str(date), args.export_folder, export_files=args.export_files)
+    process_and_save_trips(args.city_id, str(date), args.export_folder, export_files=args.export_files)
 
 
 if __name__ == "__main__":
