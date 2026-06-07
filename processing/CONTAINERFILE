@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PYTHONPATH="/app"
 
-ENTRYPOINT ["python", "-m", "nextbike_processing.main"]
+CMD ["python", "-m", "nextbike_processing.main"]
