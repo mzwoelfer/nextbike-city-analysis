@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 import networkx as nx
 import pandas as pd
@@ -6,6 +7,7 @@ import pandas as pd
 from nextbike_processing.trips import (
     build_coordinates_and_timestamps,
     calculate_shortest_path,
+    process_and_save_trips,
     remove_gps_errors,
 )
 
@@ -154,6 +156,76 @@ class TestCalculateShortestPath(unittest.TestCase):
         self.assertEqual(distance, 0)
         self.assertEqual(len(segments), 1)
         self.assertEqual(segments[0], [52.0, 13.0])
+
+
+class TestProcessAndSaveTrips(unittest.TestCase):
+    """Tests for the route-concat guard inside process_and_save_trips."""
+
+    def _all_filtered_trips_df(self):
+        """One short trip at the same location — remove_gps_errors will drop it, leaving empty unique_pairs."""
+        return pd.DataFrame([{
+            "bike_number": "B1",
+            "start_latitude": 52.5,
+            "start_longitude": 13.4,
+            "start_time": pd.Timestamp("2026-01-01T08:00:00"),
+            "end_latitude": 52.5,
+            "end_longitude": 13.4,
+            "end_time": pd.Timestamp("2026-01-01T08:00:30"),
+            "duration": pd.Timedelta("30s"),
+        }])
+
+    def _empty_routes_df(self):
+        return pd.DataFrame(
+            columns=["start_latitude", "start_longitude", "end_latitude", "end_longitude", "distance", "segments"]
+        )
+
+    @patch("nextbike_processing.trips.insert_trips")
+    @patch("nextbike_processing.trips.fetch_cached_routes")
+    @patch("nextbike_processing.trips.get_connection")
+    @patch("nextbike_processing.trips.fetch_trip_data")
+    def test_returns_early_when_both_route_dataframes_are_empty(
+        self, mock_fetch, mock_get_conn, mock_cached_routes, mock_insert
+    ):
+        """No trips survive filtering --> both route DataFrames empty --> insert_trips never called."""
+        mock_fetch.return_value = self._all_filtered_trips_df()
+        mock_get_conn.return_value = MagicMock()
+        mock_cached_routes.return_value = self._empty_routes_df()
+
+        process_and_save_trips(1, "2026-01-01", "/tmp")
+
+        mock_insert.assert_not_called()
+
+    @patch("nextbike_processing.trips.insert_trips")
+    @patch("nextbike_processing.trips.fetch_cached_routes")
+    @patch("nextbike_processing.trips.get_connection")
+    @patch("nextbike_processing.trips.fetch_trip_data")
+    def test_concat_succeeds_and_insert_called_when_cached_routes_cover_all_pairs(
+        self, mock_fetch, mock_get_conn, mock_cached_routes, mock_insert
+    ):
+        """Cached routes cover all O/D pairs --> concat runs without error --> insert_trips called once."""
+        mock_fetch.return_value = pd.DataFrame([{
+            "bike_number": "B1",
+            "start_latitude": 52.5,
+            "start_longitude": 13.4,
+            "start_time": pd.Timestamp("2026-01-01T08:00:00"),
+            "end_latitude": 52.51,
+            "end_longitude": 13.41,
+            "end_time": pd.Timestamp("2026-01-01T08:05:00"),
+            "duration": pd.Timedelta("5min"),
+        }])
+        mock_get_conn.return_value = MagicMock()
+        mock_cached_routes.return_value = pd.DataFrame([{
+            "start_latitude": 52.5,
+            "start_longitude": 13.4,
+            "end_latitude": 52.51,
+            "end_longitude": 13.41,
+            "distance": 1200.0,
+            "segments": [[52.5, 13.4], [52.51, 13.41]],
+        }])
+
+        process_and_save_trips(1, "2026-01-01", "/tmp")
+
+        mock_insert.assert_called_once()
 
 
 if __name__ == "__main__":

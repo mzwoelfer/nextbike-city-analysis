@@ -176,10 +176,10 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         with get_connection() as conn:
             insert_routes(new_routes, conn)
 
-    all_routes = pd.concat(
-        [df for df in [cached_routes, new_routes] if not df.empty],
-        ignore_index=True,
-    )
+    non_empty = [df for df in [cached_routes, new_routes] if not df.empty]
+    if not non_empty:
+        return
+    all_routes = pd.concat(non_empty, ignore_index=True)
 
     trips = trips.merge(
         all_routes[["start_latitude", "start_longitude", "end_latitude", "end_longitude", "distance", "segments"]],
