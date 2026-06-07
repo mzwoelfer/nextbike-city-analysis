@@ -77,3 +77,13 @@ docker run --rm \
 ```sh
 docker compose up -d --no-deps --build processor
 ```
+
+## Running tests
+
+```sh
+cd processing/
+python3 -m venv Env
+source Env/bin/activate
+pip install -r requirements.txt pytest
+pytest tests/ -v
+```

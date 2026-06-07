@@ -9,12 +9,12 @@ from geopy.distance import geodesic
 
 
 def fetch_trip_data(city_id, date):
-    query = f"""
+    query = """
         WITH ordered_bikes AS (
             SELECT *
             FROM public.bikes
-            WHERE city_id = {city_id}
-            AND DATE(last_updated) = '{date}'
+            WHERE city_id = %s
+            AND DATE(last_updated) = %s
             ORDER BY bike_number, last_updated
         ),
         bike_movements AS (
@@ -40,7 +40,7 @@ def fetch_trip_data(city_id, date):
         ORDER BY start_time, bike_number;
     """
     with get_connection() as conn:
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(city_id, date))
     df["start_time"] = pd.to_datetime(df["start_time"])
     df["end_time"] = pd.to_datetime(df["end_time"])
     df["duration"] = df["end_time"] - df["start_time"]
