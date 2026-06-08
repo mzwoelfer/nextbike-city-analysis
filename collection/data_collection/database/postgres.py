@@ -1,3 +1,5 @@
+import datetime
+
 import psycopg
 from database.base import AbstractDatabaseClient, register_backend
 
@@ -83,3 +85,24 @@ class PostgresClient(AbstractDatabaseClient):
         """
 
         return station_sql
+
+    # ----- SYNC TIMESTAMPS -----
+    def get_last_station_sync(self, city_id: int) -> datetime.datetime | None:
+        with psycopg.connect(self.connection_string) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT MAX(last_updated) FROM {self.config.db_stations_table} WHERE city_id = %s",
+                    (city_id,),
+                )
+                result = cursor.fetchone()
+                return result[0] if result and result[0] else None
+
+    def get_last_city_sync(self, city_id: int) -> datetime.datetime | None:
+        with psycopg.connect(self.connection_string) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT last_updated FROM {self.config.db_cities_table} WHERE city_id = %s",
+                    (city_id,),
+                )
+                result = cursor.fetchone()
+                return result[0] if result else None
