@@ -252,6 +252,9 @@ class AppConfig:
         self.db_bikes_table = os.getenv("DB_BIKES_TABLE")
         self.db_stations_table = os.getenv("DB_STATIONS_TABLE")
 
+        self.stations_sync_interval_hours = int(os.getenv("STATIONS_SYNC_INTERVAL_HOURS", "24"))
+        self.cities_sync_interval_hours = int(os.getenv("CITIES_SYNC_INTERVAL_HOURS", "720"))
+
         env_city_ids = os.getenv("CITY_IDS", None)
         self.city_ids = self._parse_city_ids(cli_city_ids, env_city_ids)
 
@@ -293,9 +296,17 @@ def main():
         city, bike_entries, station_entries = process_nextbike_data(api, last_updated)
 
         if cli.save:
-            db.insert_city_information(city)
             db.insert_bike_entries(bike_entries)
-            db.insert_station_entries(station_entries)
+
+            last_station_sync = db.get_last_station_sync(city_id)
+            if last_station_sync is None or (last_updated - last_station_sync).total_seconds() >= config.stations_sync_interval_hours * 3600:
+                db.insert_station_entries(station_entries)
+                print(f"Station data synced for city {city_id}")
+
+            last_city_sync = db.get_last_city_sync(city_id)
+            if last_city_sync is None or (last_updated - last_city_sync).total_seconds() >= config.cities_sync_interval_hours * 3600:
+                db.insert_city_information(city)
+                print(f"City info synced for city {city_id}")
 
 
 if __name__ == "__main__":

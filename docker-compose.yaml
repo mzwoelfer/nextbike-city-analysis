@@ -60,10 +60,10 @@ services:
     command: >
       sh -c "
       while true; do
-        sleep \$(( \$(date -d 'tomorrow 00:00' +%s) - \$(date +%s) ));
-        YESTERDAY=\$(date -d 'yesterday' +%Y-%m-%d);
-        for city_id in \$(echo \$CITY_IDS | tr ',' ' '); do
-          python -m nextbike_processing.main --city-id \$city_id --date \$YESTERDAY;
+        sleep $$(( $$(date -d 'tomorrow 00:00' +%s) - $$(date +%s) ));
+        YESTERDAY=$$(date -d 'yesterday' +%Y-%m-%d);
+        for city_id in $$(echo $$CITY_IDS | tr ',' ' '); do
+          python -m nextbike_processing.main --city-id $$city_id --date $$YESTERDAY;
         done;
       done"
     volumes:
