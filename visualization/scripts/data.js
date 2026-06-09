@@ -52,8 +52,9 @@ export const loadAvailableFiles = async () => {
         const response = await fetch('/api/available');
         if (response.ok) {
             const data = await response.json();
-            data.forEach(({ city_id, dates }) => {
+            data.forEach(({ city_id, city_name, dates }) => {
                 groupedFiles[city_id] = dates;
+                state.cities[city_name] = city_id;
             });
             state.useApi = true;
             console.log('Loaded available data from API:', groupedFiles);
@@ -145,6 +146,12 @@ export const loadFirstAvailableData = async () => {
     state.city_id = first_city_id;
     state.date = state.availableFiles[first_city_id][0];
 
+    if (state.useApi) {
+        // city names already populated from /api/available
+        return;
+    }
+
+    // existing CSV fallback for static / GitHub Pages mode
     const cityPromises = city_ids.map(async (city_id) => {
         const stationData = await fetchAndParseGzipCSV(`data/${city_id}_stations_${state.date}.csv.gz`);
         console.log("RESPONSE:", stationData)
