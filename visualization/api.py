@@ -25,14 +25,16 @@ def available():
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT city_id,
-                       array_agg(DISTINCT DATE(start_time)::text ORDER BY DATE(start_time)::text DESC)
-                FROM public.trips
-                GROUP BY city_id
-                ORDER BY city_id
+                SELECT t.city_id,
+                       COALESCE(c.city_name, t.city_id::text) AS city_name,
+                       array_agg(DISTINCT DATE(t.start_time)::text ORDER BY DATE(t.start_time)::text DESC)
+                FROM public.trips t
+                LEFT JOIN public.cities c ON t.city_id = c.city_id
+                GROUP BY t.city_id, c.city_name
+                ORDER BY t.city_id
             """)
             rows = cur.fetchall()
-    return [{"city_id": str(row[0]), "dates": row[1]} for row in rows]
+    return [{"city_id": str(row[0]), "city_name": row[1], "dates": row[2]} for row in rows]
 
 
 @app.get("/api/trips")
