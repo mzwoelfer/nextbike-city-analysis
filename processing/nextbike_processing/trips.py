@@ -214,3 +214,18 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     geojson = {"type": "FeatureCollection", "features": features}
     if export_files:
         save_gzipped_geojson(os.path.join(folder, f"{city_id}_trips_{date}.geojson.gz"), geojson)
+
+        # Also export as CSV for static/GitHub Pages visualization mode.
+        # segments format: [[lat, lon, timestamp], ...] (coordinates are stored lat/lon in CSV,
+        # opposite of GeoJSON which uses [lon, lat])
+        trips["date"] = date
+        trips["segments"] = trips.apply(
+            lambda row: [[lat, lon, ts] for [lon, lat], ts in zip(row["coordinates"], row["timestamps"])],
+            axis=1,
+        )
+        csv_cols = [
+            "bike_number", "start_latitude", "start_longitude", "start_time",
+            "end_latitude", "end_longitude", "end_time", "duration", "date",
+            "distance", "segments",
+        ]
+        save_gzipped_csv(os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), trips[csv_cols])
