@@ -199,8 +199,8 @@ export const loadTripsData = async () => {
                     bike_number: row.bike_number,
                     start_time: row.start_time,
                     end_time: row.end_time,
-                    duration: row.duration,
-                    distance: row.distance,
+                    duration: Number(row.duration),
+                    distance: Number(row.distance),
                     coordinates: segments.map(([lat, lon]) => [lon, lat]),  // GeoJSON: [lon, lat]
                     timestamps: segments.map(([,, ts]) => ts),
                 };

@@ -133,11 +133,7 @@ async function loadCityData(city_id) {
     populateRouteTable();
 
     await loadStationData();
-    if (map) {
-        plotStationsOnMap();
-    } else {
-        console.error('Map is not initialized. Cannot plot stations.');
-    }
+    plotStationsOnMap();
     updateButtonStates();
     updateAllComponents();
 
