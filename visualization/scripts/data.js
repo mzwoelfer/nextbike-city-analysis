@@ -172,33 +172,42 @@ export const loadFirstAvailableData = async () => {
  */
 export const loadTripsData = async () => {
     try {
-        let geojson;
-
         if (state.useApi) {
             const response = await fetch(`/api/trips?city_id=${state.city_id}&date=${state.date}`);
             if (!response.ok) throw new Error(`API request failed for trips ${state.city_id} ${state.date}`);
-            geojson = await response.json();
+            const geojson = await response.json();
+
+            state.tripsData = geojson.features.map(feature => ({
+                bike_number: feature.properties.bike_number,
+                start_time: feature.properties.start_time,
+                end_time: feature.properties.end_time,
+                duration: feature.properties.duration,
+                distance: feature.properties.distance,
+                coordinates: feature.geometry.coordinates,  // [[lon, lat], ...]
+                timestamps: feature.properties.timestamps,
+            }));
+
+            state.city_lat = state.tripsData[0].coordinates[0][1];
+            state.city_lng = state.tripsData[0].coordinates[0][0];
         } else {
-            const filePath = `data/${state.city_id}_trips_${state.date}.geojson.gz`;
-            const response = await fetch(filePath);
-            if (!response.ok) throw new Error(`Failed to load ${filePath}`);
-            const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
-            const text = await new Response(decompressedStream).text();
-            geojson = JSON.parse(text);
+            const rows = await fetchAndParseGzipCSV(`data/${state.city_id}_trips_${state.date}.csv.gz`);
+            if (!rows.length) throw new Error(`No trip data for city ${state.city_id} on ${state.date}`);
+            state.tripsData = rows.map(row => {
+                // segments is a Python-repr list: [[lat, lon, 'timestamp'], ...]
+                const segments = JSON.parse(row.segments.replace(/'/g, '"'));
+                return {
+                    bike_number: row.bike_number,
+                    start_time: row.start_time,
+                    end_time: row.end_time,
+                    duration: row.duration,
+                    distance: row.distance,
+                    coordinates: segments.map(([lat, lon]) => [lon, lat]),  // GeoJSON: [lon, lat]
+                    timestamps: segments.map(([,, ts]) => ts),
+                };
+            });
+            state.city_lat = state.tripsData[0].coordinates[0][1];
+            state.city_lng = state.tripsData[0].coordinates[0][0];
         }
-
-        state.tripsData = geojson.features.map(feature => ({
-            bike_number: feature.properties.bike_number,
-            start_time: feature.properties.start_time,
-            end_time: feature.properties.end_time,
-            duration: feature.properties.duration,
-            distance: feature.properties.distance,
-            coordinates: feature.geometry.coordinates,  // [[lon, lat], ...]
-            timestamps: feature.properties.timestamps,
-        }));
-
-        state.city_lat = state.tripsData[0].coordinates[0][1];
-        state.city_lng = state.tripsData[0].coordinates[0][0];
 
         console.log('Trips data loaded:', state.tripsData);
         return;
