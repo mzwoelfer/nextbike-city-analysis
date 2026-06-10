@@ -5,6 +5,7 @@ import networkx as nx
 from nextbike_processing.database import get_connection, fetch_cached_routes, insert_routes, insert_trips
 from nextbike_processing.utils import save_gzipped_geojson
 from nextbike_processing.cities import get_city_coordinates_from_database
+from nextbike_processing.utils import save_gzipped_csv
 from geopy.distance import geodesic
 
 
