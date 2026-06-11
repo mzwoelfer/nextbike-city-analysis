@@ -77,7 +77,7 @@ function populateCityDropdown() {
 
 // ++++++++++++++++++++++++++ //
 // City selection
-async function handleCityChange(event) {
+async function changeCityData(event) {
     const cityId = parseInt(event.target.value, 10);
     const cityName = Object.keys(state.cities).find(key => state.cities[key] === cityId);
 
@@ -90,7 +90,7 @@ const previousDayButton = document.getElementById('previous-day')
 const nextDayButton = document.getElementById('next-day')
 const citySelector = document.getElementById('city-selector')
 
-citySelector.addEventListener('change', handleCityChange);
+citySelector.addEventListener('change', changeCityData);
 
 
 const updateButtonStates = async () => {
