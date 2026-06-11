@@ -2,7 +2,7 @@ import os
 
 import psycopg
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
@@ -39,6 +39,8 @@ def available():
 
 @app.get("/api/trips")
 def trips(city_id: int, date: str):
+    if not date:
+        raise HTTPException(status_code=400, detail="date parameter is required")
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -76,6 +78,8 @@ def trips(city_id: int, date: str):
 
 @app.get("/api/stations")
 def stations(city_id: int, date: str):
+    if not date:
+        raise HTTPException(status_code=400, detail="date parameter is required")
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
