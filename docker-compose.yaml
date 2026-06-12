@@ -44,6 +44,7 @@ services:
       - nextbike_network
 
   processor:
+    # Runs at midnight every day for each city in CITY_IDS
     build:
       context: ./processing
       dockerfile: CONTAINERFILE
@@ -56,16 +57,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # Runs at midnight every day for each city in CITY_IDS
-    command: >
-      sh -c "
-      while true; do
-        sleep $$(( $$(date -d 'tomorrow 00:00' +%s) - $$(date +%s) ));
-        YESTERDAY=$$(date -d 'yesterday' +%Y-%m-%d);
-        for city_id in $$(echo $$CITY_IDS | tr ',' ' '); do
-          python -m nextbike_processing.main --city-id $$city_id --date $$YESTERDAY;
-        done;
-      done"
     volumes:
       - trip_data:/data
     networks:
