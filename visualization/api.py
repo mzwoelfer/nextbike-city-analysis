@@ -82,6 +82,15 @@ def stations(city_id: int, date: str):
         raise HTTPException(status_code=400, detail="date parameter is required")
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # First, find the latest available date for this city (on or before the requested date)
+            cur.execute("""
+                SELECT MAX(DATE(last_updated))
+                FROM public.stations
+                WHERE city_id = %s AND DATE(last_updated) <= %s::date
+            """, (city_id, date))
+            result = cur.fetchone()
+            latest_date = result[0] if result[0] else date
+            
             cur.execute("""
                 WITH station_data AS (
                     SELECT id, uid, latitude, longitude, name, spot, station_number,
@@ -137,7 +146,7 @@ def stations(city_id: int, date: str):
                 FROM bike_changes
                 WHERE bike_count IS DISTINCT FROM previous_bike_count
                 ORDER BY station_number, minute
-            """, (city_id, date, city_id, date, city_id, date))
+            """, (city_id, latest_date, city_id, latest_date, city_id, latest_date))
             rows = cur.fetchall()
 
     return [
