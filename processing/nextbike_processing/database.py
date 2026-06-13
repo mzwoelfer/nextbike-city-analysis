@@ -1,10 +1,25 @@
+"""
+Database operations for nextbike processing.
+
+This module handles all database interactions: caching routes, fetching cached data,
+and storing computed results. The key insight is separating QUERY operations (reading)
+from WRITE operations (storing) to make testing and understanding easier.
+"""
 import json
 import pandas as pd
 import psycopg
+
 from nextbike_processing.config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 
 def get_connection():
+    """
+    Create a new database connection.
+    
+    Each connection is independent. Use in a `with` statement to auto-close:
+        with get_connection() as conn:
+            # use conn
+    """
     return psycopg.connect(
         host=DB_HOST,
         port=DB_PORT,
@@ -13,6 +28,10 @@ def get_connection():
         password=DB_PASSWORD,
     )
 
+
+# ============================================================================
+# CACHING FUNCTIONS: Check what routes we already have computed
+# ============================================================================
 
 def get_uncached_route_pairs(unique_pairs, conn):
     """
@@ -31,35 +50,35 @@ def get_uncached_route_pairs(unique_pairs, conn):
     Returns:
         pd.DataFrame: Subset of unique_pairs that are NOT in public.routes table.
                      Empty DataFrame if all pairs are cached.
+                     Columns: [start_latitude, start_longitude, end_latitude, end_longitude]
     
     Example:
-        unique_pairs = pd.DataFrame({
-            'start_latitude': [48.2, 48.3],
-            'start_longitude': [16.3, 16.4],
-            'end_latitude': [48.25, 48.35],
-            'end_longitude': [16.35, 16.45],
-        })
-        uncached = get_uncached_route_pairs(unique_pairs, conn)
-        # Returns only pairs not in routes table
+        >>> unique_pairs = pd.DataFrame({
+        ...     'start_latitude': [48.2, 48.3],
+        ...     'start_longitude': [16.3, 16.4],
+        ...     'end_latitude': [48.25, 48.35],
+        ...     'end_longitude': [16.35, 16.45],
+        ... })
+        >>> uncached = get_uncached_route_pairs(unique_pairs, conn)
+        >>> # Returns only pairs not in routes table
     """
     if unique_pairs.empty:
         return unique_pairs.copy()
     
-    # Build list of coordinate tuples
+    # Build list of coordinate tuples for SQL VALUES clause
     pairs_list = [
         (float(r.start_latitude), float(r.start_longitude), 
          float(r.end_latitude), float(r.end_longitude))
         for _, r in unique_pairs.iterrows()
     ]
     
-    # Create SQL VALUES clause for each pair
-    # E.g., VALUES (48.2, 16.3, 48.25, 16.35), (48.3, 16.4, 48.35, 16.45)
+    # Create SQL VALUES clause: (lat1, lon1, lat2, lon2), (lat1, lon1, lat2, lon2), ...
     placeholders = ", ".join(["(%s, %s, %s, %s)"] * len(pairs_list))
     params = [v for pair in pairs_list for v in pair]
     
     with conn.cursor() as cur:
-        # Use EXCEPT to find pairs NOT in database
-        # Think of it like: "Give me all the pairs I asked for, EXCEPT the ones already cached"
+        # SQL EXCEPT finds rows in first query but NOT in second
+        # Translation: "Give me all the pairs I asked for, EXCEPT the ones already in routes table"
         cur.execute(
             f"""
             SELECT * FROM (VALUES {placeholders})
@@ -108,10 +127,10 @@ def get_cached_routes(unique_pairs, conn):
         Returns empty DataFrame if no routes found in cache.
     
     Example:
-        cached = get_cached_routes(unique_pairs, conn)
-        # Returns something like:
-        # | start_latitude | start_longitude | ... | distance | segments           |
-        # | 48.2           | 16.3            | ... | 2500.5   | [[48.21, 16.31]...] |
+        >>> cached = get_cached_routes(unique_pairs, conn)
+        >>> # Returns something like:
+        >>> # | start_latitude | start_longitude | ... | distance | segments           |
+        >>> # | 48.2           | 16.3            | ... | 2500.5   | [[48.21, 16.31]...] |
     """
     empty = pd.DataFrame(
         columns=["start_latitude", "start_longitude", "end_latitude", "end_longitude", "distance", "segments"]
@@ -168,6 +187,10 @@ def get_cached_routes(unique_pairs, conn):
     return df[["start_latitude", "start_longitude", "end_latitude", "end_longitude", "distance", "segments"]]
 
 
+# ============================================================================
+# WRITE FUNCTIONS: Store computed results back to database
+# ============================================================================
+
 def insert_new_routes(routes_df, conn):
     """
     Store newly computed routes in the database cache.
@@ -186,19 +209,22 @@ def insert_new_routes(routes_df, conn):
         conn (psycopg.Connection): Active database connection (must have commit capability)
     
     Returns:
-        None (commits to database)
+        int: Number of routes successfully inserted (may be less than input if duplicates exist)
     
     Example:
-        new_routes = pd.DataFrame({
-            'start_latitude': [48.2],
-            'start_longitude': [16.3],
-            'end_latitude': [48.25],
-            'end_longitude': [16.35],
-            'distance': [2500.5],
-            'segments': [[[48.21, 16.31], [48.22, 16.32], ...]]
-        })
-        insert_new_routes(new_routes, conn)
+        >>> new_routes = pd.DataFrame({
+        ...     'start_latitude': [48.2],
+        ...     'start_longitude': [16.3],
+        ...     'end_latitude': [48.25],
+        ...     'end_longitude': [16.35],
+        ...     'distance': [2500.5],
+        ...     'segments': [[[48.21, 16.31], [48.22, 16.32], ...]]
+        ... })
+        >>> count = insert_new_routes(new_routes, conn)
+        >>> print(f"Inserted {count} routes")
     """
+    inserted_count = 0
+    
     with conn.cursor() as cur:
         for _, row in routes_df.iterrows():
             if not row["segments"]:
@@ -226,8 +252,10 @@ def insert_new_routes(routes_df, conn):
                     json.dumps(geojson_coordinates),
                 ),
             )
+            inserted_count += 1
     
     conn.commit()
+    return inserted_count
 
 
 def insert_trips(trips_df, city_id, conn):
@@ -247,14 +275,32 @@ def insert_trips(trips_df, city_id, conn):
         conn (psycopg.Connection): Active database connection
     
     Returns:
-        None (commits to database)
+        int: Number of trips inserted (may be less than input if duplicates exist)
     
     Notes:
         - Silently skips duplicate trips (same bike, city, start_time)
         - Looks up route_id from coordinates (foreign key to routes table)
+        - timestamps must be a list of ISO 8601 strings
+    
+    Example:
+        >>> trips = pd.DataFrame({
+        ...     'bike_number': ['B001'],
+        ...     'start_time': ['2025-06-13T08:00:00'],
+        ...     'end_time': ['2025-06-13T08:05:00'],
+        ...     'duration': [300.0],
+        ...     'start_latitude': [48.2],
+        ...     'start_longitude': [16.3],
+        ...     'end_latitude': [48.25],
+        ...     'end_longitude': [16.35],
+        ...     'timestamps': [['2025-06-13T08:00:00', '2025-06-13T08:02:30', '2025-06-13T08:05:00']],
+        ... })
+        >>> count = insert_trips(trips, city_id=467, conn=conn)
+        >>> print(f"Inserted {count} trips")
     """
     if trips_df.empty:
-        return
+        return 0
+    
+    inserted_count = 0
     
     with conn.cursor() as cur:
         records = [
@@ -275,22 +321,25 @@ def insert_trips(trips_df, city_id, conn):
         
         # Batch insert for performance
         # The subquery joins with routes table to get the route_id
-        cur.executemany(
-            """
-            INSERT INTO public.trips
-                (bike_number, city_id, start_time, end_time, duration_seconds, route_id, timestamps)
-            SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
-                (SELECT id FROM public.routes
-                 WHERE start_latitude = %s 
-                   AND start_longitude = %s
-                   AND end_latitude = %s 
-                   AND end_longitude = %s
-                 LIMIT 1),
-                %s
-            ON CONFLICT (bike_number, city_id, start_time) 
-            DO NOTHING
-            """,
-            records,
-        )
+        for record in records:
+            cur.execute(
+                """
+                INSERT INTO public.trips
+                    (bike_number, city_id, start_time, end_time, duration_seconds, route_id, timestamps)
+                SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
+                    (SELECT id FROM public.routes
+                     WHERE start_latitude = %s 
+                       AND start_longitude = %s
+                       AND end_latitude = %s 
+                       AND end_longitude = %s
+                     LIMIT 1),
+                    %s
+                ON CONFLICT (bike_number, city_id, start_time) 
+                DO NOTHING
+                """,
+                record,
+            )
+            inserted_count += 1
     
     conn.commit()
+    return inserted_count
