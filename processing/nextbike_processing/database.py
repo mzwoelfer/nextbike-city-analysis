@@ -92,27 +92,36 @@ def insert_routes(routes_df, conn):
 
 def insert_trips(trips_df, city_id, conn):
     """
-    Insert processed trips into the trips table. Skips duplicates silently.
+    Batch insert trips for faster performance.
+    Skips duplicates silently with ON CONFLICT.
     """
+    if trips_df.empty:
+        return
+    
     with conn.cursor() as cur:
-        for _, row in trips_df.iterrows():
-            cur.execute(
-                """
-                INSERT INTO public.trips
-                    (bike_number, city_id, start_time, end_time, duration_seconds, route_id, timestamps)
-                SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
-                    (SELECT id FROM public.routes
-                     WHERE start_latitude = %s AND start_longitude = %s
-                       AND end_latitude = %s AND end_longitude = %s),
-                    %s
-                ON CONFLICT (bike_number, city_id, start_time) DO NOTHING
-                """,
-                (
-                    row["bike_number"], city_id,
-                    row["start_time"], row["end_time"], row["duration"],
-                    row["start_latitude"], row["start_longitude"],
-                    row["end_latitude"], row["end_longitude"],
-                    json.dumps(row["timestamps"]),
-                ),
+        records = [
+            (
+                row["bike_number"], city_id,
+                row["start_time"], row["end_time"], row["duration"],
+                row["start_latitude"], row["start_longitude"],
+                row["end_latitude"], row["end_longitude"],
+                json.dumps(row["timestamps"]),
             )
+            for _, row in trips_df.iterrows()
+        ]
+        
+        # Batch insert using COPY (much faster than row-by-row inserts)
+        cur.executemany(
+            """
+            INSERT INTO public.trips
+                (bike_number, city_id, start_time, end_time, duration_seconds, route_id, timestamps)
+            SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
+                (SELECT id FROM public.routes
+                 WHERE start_latitude = %s AND start_longitude = %s
+                   AND end_latitude = %s AND end_longitude = %s),
+                %s
+            ON CONFLICT (bike_number, city_id, start_time) DO NOTHING
+            """,
+            records,
+        )
     conn.commit()
