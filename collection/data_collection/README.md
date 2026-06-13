@@ -49,3 +49,15 @@ Change directory to `collection/data_collection`:
 
 Run specific tests:
 - `python3 -m unittest tests/test_city_class.py`
+
+#### Run coverage tests
+Change directory to `collection/data_collection`:
+
+Make sure `coverage` is installed:
+```BASH
+pip install coverage
+```
+
+```BASH
+coverage run -m unittest discover -s tests && coverage report --show-missing
+```
