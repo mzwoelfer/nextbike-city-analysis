@@ -546,7 +546,6 @@ th[data-order=""]::after     { content: ""; }
 
     #sidebar-chart {
         flex: none;
-        min-height: 180px;
     }
 
     #trips-chart {
