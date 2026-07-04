@@ -128,3 +128,85 @@ function _draw(currentMinute) {
     ctx.lineWidth   = 2;
     ctx.stroke();
 }
+
+// =============================================================================
+// TRIP DURATION HISTOGRAM
+// Bucket size: 5 minutes. Buckets 0-5, 5-10 … 55-60, then "60+".
+// =============================================================================
+const BUCKET_SIZE = 5;
+const BUCKET_COUNT = 13; // 0-5 … 55-60 = 12 buckets + 1 overflow (60+)
+
+export function drawDurationHistogram(canvas, tripsData) {
+    if (!canvas || !tripsData || tripsData.length === 0) return;
+
+    // Build buckets
+    const buckets = new Int32Array(BUCKET_COUNT);
+    tripsData.forEach(trip => {
+        const dur = parseFloat(trip.duration);
+        if (isNaN(dur) || dur < 0) return;
+        const idx = dur >= (BUCKET_COUNT - 1) * BUCKET_SIZE
+            ? BUCKET_COUNT - 1
+            : Math.floor(dur / BUCKET_SIZE);
+        buckets[idx]++;
+    });
+
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const W = rect.width;
+    const H = rect.height;
+
+    const padL = 36, padR = 8, padT = 10, padB = 26;
+    const cW   = W - padL - padR;
+    const cH   = H - padT - padB;
+
+    let maxVal = 1;
+    for (let i = 0; i < BUCKET_COUNT; i++) if (buckets[i] > maxVal) maxVal = buckets[i];
+
+    ctx.clearRect(0, 0, W, H);
+
+    const barW   = cW / BUCKET_COUNT;
+    const gap    = Math.max(1, barW * 0.15);
+
+    // ---- y-axis grid + labels ----
+    ctx.strokeStyle = 'rgba(240,240,240,0.1)';
+    ctx.lineWidth   = 1;
+    ctx.fillStyle   = 'rgba(240,240,240,0.4)';
+    ctx.font        = '9px sans-serif';
+    ctx.textAlign   = 'right';
+    const ySteps = 4;
+    for (let i = 0; i <= ySteps; i++) {
+        const v = Math.round((maxVal / ySteps) * i);
+        const y = padT + cH - (v / maxVal) * cH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cW, y); ctx.stroke();
+        if (i > 0) ctx.fillText(v, padL - 4, y + 3);
+    }
+
+    // ---- bars ----
+    for (let i = 0; i < BUCKET_COUNT; i++) {
+        const x   = padL + i * barW + gap / 2;
+        const bH  = (buckets[i] / maxVal) * cH;
+        const y   = padT + cH - bH;
+        ctx.fillStyle = 'rgba(240,112,48,0.75)';
+        ctx.fillRect(x, y, barW - gap, bH);
+    }
+
+    // ---- x-axis labels ----
+    ctx.fillStyle = 'rgba(240,240,240,0.45)';
+    ctx.font      = '9px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < BUCKET_COUNT; i++) {
+        const label = i === BUCKET_COUNT - 1
+            ? '60+'
+            : String(i * BUCKET_SIZE);
+        const x = padL + i * barW + barW / 2;
+        ctx.fillText(label, x, H - 7);
+    }
+}

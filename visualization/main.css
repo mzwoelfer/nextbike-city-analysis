@@ -328,6 +328,17 @@ html, body {
     height: 150px;
     display: block;
 }
+#sidebar-histogram {
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+#duration-chart {
+    width: 100%;
+    height: 150px;
+    display: block;
+}
+
 
 #sidebar-links {
     padding: 18px 20px;
