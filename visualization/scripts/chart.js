@@ -18,11 +18,24 @@ function minutesOf(date) {
 let _canvas       = null;
 let _counts       = null;
 let _lastMinute   = 0;
+let _onSeek       = null;
 
-export function initChart(canvas, tripsPerMinute) {
+export function initChart(canvas, tripsPerMinute, onSeek) {
     _canvas = canvas;
     _counts = tripsPerMinute;
+    _onSeek = onSeek || null;
+    canvas.removeEventListener('click', _handleChartClick);
+    canvas.addEventListener('click', _handleChartClick);
     _draw(_lastMinute);
+}
+
+function _handleChartClick(e) {
+    if (!_onSeek || !_canvas) return;
+    const rect = _canvas.getBoundingClientRect();
+    const padL = 36, padR = 10;
+    const cW   = rect.width - padL - padR;
+    const x    = Math.min(Math.max(e.clientX - rect.left - padL, 0), cW);
+    _onSeek(Math.round((x / cW) * 1440));
 }
 
 export function updateChartDot(currentMinute) {
