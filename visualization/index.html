@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<\!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Route Visualization</title>
+  <title>Nextbike City Analysis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="main.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,49 +12,88 @@
 </head>
 
 <body>
+
   <div id="city-selection">
-    <label for="city-selector">Choose a city:</label>
+    <label for="city-selector">City</label>
     <select name="city" id="city-selector"></select>
   </div>
-  <div id="control_panel">
-    <!-- First Layer -->
-    <div id="info-date">
-      <div id="time">
-        <span><strong>Time:</strong></span>
-        <span id="time-display">--:--</span>
+
+  <div id="main-layout">
+
+    <\!-- ===== MAP SECTION ===== -->
+    <div id="map-section">
+      <div id="map"></div>
+
+      <div id="play-area">
+        <\!-- Row 1: time / date / day nav -->
+        <div id="play-info-row">
+          <span id="time-display">--:--</span>
+          <span id="trip-date">---</span>
+          <div id="day-navigation">
+            <button id="previous-day" title="Previous Day">&#9664;</button>
+            <button id="next-day"     title="Next Day">&#9654;</button>
+          </div>
+        </div>
+
+        <\!-- Row 2: play button + slider -->
+        <div id="play-controls">
+          <button id="play-button">&#9654;</button>
+          <input type="range" id="time-slider" min="0" max="1440" value="0" />
+        </div>
+
+        <\!-- Row 3: stats -->
+        <div id="play-stats">
+          <div class="stat-item">
+            <span class="stat-value" id="trip-count">0</span>
+            <span class="stat-label">Total trips</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="active-trips-count">0</span>
+            <span class="stat-label">Active trips</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="bike-count">0</span>
+            <span class="stat-label">Active bikes</span>
+          </div>
+        </div>
+      </div><\!-- /play-area -->
+    </div><\!-- /map-section -->
+
+    <\!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar">
+
+      <div id="sidebar-stats">
+        <span class="sidebar-section-label">Now</span>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Total trips today</span>
+          <span class="sidebar-stat-value" id="sb-trip-count">0</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Active trips</span>
+          <span class="sidebar-stat-value" id="sb-active-trips">0</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Active bikes</span>
+          <span class="sidebar-stat-value" id="sb-bike-count">0</span>
+        </div>
       </div>
-      <div>
-        <strong>Date:</strong> <span id="trip-date">--</span>
+
+      <div id="sidebar-chart">
+        <span class="sidebar-section-label">All Trips</span>
+        <canvas id="trips-chart"></canvas>
       </div>
-      <div id="day-navigation">
-        <button id="previous-day" title="Previous Day">◀</button>
-        <button id="next-day" title="Next Day">▶</button>
-      </div>
-    </div>
 
-    <!-- Second Layer -->
-    <div id="controls">
-      <button id="play-button">Play</button>
-      <input type="range" id="time-slider" min="0" max="1440" value="0" />
-    </div>
+      <nav id="sidebar-links">
+        <a href="#faq-section">FAQ</a>
+        <a href="#data-section">Data</a>
+      </nav>
 
-    <!-- Third Layer -->
-    <div id="info-stats">
-      <div id="trips-count">
-        <strong>Total Trips Today:</strong> <span id="trip-count">0</span>
-      </div>
-      <div id="bikes-count">
-        <strong>Current Trips:</strong> <span id="bike-count">0</span>
-      </div>
-    </div>
-  </div>
+    </aside><\!-- /sidebar -->
 
+  </div><\!-- /main-layout -->
 
-  <div id="back-to-top" title="Back to Top">⬆</div>
-
-  <div id="map"></div>
-
-  <div id="faq-section">
+  <\!-- ===== FAQ ===== -->
+  <section id="faq-section">
     <h2>FAQ</h2>
 
     <div class="faq-item">
@@ -77,86 +116,81 @@
     <div class="faq-item">
       <h3>Why do some trips look wrong?</h3>
       <p>
-        Some trips may seem unrealistic due to GPS inaccuracies, faulty time data, or route calculation errors. For
-        example:
+        Some trips may seem unrealistic due to GPS inaccuracies, faulty time data, or route calculation errors.
+        For example:
       </p>
       <ul>
-        <li><strong>1-minute trips:</strong> These could be due to delayed data updates or an error on Nextbikes part.
-        </li>
+        <li><strong>1-minute trips:</strong> These could be due to delayed data updates or an error on Nextbike's part.</li>
         <li><strong>Weird routes:</strong> OpenStreetMap may not always provide the shortest or most realistic path,
           especially in pedestrianized areas.</li>
       </ul>
     </div>
 
     <div class="faq-item">
-      <h3>Why don’t you remove incorrect trips?</h3>
+      <h3>Why don't you remove incorrect trips?</h3>
       <p>
-        Filtering “incorrect” trips is tricky.
+        Filtering "incorrect" trips is tricky.
         Some 1-minute trips are valid, like short hops between stations.
-        Somestimes the trips are valid, but the time data didn't update.
+        Sometimes the trips are valid, but the time data didn't update.
         Deleting those trips based on general rules removes real data.
       </p>
     </div>
 
     <div class="faq-item">
       <h3>Where is my city?</h3>
+      <p>This is a sample visualization for the cities of Giessen and Marburg.</p>
+      <p>You want your city analysed?</p>
       <p>
-        This is a sample visualization for the cities of Gießen and Marburg.
-      </p>
-
-      <p>
-        You want your city analysed?
-      </p>
-      <p>
-        Make it happen:
-        Get someone with technical knowledge to set up tracking for your city's Nextbike network by following the
-        instructions in the GitHub Repository <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
-          target="_blank">Nextbike City Analysis Project</a>.
+        Make it happen: get someone with technical knowledge to set up tracking for your city's Nextbike network by
+        following the instructions in the
+        <a href="https://github.com/mzwoelfer/nextbike-city-analysis" target="_blank">Nextbike City Analysis Project</a>.
       </p>
       <p>
-        The project uses open data from Nextbike and OpenStreetMap, making it easy to expand
-        to new locations.
+        The project uses open data from Nextbike and OpenStreetMap, making it easy to expand to new locations.
       </p>
     </div>
 
     <div class="faq-item">
       <h3>Where do you get the data from?</h3>
       <p>
-        Nextbikes publicly available data endpoint.<br>
-        The endpoint for the data for the city of <a href="https://maps.nextbike.net/maps/nextbike-live.json?city=467"
-          target="_blank">Gießen</a>.
+        Nextbike's publicly available data endpoint.<br>
+        The endpoint for the city of
+        <a href="https://maps.nextbike.net/maps/nextbike-live.json?city=467" target="_blank">Giessen</a>.
       </p>
     </div>
 
     <div class="faq-item">
-      <h3>Looks cool - Can I use this?</h3>
+      <h3>Looks cool - can I use this?</h3>
       <p>
-        Sure. It's public for a reason.
-        Either link to this page.
-        Or for people with technical knowledge to the <a href="https://github.com/mzwoelfer/nextbike-city-analysis"
-          target="_blank">Nextbike City Analysis Project</a>.
+        Sure. It's public for a reason. Either link to this page, or for people with technical knowledge, to the
+        <a href="https://github.com/mzwoelfer/nextbike-city-analysis" target="_blank">Nextbike City Analysis Project</a>.
       </p>
     </div>
-  </div>
+  </section>
 
+  <\!-- ===== DATA ===== -->
+  <section id="data-section">
+    <h2>Data</h2>
+    <p>More charts coming soon.</p>
+  </section>
 
+  <\!-- ===== TRIPS TABLE ===== -->
   <div id="route-table-container">
     <table id="route-table">
       <thead>
         <tr>
           <th data-column="bike_number" data-order="">Bike Number</th>
-          <th data-column="start_time" data-order="asc">Start Time</th>
-          <th data-column="end_time" data-order="">End Time</th>
-          <th data-column="distance" data-order="">Distance (m)</th>
-          <th data-column="duration" data-order="">Duration (Minutes)</th>
+          <th data-column="start_time"  data-order="asc">Start Time</th>
+          <th data-column="end_time"    data-order="">End Time</th>
+          <th data-column="distance"    data-order="">Distance (m)</th>
+          <th data-column="duration"    data-order="">Duration (min)</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Table is dynamically populated -->
-      </tbody>
+      <tbody><\!-- dynamically populated --></tbody>
     </table>
   </div>
 
+  <div id="back-to-top" title="Back to Top">&#8679;</div>
 
 </body>
 

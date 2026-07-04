@@ -7,6 +7,7 @@ import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
 import { drawTrips, highlightTripOnMap } from './trips.js';
+import { buildTripsPerMinute, initChart, updateChartDot } from './chart.js';
 
 let updateThrottle;
 
@@ -32,8 +33,18 @@ function updateInfoBox() {
         }
     });
 
-    document.getElementById('trip-count').textContent = tripsData.length; // Total trips that day
-    document.getElementById('bike-count').textContent = activeBikes.size; // Unique active bikes
+    // Play area stats
+    document.getElementById('trip-count').textContent = tripsData.length;
+    document.getElementById('active-trips-count').textContent = activeTrips;
+    document.getElementById('bike-count').textContent = activeBikes.size;
+
+    // Sidebar stats
+    document.getElementById('sb-trip-count').textContent = tripsData.length;
+    document.getElementById('sb-active-trips').textContent = activeTrips;
+    document.getElementById('sb-bike-count').textContent = activeBikes.size;
+
+    // Chart dot
+    updateChartDot(currentTimeMinutes);
 }
 
 export function updateAllComponents() {
@@ -129,7 +140,7 @@ document.getElementById('play-button').addEventListener('click', () => togglePla
 async function loadCityData(city_id) {
     state.city_id = city_id;
     await loadTripsData();
-    initializeMap(state.city_lat, state.city_lng)
+    initializeMap(state.city_lat, state.city_lng);
     populateRouteTable();
 
     await loadStationData();
@@ -137,6 +148,12 @@ async function loadCityData(city_id) {
     updateButtonStates();
     updateAllComponents();
 
+    // Init the sidebar chart after layout has settled
+    requestAnimationFrame(() => {
+        const canvas = document.getElementById('trips-chart');
+        const counts = buildTripsPerMinute(state.tripsData);
+        initChart(canvas, counts);
+    });
 }
 
 state.availableFiles = await loadAvailableFiles();
