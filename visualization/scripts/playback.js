@@ -4,7 +4,7 @@ import { updateAllComponents } from './main.js';
 
 export function updatePlayButtonUI() {
     const playButton = document.getElementById('play-button');
-    playButton.textContent = state.isPlaying ? 'Pause' : 'Play';
+    playButton.textContent = state.isPlaying ? '⏸' : '▶';
 }
 
 export function updateSlider() {

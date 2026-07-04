@@ -4,9 +4,11 @@ WORKDIR /app
 
 COPY requirements.txt .
 COPY nextbike_processing/ ./nextbike_processing/
+COPY entrypoint.sh .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    chmod +x entrypoint.sh
 
 ENV PYTHONPATH="/app"
 
-CMD ["python", "-m", "nextbike_processing.main"]
+ENTRYPOINT ["./entrypoint.sh"]

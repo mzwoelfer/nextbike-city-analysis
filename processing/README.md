@@ -9,7 +9,7 @@ For a given city and date:
 1. Reads raw `bikes` and `stations` records from PostgreSQL
 2. Calculates trips between stations.
 3. Calculates the road-network trip-routes using OSMnx.
-   - Caches calcualted trip-routes in the `public.routes` table. 
+   - Caches calcualted trip-routes in the `public.routes` table.
    - reuses cached geometry. REduces calls to OSMnx
 4. Writes the results to:
    - `public.trips`
@@ -27,7 +27,10 @@ Trips are in a **GeoJSON FeatureCollection** (gzip-compressed):
       "type": "Feature",
       "geometry": {
         "type": "LineString",
-        "coordinates": [[13.400, 52.500], [13.401, 52.501]]
+        "coordinates": [
+          [13.4, 52.5],
+          [13.401, 52.501]
+        ]
       },
       "properties": {
         "bike_number": "42",
@@ -47,6 +50,7 @@ GeoJSON coordinates are `[longitude, latitude]` (x, y order).
 ## Production
 
 The processor runs automatically at midnight every day for each city in `CITY_IDS`:
+
 ```sh
 # From the project root
 docker compose up -d
@@ -55,6 +59,7 @@ docker compose up -d
 ## Manual processing
 
 To process a specific city and date on demand (DB only, no files):
+
 ```sh
 docker run --rm \
   --env-file .env \
@@ -64,6 +69,7 @@ docker run --rm \
 ```
 
 To write the data to files (`.geojson.gz` / `.csv.gz`) for GitHub Pages or local testing, add `--export-files`:
+
 ```sh
 docker run --rm \
   --env-file .env \
@@ -74,8 +80,9 @@ docker run --rm \
 ```
 
 ## Updating the processor image
+
 ```sh
-docker compose up -d --no-deps --build processor
+docker compose up -d --build processor
 ```
 
 ## Running tests
@@ -87,3 +94,4 @@ source Env/bin/activate
 pip install -r requirements.txt pytest
 pytest tests/ -v
 ```
+
