@@ -196,6 +196,7 @@ export const loadTripsData = async () => {
         distance: feature.properties.distance,
         coordinates: feature.geometry.coordinates, // [[lon, lat], ...]
         timestamps: feature.properties.timestamps,
+        route_id: feature.properties.route_id ?? null,
       }));
 
       state.city_lat = state.tripsData[0].coordinates[0][1];
@@ -219,6 +220,7 @@ export const loadTripsData = async () => {
           distance: Number(row.distance),
           coordinates: segments.map(([lat, lon]) => [lon, lat]), // GeoJSON: [lon, lat]
           timestamps: segments.map(([, , ts]) => ts),
+          route_id: row.route_id != null ? Number(row.route_id) : null,
         };
       });
       state.city_lat = state.tripsData[0].coordinates[0][1];

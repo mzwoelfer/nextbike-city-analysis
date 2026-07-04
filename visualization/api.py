@@ -50,7 +50,8 @@ def trips(city_id: int, date: str):
                        t.duration_seconds,
                        r.distance_meters,
                        r.coordinates,
-                       t.timestamps
+                       t.timestamps,
+                       t.route_id
                 FROM public.trips t
                 LEFT JOIN public.routes r ON t.route_id = r.id
                 WHERE t.city_id = %s AND DATE(t.start_time) = %s
@@ -69,6 +70,7 @@ def trips(city_id: int, date: str):
                 "duration": row[3],
                 "distance": row[4] or 0,
                 "timestamps": row[6] or [],
+                "route_id": row[7],
             },
         }
         for row in rows

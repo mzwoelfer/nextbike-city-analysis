@@ -330,10 +330,13 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         axis=1,
     )
     
+    trips_export["route_id"] = trips_export.groupby(
+        ["start_latitude", "start_longitude", "end_latitude", "end_longitude"]
+    ).ngroup()
     csv_cols = [
         "bike_number", "start_latitude", "start_longitude", "start_time",
         "end_latitude", "end_longitude", "end_time", "duration", "date",
-        "distance", "segments",
+        "distance", "segments", "route_id"
     ]
     save_gzipped_csv(
         os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), 
