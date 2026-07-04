@@ -8,6 +8,7 @@ import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
 import { drawTrips, highlightTripOnMap } from './trips.js';
 import { buildTripsPerMinute, initChart, updateChartDot } from './chart.js';
+import { initCalendar, refreshCalendar } from './calendar.js';
 
 let updateThrottle;
 
@@ -152,7 +153,11 @@ async function loadCityData(city_id) {
     requestAnimationFrame(() => {
         const canvas = document.getElementById('trips-chart');
         const counts = buildTripsPerMinute(state.tripsData);
-        initChart(canvas, counts);
+        initChart(canvas, counts, (minute) => {
+            state.currentTimeMinutes = minute;
+            updateAllComponents();
+        });
+        refreshCalendar();
     });
 }
 
@@ -161,3 +166,7 @@ await loadFirstAvailableData();
 populateCityDropdown();
 loadCityData(state.city_id);
 initializeBackToTop();
+initCalendar((dateStr) => {
+    state.date = dateStr;
+    loadCityData(state.city_id);
+});

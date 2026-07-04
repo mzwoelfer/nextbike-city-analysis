@@ -25,6 +25,20 @@
       <div id="map"></div>
 
       <div id="play-area">
+        <!-- Calendar popup (hidden by default) -->
+        <div id="date-picker" hidden>
+          <div id="cal-header">
+            <button id="cal-prev-month">&#9664;</button>
+            <span id="cal-month-label"></span>
+            <button id="cal-next-month">&#9654;</button>
+          </div>
+          <div id="cal-weekdays">
+            <span>Su</span><span>Mo</span><span>Tu</span>
+            <span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+          </div>
+          <div id="cal-days"></div>
+        </div>
+
         <!-- Row 1: time / date / day nav -->
         <div id="play-info-row">
           <span id="time-display">--:--</span>
