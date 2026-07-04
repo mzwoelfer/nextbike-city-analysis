@@ -533,8 +533,8 @@ th[data-order=""]::after     { content: ""; }
     }
 
     #map-section {
+        flex: none;
         height: 100vh;
-        flex-shrink: 0;
         overflow: hidden;
     }
 
