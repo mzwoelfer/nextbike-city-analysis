@@ -128,3 +128,117 @@ function _draw(currentMinute) {
     ctx.lineWidth   = 2;
     ctx.stroke();
 }
+
+// =============================================================================
+// GENERIC HISTOGRAM  (shared by duration + distance)
+// opts: { field, bucketSize, bucketCount, labels }
+//   field       — key on each trip object  (string)
+//   bucketSize  — width of each bucket in data units
+//   bucketCount — total buckets incl. the overflow bucket
+//   labels      — array[bucketCount] of x-axis strings (empty string = skip)
+// =============================================================================
+function _drawHistogram(canvas, tripsData, { field, valueFn, bucketSize, bucketCount, labels }) {
+    if (!canvas || !tripsData || tripsData.length === 0) return;
+
+    const getValue = valueFn || (trip => parseFloat(trip[field]));
+    const buckets = new Int32Array(bucketCount);
+    tripsData.forEach(trip => {
+        const val = getValue(trip);
+        if (isNaN(val) || val < 0) return;
+        const idx = val >= (bucketCount - 1) * bucketSize
+            ? bucketCount - 1
+            : Math.floor(val / bucketSize);
+        buckets[idx]++;
+    });
+
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const W = rect.width;
+    const H = rect.height;
+
+    const padL = 36, padR = 8, padT = 10, padB = 26;
+    const cW   = W - padL - padR;
+    const cH   = H - padT - padB;
+
+    let maxVal = 1;
+    for (let i = 0; i < bucketCount; i++) if (buckets[i] > maxVal) maxVal = buckets[i];
+
+    ctx.clearRect(0, 0, W, H);
+
+    const barW = cW / bucketCount;
+    const gap  = Math.max(1, barW * 0.15);
+
+    // ---- y-axis grid + labels ----
+    ctx.strokeStyle = 'rgba(240,240,240,0.1)';
+    ctx.lineWidth   = 1;
+    ctx.fillStyle   = 'rgba(240,240,240,0.4)';
+    ctx.font        = '9px sans-serif';
+    ctx.textAlign   = 'right';
+    const ySteps = 4;
+    for (let i = 0; i <= ySteps; i++) {
+        const v = Math.round((maxVal / ySteps) * i);
+        const y = padT + cH - (v / maxVal) * cH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cW, y); ctx.stroke();
+        if (i > 0) ctx.fillText(v, padL - 4, y + 3);
+    }
+
+    // ---- bars ----
+    for (let i = 0; i < bucketCount; i++) {
+        const x  = padL + i * barW + gap / 2;
+        const bH = (buckets[i] / maxVal) * cH;
+        const y  = padT + cH - bH;
+        ctx.fillStyle = 'rgba(240,112,48,0.75)';
+        ctx.fillRect(x, y, barW - gap, bH);
+    }
+
+    // ---- x-axis labels ----
+    ctx.fillStyle = 'rgba(240,240,240,0.45)';
+    ctx.font      = '9px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < bucketCount; i++) {
+        if (!labels[i]) continue;
+        ctx.fillText(labels[i], padL + i * barW + barW / 2, H - 7);
+    }
+}
+
+// -- Duration: 5-min buckets, 0-5 … 55-60, 60+ --------------------------------
+export function drawDurationHistogram(canvas, tripsData) {
+    const bucketSize  = 5;
+    const bucketCount = 13;
+    const labels = Array.from({ length: bucketCount }, (_, i) =>
+        i === bucketCount - 1 ? '60+' : String(i * bucketSize)
+    );
+    _drawHistogram(canvas, tripsData, { field: 'duration', bucketSize, bucketCount, labels });
+}
+
+// -- Distance: 500-m buckets, 0-500 … 5500-6000, 6000+ -----------------------
+export function drawDistanceHistogram(canvas, tripsData) {
+    const bucketSize  = 500;
+    const bucketCount = 13;
+    // Show every other label to avoid crowding (0, 1k, 2k … 6k+)
+    const labels = Array.from({ length: bucketCount }, (_, i) => {
+        if (i === bucketCount - 1) return '6k+';
+        const km = (i * bucketSize) / 1000;
+        return i % 2 === 0 ? (km === 0 ? '0' : km + 'k') : '';
+    });
+    _drawHistogram(canvas, tripsData, { field: 'distance', bucketSize, bucketCount, labels });
+}
+
+export function drawHourHistogram(canvas, tripsData) {
+    const bucketCount = 24;
+    const labels = Array.from({ length: 24 }, (_, i) => i % 3 === 0 ? String(i) : '');
+    _drawHistogram(canvas, tripsData, {
+        valueFn:    trip => new Date(trip.start_time).getHours(),
+        bucketSize: 1,
+        bucketCount,
+        labels,
+    });
+}

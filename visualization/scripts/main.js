@@ -7,7 +7,7 @@ import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
 import { drawTrips, highlightTripOnMap } from './trips.js';
-import { buildTripsPerMinute, initChart, updateChartDot } from './chart.js';
+import { buildTripsPerMinute, initChart, updateChartDot, drawDurationHistogram, drawDistanceHistogram, drawHourHistogram } from './chart.js';
 import { initCalendar, refreshCalendar } from './calendar.js';
 
 let updateThrottle;
@@ -163,6 +163,18 @@ async function loadCityData(city_id) {
             state.currentTimeMinutes = minute;
             updateAllComponents();
         });
+        drawDurationHistogram(
+            document.getElementById('duration-chart'),
+            state.tripsData
+        );
+        drawDistanceHistogram(
+            document.getElementById('distance-chart'),
+            state.tripsData
+        );
+        drawHourHistogram(
+            document.getElementById('hour-chart'),
+            state.tripsData
+        );
         refreshCalendar();
     });
 }
