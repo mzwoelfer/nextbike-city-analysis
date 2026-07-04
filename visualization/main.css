@@ -533,7 +533,7 @@ th[data-order=""]::after     { content: ""; }
     }
 
     #map-section {
-        height: 60vh;
+        height: 100vh;
         flex-shrink: 0;
         overflow: hidden;
     }
