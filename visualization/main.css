@@ -195,9 +195,8 @@ html, body {
     flex: 1;
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.18);
+    height: 20px;
+    background: transparent;
     outline: none;
     cursor: pointer;
 }
@@ -212,6 +211,18 @@ html, body {
     cursor: pointer;
     box-shadow: 0 0 0 3px rgba(240, 112, 48, 0.28);
     transition: transform 0.1s;
+}
+
+#time-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+#time-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
 }
 
 #time-slider::-webkit-slider-thumb:hover {
