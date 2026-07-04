@@ -21,7 +21,6 @@ function updateInfoBox() {
     document.getElementById('trip-date').textContent = tripDate;
 
     let activeTrips = 0;
-    const activeBikes = new Set();
 
     tripsData.forEach((trip) => {
         const tripStart = new Date(trip.start_time);
@@ -30,19 +29,26 @@ function updateInfoBox() {
         if (currentTimeMinutes >= minutesSinceMidnight(tripStart) &&
             currentTimeMinutes <= minutesSinceMidnight(tripEnd)) {
             activeTrips++;
-            activeBikes.add(trip.bike_number);
         }
     });
+    const latestCount = {};
+        state.stationData.forEach(({ id, minute, bike_count }) => {
+            if (minutesSinceMidnight(new Date(minute)) <= currentTimeMinutes) {
+                latestCount[id] = bike_count;
+            }
+        });
+    const availableBikes = Object.values(latestCount).reduce((s, n) => s + n, 0);
+
 
     // Play area stats
     document.getElementById('trip-count').textContent = tripsData.length;
     document.getElementById('active-trips-count').textContent = activeTrips;
-    document.getElementById('bike-count').textContent = activeBikes.size;
+    document.getElementById('bike-count').textContent = availableBikes;
 
     // Sidebar stats
     document.getElementById('sb-trip-count').textContent = tripsData.length;
     document.getElementById('sb-active-trips').textContent = activeTrips;
-    document.getElementById('sb-bike-count').textContent = activeBikes.size;
+    document.getElementById('sb-bike-count').textContent = availableBikes;
 
     // Chart dot
     updateChartDot(currentTimeMinutes);
