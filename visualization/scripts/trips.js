@@ -42,7 +42,8 @@ export function drawTrips() {
         const tripEnd = new Date(trip.end_time);
 
         if (currentTime >= tripStart && currentTime <= tripEnd) {
-            const segmentCount = trip.timestamps.findLastIndex(ts => new Date(ts) <= currentTime) + 1;
+            const elapsed = (currentTime - tripStart) / (tripEnd - tripStart);
+            const segmentCount = Math.floor(elapsed * trip.coordinates.length); 
             const pathCoordinates = trip.coordinates.slice(0, Math.max(segmentCount, 0)).map(([lon, lat]) => [lat, lon]);
 
             if (pathCoordinates.length > 1) {

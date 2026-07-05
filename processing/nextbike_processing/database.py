@@ -262,14 +262,14 @@ def insert_trips(trips_df, city_id, conn):
     """
     Batch insert trip records with their associated routes.
     
-    A "trip" is a bike movement from point A to point B with timestamps.
+    A "trip" is a bike movement from point A to point B.
     This function links each trip to its pre-computed route (via START/END coordinates).
     
     Args:
         trips_df (pd.DataFrame): DataFrame with columns:
             [bike_number, start_time, end_time, duration, 
              start_latitude, start_longitude, end_latitude, end_longitude,
-             timestamps, coordinates]
+             coordinates]
         
         city_id (int): The city being processed
         conn (psycopg.Connection): Active database connection
@@ -280,7 +280,6 @@ def insert_trips(trips_df, city_id, conn):
     Notes:
         - Silently skips duplicate trips (same bike, city, start_time)
         - Looks up route_id from coordinates (foreign key to routes table)
-        - timestamps must be a list of ISO 8601 strings
     
     Example:
         >>> trips = pd.DataFrame({
@@ -292,7 +291,6 @@ def insert_trips(trips_df, city_id, conn):
         ...     'start_longitude': [16.3],
         ...     'end_latitude': [48.25],
         ...     'end_longitude': [16.35],
-        ...     'timestamps': [['2025-06-13T08:00:00', '2025-06-13T08:02:30', '2025-06-13T08:05:00']],
         ... })
         >>> count = insert_trips(trips, city_id=467, conn=conn)
         >>> print(f"Inserted {count} trips")
@@ -314,7 +312,6 @@ def insert_trips(trips_df, city_id, conn):
                 row["start_longitude"],
                 row["end_latitude"], 
                 row["end_longitude"],
-                json.dumps(row["timestamps"]),
             )
             for _, row in trips_df.iterrows()
         ]
@@ -325,15 +322,14 @@ def insert_trips(trips_df, city_id, conn):
             cur.execute(
                 """
                 INSERT INTO public.trips
-                    (bike_number, city_id, start_time, end_time, duration_seconds, route_id, timestamps)
+                    (bike_number, city_id, start_time, end_time, duration_seconds, route_id)
                 SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
                     (SELECT id FROM public.routes
                      WHERE start_latitude = %s 
                        AND start_longitude = %s
                        AND end_latitude = %s 
                        AND end_longitude = %s
-                     LIMIT 1),
-                    %s
+                     LIMIT 1)
                 ON CONFLICT (bike_number, city_id, start_time) 
                 DO NOTHING
                 """,

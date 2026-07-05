@@ -118,62 +118,6 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
 
     return shortest_path_length, path_segments
 
-
-def build_coordinates_and_timestamps(trips):
-    """
-    Interpolate timestamps along the route segments.
-    
-    Given a route with segments and a start time + duration,
-    creates a parallel timestamps array that evenly distributes
-    the time across all waypoints.
-    
-    Args:
-        trips (pd.DataFrame): Must have columns:
-            [start_time (datetime), duration (timedelta), segments (list of [lat, lon])]
-    
-    Returns:
-        pd.DataFrame: Same trips df with added columns:
-            - coordinates: [[lon, lat], [lon, lat], ...] (GeoJSON format, opposite of segments)
-            - timestamps: [ISO_string, ISO_string, ...]  (one per coordinate)
-    
-    Example:
-        Input segments: [[48.2, 16.3], [48.21, 16.31], [48.22, 16.32]]
-        Input start_time: 2025-06-13 10:00:00
-        Input duration: 300 seconds (5 minutes)
-        
-        Output timestamps: [
-            "2025-06-13T10:00:00",
-            "2025-06-13T10:02:30",
-            "2025-06-13T10:05:00"
-        ]
-    """
-    def process_row(row):
-        start_time = pd.to_datetime(row["start_time"])
-        duration = row["duration"]
-        segments = row["segments"]
-        num_segments = len(segments)
-        
-        # Distribute duration evenly across all waypoints
-        time_increment = duration / max(num_segments - 1, 1)
-
-        # Convert [lat, lon] to GeoJSON [lon, lat]
-        coordinates = [[lon, lat] for lat, lon in segments]
-        
-        # Create ISO 8601 timestamps for each waypoint
-        timestamps = [
-            (start_time + pd.to_timedelta(i * time_increment, unit="s")).isoformat()
-            for i in range(num_segments)
-        ]
-        
-        return pd.Series({"coordinates": coordinates, "timestamps": timestamps})
-
-    result = trips.apply(process_row, axis=1)
-    trips["coordinates"] = result["coordinates"]
-    trips["timestamps"] = result["timestamps"]
-    
-    return trips
-
-
 def process_and_save_trips(city_id, date, folder, export_files=False):
     """
     Main orchestration function: Fetch raw movements → compute routes → save results.
@@ -277,16 +221,13 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         how="left",
     )
     
-    # ===== STEP 6: Interpolate timestamps along route segments =====
-    trips = build_coordinates_and_timestamps(trips)
-    
-    # ===== STEP 7: Save to database =====
+    # ===== STEP 6: Save to database =====
     print(f"  Saving {len(trips)} trips to database...")
     with get_connection() as conn:
         insert_trips(trips, city_id, conn)
     print(f"  Done!")
     
-    # ===== STEP 8: Export files (optional) =====
+    # ===== STEP 7: Export files (optional) =====
     if not export_files:
         return
     
@@ -306,7 +247,6 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
                 "end_time": row["end_time"],
                 "duration": row["duration"],
                 "distance": row["distance"],
-                "timestamps": row["timestamps"],
             },
         }
         for _, row in trips.iterrows()
@@ -323,10 +263,7 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     trips_export["date"] = date
     # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
     trips_export["segments"] = trips_export.apply(
-        lambda row: [
-            [lat, lon, ts] 
-            for [lon, lat], ts in zip(row["coordinates"], row["timestamps"])
-        ],
+        lambda row: [[lat, lon] for [lon, lat] in row["coordinates"]],
         axis=1,
     )
     

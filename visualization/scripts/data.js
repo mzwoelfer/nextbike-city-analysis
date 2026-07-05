@@ -195,7 +195,6 @@ export const loadTripsData = async () => {
         duration: feature.properties.duration,
         distance: feature.properties.distance,
         coordinates: feature.geometry.coordinates, // [[lon, lat], ...]
-        timestamps: feature.properties.timestamps,
         route_id: feature.properties.route_id ?? null,
       }));
 
@@ -210,7 +209,7 @@ export const loadTripsData = async () => {
           `No trip data for city ${state.city_id} on ${state.date}`,
         );
       state.tripsData = rows.map((row) => {
-        // segments is a Python-repr list: [[lat, lon, 'timestamp'], ...]
+        // segments is a Python-repr list: [[lat, lon,], ...]
         const segments = JSON.parse(row.segments.replace(/'/g, '"'));
         return {
           bike_number: row.bike_number,
@@ -219,7 +218,6 @@ export const loadTripsData = async () => {
           duration: Number(row.duration),
           distance: Number(row.distance),
           coordinates: segments.map(([lat, lon]) => [lon, lat]), // GeoJSON: [lon, lat]
-          timestamps: segments.map(([, , ts]) => ts),
           route_id: row.route_id != null ? Number(row.route_id) : null,
         };
       });

@@ -59,6 +59,5 @@ CREATE TABLE IF NOT EXISTS public.trips (
     end_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     duration_seconds DOUBLE PRECISION NOT NULL,
     route_id INTEGER REFERENCES public.routes(id),
-    timestamps JSONB NOT NULL,
     UNIQUE (bike_number, city_id, start_time)
 );
