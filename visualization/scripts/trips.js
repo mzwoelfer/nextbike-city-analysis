@@ -15,7 +15,7 @@ export function createFadingPolyline(pathCoordinates) {
         const opacity = (i + 1) / totalSegments;
 
         const polyline = L.polyline([start, end], {
-            color: '#91785D',
+            color: 'var(--accent)',
             weight: 3,
             opacity: opacity,
         });
