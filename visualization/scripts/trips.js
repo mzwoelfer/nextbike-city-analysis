@@ -15,7 +15,7 @@ export function createFadingPolyline(pathCoordinates) {
         const opacity = (i + 1) / totalSegments;
 
         const polyline = L.polyline([start, end], {
-            color: '#91785D',
+            color: 'var(--accent)',
             weight: 3,
             opacity: opacity,
         });
@@ -74,7 +74,7 @@ export function highlightTripOnMap(index) {
     state.activeRoutes = {};
 
     const pathCoordinates = trip.coordinates.map(([lon, lat]) => [lat, lon]);
-    const selectedRoute = L.polyline(pathCoordinates, { color: 'red', weight: 4 }).addTo(map);
+    const selectedRoute = L.polyline(pathCoordinates, { color: 'var(--accent)', weight: 4 }).addTo(map);
 
     if (pathCoordinates.length > 0) {
         map.panTo(pathCoordinates[0]);
