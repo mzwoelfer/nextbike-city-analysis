@@ -11,8 +11,8 @@ export const plotStationsOnMap = () => {
 
         const marker = L.circleMarker([latitude, longitude], {
             radius: 6,
-            color: '#7C0A02',
-            fillColor: '#7C0A02',
+            color: 'var(--bg-dark-2)',
+            fillColor: 'var(--bg-dark-2)',
             fillOpacity: 1,
         }).addTo(map);
 

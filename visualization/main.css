@@ -286,7 +286,7 @@ html, body {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--text-muted);
+    color: var(--accent);
     margin-bottom: 14px;
 }
 
@@ -553,7 +553,7 @@ th[data-order=""]::after     { content: ""; }
     text-align: center;
     font-size: 10px;
     font-weight: bold;
-    color: #fff5bc;
+    color: var(--accent);
     pointer-events: none;
 }
 

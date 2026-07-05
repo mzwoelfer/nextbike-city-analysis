@@ -2,7 +2,7 @@
 
 The `processor` service runs automatically at midnight.
 It calculates the previous day's trips for every city in `CITY_IDS`.
-Use the steps below to trigger processing on demand — for a specific city, date, or to backfill historical data.
+Use the steps below to trigger processing on demand  for a specific city, date, or to backfill historical data.
 
 ## Prerequisites
 
@@ -65,7 +65,7 @@ docker exec nextbike_visualization sh -c "cd /app/data && sh /app/create_manifes
 | `--export-files` | no | Also write static `.geojson.gz` / `.csv.gz` files |
 | `--export-folder` | no* | Output folder inside the container. Required when `--export-files` is set. |
 
-The processor image has `ENTRYPOINT ["python", "-m", "nextbike_processing.main"]`, so pass only the arguments — not the python command itself.
+The processor image has `ENTRYPOINT ["python", "-m", "nextbike_processing.main"]`, so pass only the arguments.
 
 ## Backfill multiple dates
 
