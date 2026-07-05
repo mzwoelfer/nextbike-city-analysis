@@ -216,7 +216,10 @@ export function drawDurationHistogram(canvas, tripsData) {
     const labels = Array.from({ length: bucketCount }, (_, i) =>
         i === bucketCount - 1 ? '60+' : String(i * bucketSize)
     );
-    _drawHistogram(canvas, tripsData, { field: 'duration', bucketSize, bucketCount, labels });
+    _drawHistogram(canvas, tripsData, {
+        valueFn: trip => trip.duration / 60,   // convert seconds to minutes
+        bucketSize, bucketCount, labels,
+    });
 }
 
 // -- Distance: 500-m buckets, 0-500 … 5500-6000, 6000+ -----------------------
