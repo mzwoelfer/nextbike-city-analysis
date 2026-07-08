@@ -33,7 +33,7 @@ class City:
             longitude=country.get("lng", 0),
             set_point_bikes=country.get("set_point_bikes", 0),
             available_bikes=country.get("available_bikes", 0),
-            last_updated=datetime.datetime.now(ZoneInfo(tz)).replace(tzinfo=None),
+            last_updated=datetime.datetime.now(ZoneInfo(tz)),
         )
 
     def as_tuple(self) -> tuple:

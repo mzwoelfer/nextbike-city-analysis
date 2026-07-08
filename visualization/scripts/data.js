@@ -196,7 +196,10 @@ export const loadTripsData = async () => {
         distance: feature.properties.distance,
         coordinates: feature.geometry.coordinates, // [[lon, lat], ...]
         route_id: feature.properties.route_id ?? null,
+        timezone: feature.properties.timezone ?? geojson.timezone ?? "UTC",
       }));
+
+      state.city_timezone = geojson.timezone ?? state.tripsData[0]?.timezone ?? "UTC";
 
       state.city_lat = state.tripsData[0].coordinates[0][1];
       state.city_lng = state.tripsData[0].coordinates[0][0];
@@ -219,8 +222,10 @@ export const loadTripsData = async () => {
           distance: Number(row.distance),
           coordinates: segments.map(([lat, lon]) => [lon, lat]), // GeoJSON: [lon, lat]
           route_id: row.route_id != null ? Number(row.route_id) : null,
+          timezone: row.timezone || "UTC",
         };
       });
+      state.city_timezone = state.tripsData[0]?.timezone || "UTC";
       state.city_lat = state.tripsData[0].coordinates[0][1];
       state.city_lng = state.tripsData[0].coordinates[0][0];
     }
@@ -264,7 +269,11 @@ export const loadStationData = async () => {
         city_name: row.city_name,
         bike_count: row.bike_count,
         bike_list: row.bike_list || "",
+        timezone: row.timezone || state.city_timezone || "UTC",
       }));
+      if (rows.length > 0) {
+        state.city_timezone = rows[0].timezone || state.city_timezone || "UTC";
+      }
     } else {
       const filePath = `data/${state.city_id}_stations_${state.date}.csv.gz`;
       const csvData = await fetchAndParseGzipCSV(filePath);
@@ -283,7 +292,11 @@ export const loadStationData = async () => {
         city_name: row.city_name,
         bike_count: Number(row.bike_count),
         bike_list: row.bike_list || "",
+        timezone: row.timezone || state.city_timezone || "UTC",
       }));
+      if (state.stationData.length > 0) {
+        state.city_timezone = state.stationData[0].timezone || state.city_timezone || "UTC";
+      }
     }
 
     console.log("Station data loaded:", state.stationData);

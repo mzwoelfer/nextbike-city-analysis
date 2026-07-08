@@ -1,4 +1,5 @@
 import os
+from zoneinfo import ZoneInfo
 
 import psycopg
 from dotenv import load_dotenv
@@ -8,6 +9,11 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv()
 
 app = FastAPI()
+
+
+def to_city_iso(timestamp, city_timezone):
+    city_zone = ZoneInfo(city_timezone)
+    return timestamp.astimezone(city_zone).isoformat(timespec="seconds")
 
 
 def get_connection():
@@ -27,7 +33,8 @@ def available():
             cur.execute("""
                 SELECT t.city_id,
                        COALESCE(c.city_name, t.city_id::text) AS city_name,
-                       array_agg(DISTINCT DATE(t.start_time)::text ORDER BY DATE(t.start_time)::text DESC)
+                       array_agg(DISTINCT DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC'))::text
+                                 ORDER BY DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC'))::text DESC)
                 FROM public.trips t
                 LEFT JOIN public.cities c ON t.city_id = c.city_id
                 GROUP BY t.city_id, c.city_name
@@ -45,18 +52,22 @@ def trips(city_id: int, date: str):
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT t.bike_number,
-                       t.start_time::text,
-                       t.end_time::text,
+                       t.start_time,
+                       t.end_time,
                        t.duration_seconds,
                        r.distance_meters,
                        r.coordinates,
-                       t.route_id
+                       t.route_id,
+                       COALESCE(c.timezone, 'UTC') AS city_timezone
                 FROM public.trips t
                 LEFT JOIN public.routes r ON t.route_id = r.id
-                WHERE t.city_id = %s AND DATE(t.start_time) = %s
+                LEFT JOIN public.cities c ON t.city_id = c.city_id
+                WHERE t.city_id = %s AND DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC')) = %s
                 ORDER BY t.start_time
             """, (city_id, date))
             rows = cur.fetchall()
+
+    city_timezone = rows[0][7] if rows else "UTC"
 
     features = [
         {
@@ -64,16 +75,21 @@ def trips(city_id: int, date: str):
             "geometry": {"type": "LineString", "coordinates": row[5] or []},
             "properties": {
                 "bike_number": row[0],
-                "start_time": row[1],
-                "end_time": row[2],
+                "start_time": to_city_iso(row[1], row[7]),
+                "end_time": to_city_iso(row[2], row[7]),
                 "duration": row[3],
                 "distance": row[4] or 0,
                 "route_id": row[6],
+                "timezone": row[7],
             },
         }
         for row in rows
     ]
-    return {"type": "FeatureCollection", "features": features}
+    return {
+        "type": "FeatureCollection",
+        "timezone": city_timezone,
+        "features": features,
+    }
 
 
 @app.get("/api/stations")
@@ -82,12 +98,20 @@ def stations(city_id: int, date: str):
         raise HTTPException(status_code=400, detail="date parameter is required")
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # Fetch city timezone once; use it for all subsequent date filters
+            cur.execute(
+                "SELECT COALESCE(timezone, 'UTC') FROM public.cities WHERE city_id = %s",
+                (city_id,)
+            )
+            tz_row = cur.fetchone()
+            city_tz = tz_row[0] if tz_row else 'UTC'
+
             # First, find the latest available date for this city (on or before the requested date)
             cur.execute("""
-                SELECT MAX(DATE(last_updated))
+                SELECT MAX(DATE(last_updated AT TIME ZONE %s))
                 FROM public.stations
-                WHERE city_id = %s AND DATE(last_updated) <= %s::date
-            """, (city_id, date))
+                WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) <= %s::date
+            """, (city_tz, city_id, city_tz, date))
             result = cur.fetchone()
             latest_date = result[0] if result[0] else date
             
@@ -97,11 +121,11 @@ def stations(city_id: int, date: str):
                            maintenance, terminal_type, city_id, city_name,
                            ROW_NUMBER() OVER (
                                PARTITION BY uid, latitude, longitude, name, spot,
-                                            station_number, terminal_type, DATE(last_updated), maintenance
+                                            station_number, terminal_type, DATE(last_updated AT TIME ZONE %s), maintenance
                                ORDER BY last_updated DESC
                            ) AS rn
                     FROM public.stations
-                    WHERE city_id = %s AND DATE(last_updated) = %s
+                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
                 ),
                 filtered_stations AS (
                     SELECT id, uid, latitude, longitude, name, spot, station_number,
@@ -109,18 +133,18 @@ def stations(city_id: int, date: str):
                     FROM station_data WHERE rn = 1
                 ),
                 bike_data AS (
-                    SELECT DATE_TRUNC('minute', last_updated) AS minute,
+                    SELECT DATE_TRUNC('minute', last_updated AT TIME ZONE %s) AS minute,
                            station_number,
                            COUNT(bike_number) AS bike_count,
                            STRING_AGG(bike_number::TEXT, ', ') AS bike_list
                     FROM public.bikes
-                    WHERE city_id = %s AND DATE(last_updated) = %s
-                    GROUP BY DATE_TRUNC('minute', last_updated), station_number
+                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
+                    GROUP BY DATE_TRUNC('minute', last_updated AT TIME ZONE %s), station_number
                 ),
                 distinct_minutes AS (
-                    SELECT DISTINCT DATE_TRUNC('minute', last_updated) AS minute
+                    SELECT DISTINCT DATE_TRUNC('minute', last_updated AT TIME ZONE %s) AS minute
                     FROM public.bikes
-                    WHERE city_id = %s AND DATE(last_updated) = %s
+                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
                 ),
                 station_minute_combinations AS (
                     SELECT dm.minute, fs.*
@@ -146,12 +170,19 @@ def stations(city_id: int, date: str):
                 FROM bike_changes
                 WHERE bike_count IS DISTINCT FROM previous_bike_count
                 ORDER BY station_number, minute
-            """, (city_id, latest_date, city_id, latest_date, city_id, latest_date))
+            """, (
+                city_tz, city_id, city_tz, latest_date,   # station_data
+                city_tz,                                    # bike_data DATE_TRUNC select
+                city_id, city_tz, latest_date,             # bike_data WHERE
+                city_tz,                                    # bike_data GROUP BY
+                city_tz,                                    # distinct_minutes DATE_TRUNC
+                city_id, city_tz, latest_date,             # distinct_minutes WHERE
+            ))
             rows = cur.fetchall()
 
     return [
         {
-            "minute": row[0].strftime("%Y-%m-%dT%H:%M:%S"),
+            "minute": row[0].replace(tzinfo=ZoneInfo(city_tz)).isoformat(timespec="seconds"),
             "id": row[1],
             "uid": row[2],
             "latitude": row[3],
@@ -165,6 +196,7 @@ def stations(city_id: int, date: str):
             "city_name": row[11],
             "bike_count": row[12],
             "bike_list": row[13] or "",
+            "timezone": city_tz,
         }
         for row in rows
     ]

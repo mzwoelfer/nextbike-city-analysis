@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import osmnx as ox
 import networkx as nx
+from zoneinfo import ZoneInfo
 from nextbike_processing.database import (
     get_connection, 
     get_cached_routes,
@@ -10,7 +11,17 @@ from nextbike_processing.database import (
     insert_trips
 )
 from nextbike_processing.utils import save_gzipped_geojson, save_gzipped_csv
-from nextbike_processing.cities import get_city_coordinates_from_database
+from nextbike_processing.cities import (
+    get_city_coordinates_from_database,
+    get_city_timezone_from_database,
+)
+
+
+def _to_city_isoformat(timestamp, city_zone):
+    ts = pd.Timestamp(timestamp)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return ts.tz_convert(city_zone).isoformat(timespec="seconds")
 
 
 def fetch_trip_data(city_id, date):
@@ -34,11 +45,12 @@ def fetch_trip_data(city_id, date):
     """
     query = """
         WITH ordered_bikes AS (
-            SELECT *
-            FROM public.bikes
-            WHERE city_id = %s
-            AND DATE(last_updated) = %s
-            ORDER BY bike_number, last_updated
+            SELECT b.*
+            FROM public.bikes b
+            JOIN public.cities c ON b.city_id = c.city_id
+            WHERE b.city_id = %s
+            AND DATE(b.last_updated AT TIME ZONE c.timezone) = %s
+            ORDER BY b.bike_number, b.last_updated
         ),
         bike_movements AS (
             SELECT bike_number,
@@ -232,6 +244,7 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         return
     
     print(f"  Exporting files...")
+    city_zone = ZoneInfo(get_city_timezone_from_database(city_id))
     
     # Export as GeoJSON for web mapping
     features = [
@@ -239,14 +252,15 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
-                "coordinates": row["coordinates"],
+                "coordinates": [[lon, lat] for lat, lon in row["segments"]],
             },
             "properties": {
                 "bike_number": row["bike_number"],
-                "start_time": row["start_time"],
-                "end_time": row["end_time"],
+                "start_time": _to_city_isoformat(row["start_time"], city_zone),
+                "end_time": _to_city_isoformat(row["end_time"], city_zone),
                 "duration": row["duration"],
                 "distance": row["distance"],
+                "timezone": str(city_zone),
             },
         }
         for _, row in trips.iterrows()
@@ -261,11 +275,15 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     # Export as CSV for static visualization (GitHub Pages mode)
     trips_export = trips.copy()
     trips_export["date"] = date
-    # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
-    trips_export["segments"] = trips_export.apply(
-        lambda row: [[lat, lon] for [lon, lat] in row["coordinates"]],
-        axis=1,
+    trips_export["timezone"] = str(city_zone)
+    trips_export["start_time"] = trips_export["start_time"].map(
+        lambda ts: _to_city_isoformat(ts, city_zone)
     )
+    trips_export["end_time"] = trips_export["end_time"].map(
+        lambda ts: _to_city_isoformat(ts, city_zone)
+    )
+    # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
+    trips_export["segments"] = trips_export["segments"]
     
     trips_export["route_id"] = trips_export.groupby(
         ["start_latitude", "start_longitude", "end_latitude", "end_longitude"]
@@ -273,7 +291,7 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     csv_cols = [
         "bike_number", "start_latitude", "start_longitude", "start_time",
         "end_latitude", "end_longitude", "end_time", "duration", "date",
-        "distance", "segments", "route_id"
+        "distance", "segments", "route_id", "timezone"
     ]
     save_gzipped_csv(
         os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), 

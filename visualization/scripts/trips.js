@@ -29,20 +29,18 @@ export function createFadingPolyline(pathCoordinates) {
 
 export function drawTrips() {
     const map = getMap();
-    const { tripsData, currentTimeMinutes, activeRoutes } = state;
+    const { tripsData, currentTimeMinutes, activeRoutes, city_timezone } = state;
 
     if (!tripsData || tripsData.length === 0) return;
-
-    const currentTime = new Date(tripsData[0].start_time);
-    currentTime.setHours(0, 0, 0, 0);
-    currentTime.setMinutes(currentTimeMinutes);
 
     tripsData.forEach((trip, index) => {
         const tripStart = new Date(trip.start_time);
         const tripEnd = new Date(trip.end_time);
+        const tripStartMinutes = minutesSinceMidnight(tripStart, city_timezone);
+        const tripEndMinutes = minutesSinceMidnight(tripEnd, city_timezone);
 
-        if (currentTime >= tripStart && currentTime <= tripEnd) {
-            const elapsed = (currentTime - tripStart) / (tripEnd - tripStart);
+        if (currentTimeMinutes >= tripStartMinutes && currentTimeMinutes <= tripEndMinutes) {
+            const elapsed = (currentTimeMinutes - tripStartMinutes) / (tripEndMinutes - tripStartMinutes || 1);
             const segmentCount = Math.floor(elapsed * trip.coordinates.length); 
             const pathCoordinates = trip.coordinates.slice(0, Math.max(segmentCount, 0)).map(([lon, lat]) => [lat, lon]);
 
@@ -69,7 +67,7 @@ export function highlightTripOnMap(index) {
     const trip = state.tripsData[index];
     if (!trip) return;
     const tripStartTime = new Date(trip.start_time);
-    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime);
+    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime, state.city_timezone);
 
     Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
     state.activeRoutes = {};

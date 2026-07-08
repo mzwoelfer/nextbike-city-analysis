@@ -29,12 +29,12 @@ export const plotStationsOnMap = () => {
 
 
 export const updateStationMarkers = () => {
-    const { stationData, currentTimeMinutes, markerMap } = state;
+    const { stationData, currentTimeMinutes, markerMap, city_timezone } = state;
 
     if (!stationData || stationData.length === 0 || !markerMap) return;
 
     stationData.forEach(({ id, minute, bike_count }) => {
-        const stationTime = minutesSinceMidnight(new Date(minute));
+        const stationTime = minutesSinceMidnight(new Date(minute), city_timezone);
         if (stationTime <= currentTimeMinutes) {
             const stationMarkers = markerMap[id];
             if (stationMarkers && stationMarkers.labelMarker) {

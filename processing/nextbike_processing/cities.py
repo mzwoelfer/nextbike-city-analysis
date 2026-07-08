@@ -13,3 +13,17 @@ def get_city_coordinates_from_database(city_id):
             lat, lon = cur.fetchone()
 
     return lat, lon
+
+
+def get_city_timezone_from_database(city_id):
+    query = """
+        SELECT COALESCE(timezone, 'UTC')
+        FROM public.cities
+        WHERE city_id = %s;
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (city_id,))
+            row = cur.fetchone()
+
+    return row[0] if row else "UTC"

@@ -2,6 +2,7 @@ const state = {
     city_id: 0,
     city_lat: 0,
     city_lng: 0,
+    city_timezone: "UTC",
     cities: {},
     tripsData: [],
     activeRoutes: {},
@@ -16,13 +17,15 @@ const state = {
     useApi: true,
 
     nextDay() {
-        const currentDate = new Date(this.date);
-        currentDate.setDate(currentDate.getDate() + 1);
+        const [year, month, day] = this.date.split('-').map(Number);
+        const currentDate = new Date(Date.UTC(year, month - 1, day));
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         this.date = currentDate.toISOString().split('T')[0];
     },
     previousDay() {
-        const currentDate = new Date(this.date);
-        currentDate.setDate(currentDate.getDate() - 1);
+        const [year, month, day] = this.date.split('-').map(Number);
+        const currentDate = new Date(Date.UTC(year, month - 1, day));
+        currentDate.setUTCDate(currentDate.getUTCDate() - 1);
         this.date = currentDate.toISOString().split('T')[0];
     },
 };

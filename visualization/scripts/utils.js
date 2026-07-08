@@ -6,4 +6,30 @@ export const formatTime = (minutes) => {
 };
 
 
-export const minutesSinceMidnight = (date) => date.getHours() * 60 + date.getMinutes();
+export const minutesSinceMidnight = (date, timezone = null) => {
+    if (!timezone) {
+        return date.getHours() * 60 + date.getMinutes();
+    }
+
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+    }).formatToParts(date);
+
+    const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+    const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+    return hour * 60 + minute;
+};
+
+
+export const formatTimeInTimezone = (dateString, timezone) => {
+    return new Intl.DateTimeFormat("en-GB", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+    }).format(new Date(dateString));
+};

@@ -323,7 +323,7 @@ def insert_trips(trips_df, city_id, conn):
                 """
                 INSERT INTO public.trips
                     (bike_number, city_id, start_time, end_time, duration_seconds, route_id)
-                SELECT %s, %s, %s::timestamp, %s::timestamp, %s,
+                SELECT %s, %s, %s, %s, %s,
                     (SELECT id FROM public.routes
                      WHERE start_latitude = %s 
                        AND start_longitude = %s

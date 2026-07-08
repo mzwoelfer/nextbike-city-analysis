@@ -1,5 +1,6 @@
 import state from "./state.js";
 import { highlightTrip } from "./main.js";
+import { formatTimeInTimezone } from "./utils.js";
 
 export function populateRouteTable() {
     const tableBody = document.querySelector('#route-table tbody');
@@ -11,8 +12,8 @@ export function populateRouteTable() {
 
         row.innerHTML = `
             <td>${trip.bike_number}</td>
-            <td>${new Date(trip.start_time).toLocaleTimeString()}</td>
-            <td>${new Date(trip.end_time).toLocaleTimeString()}</td>
+            <td>${formatTimeInTimezone(trip.start_time, state.city_timezone)}</td>
+            <td>${formatTimeInTimezone(trip.end_time, state.city_timezone)}</td>
             <td>${trip.distance.toFixed(2)}</td>
             <td>${Math.floor(trip.duration / 60)}</td>
         `;
