@@ -165,7 +165,7 @@ export const loadFirstAvailableData = async () => {
 
   if (state.useApi) {
     // city names already populated from /api/available
-    return;
+    return true;
   }
 
   // existing CSV fallback for static / GitHub Pages mode
