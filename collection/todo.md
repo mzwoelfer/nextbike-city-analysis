@@ -81,36 +81,3 @@ for date in \
 done
 
 
-----
-
-#### TODO MIGRATIONS
-
-I'm in Ask mode so I can't write files — switch to Agent mode and ask me to create it, or paste this content into collection/todo_migrations.md:
-
-If the table does not exist yet, start at Step 0.
-
-Step 0 — Create schema_migrations table (run once, ever)
-Migration 002 — Fix timestamp timezone (UTC naive → city local time)
-File: migrate_local_time.sql
-
-What it does:
-
-Converts all existing UTC-naive timestamps in bikes, stations, cities, trips
-to local wall-clock time using each city's stored timezone
-Collector code now uses ZoneInfo(city.timezone) instead of datetime.now()
-After running: delete all trips and reprocess every date (see todo.md).
-
-Migration 003 — Drop timestamps JSONB from trips
-File: 003_remove_timestamps_jsonb.sql
-
-What it does:
-
-Drops the timestamps column from public.trips
-Visualization now uses fraction-based elapsed-time interpolation instead
-After all migrations: rebuild containers
-Cleanup (optional, do when convenient)
-Move migrate_local_time.sql → collection/migrations/002_fix_timestamp_timezone.sql
-Move 003_remove_timestamps_jsonb.sql → collection/migrations/003_remove_timestamps_jsonb.sql
-Add schema_migrations table to create_bike_and_stations_db.sql
-so fresh deployments have it from the start
-
