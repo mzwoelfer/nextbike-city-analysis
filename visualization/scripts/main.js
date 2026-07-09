@@ -5,7 +5,7 @@ import { togglePlay, updateSlider } from './playback.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
-import { drawTrips, highlightTripOnMap } from './trips.js';
+import { drawTripsOnMap, highlightTripOnMap } from './trips.js';
 import { buildTripsPerMinute, initChart, updateChartDot, drawDurationHistogram, drawDistanceHistogram, drawHourHistogram } from './chart.js';
 import { initCalendar, refreshCalendar } from './calendar.js';
 
@@ -145,7 +145,7 @@ export function updateAllComponents() {
     }
 
     updateThrottle = requestAnimationFrame(() => {
-        drawTrips();
+        drawTripsOnMap();
         updateStationMarkers();
         renderDashboardStats();
     });
