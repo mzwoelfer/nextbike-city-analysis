@@ -2,7 +2,6 @@ import state from './state.js';
 import { initializeMap } from './map.js';
 import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
-import { formatTime, minutesSinceMidnight } from './utils.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
@@ -13,32 +12,33 @@ import { initCalendar, refreshCalendar } from './calendar.js';
 let updateThrottle;
 
 function updateInfoBox() {
-    const { tripsData, currentTimeMinutes, city_timezone } = state;
+    const { tripsData, currentTimeMinutes } = state;
 
     if (!tripsData || tripsData.length === 0) return;
 
-    const tripDate = new Intl.DateTimeFormat('en-CA', {
-        timeZone: city_timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    }).format(new Date(tripsData[0].start_time));
+    const tripDate = state.date;
     document.getElementById('trip-date').textContent = tripDate;
 
     let activeTrips = 0;
 
     tripsData.forEach((trip) => {
-        const tripStart = new Date(trip.start_time);
-        const tripEnd = new Date(trip.end_time);
+        const tripStartMinutes = trip.start_minute_city;
+        const tripEndMinutes = trip.end_minute_city;
+        if (tripStartMinutes == null || tripEndMinutes == null) {
+            return;
+        }
 
-        if (currentTimeMinutes >= minutesSinceMidnight(tripStart, city_timezone) &&
-            currentTimeMinutes <= minutesSinceMidnight(tripEnd, city_timezone)) {
+        if (currentTimeMinutes >= tripStartMinutes &&
+            currentTimeMinutes <= tripEndMinutes) {
             activeTrips++;
         }
     });
     const latestCount = {};
-        state.stationData.forEach(({ id, minute, bike_count }) => {
-            if (minutesSinceMidnight(new Date(minute), city_timezone) <= currentTimeMinutes) {
+        state.stationData.forEach(({ id, minute_city, bike_count }) => {
+            if (minute_city == null) {
+                return;
+            }
+            if (minute_city <= currentTimeMinutes) {
                 latestCount[id] = bike_count;
             }
         });

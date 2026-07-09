@@ -27,6 +27,12 @@ export function createFadingPolyline(pathCoordinates) {
     return L.layerGroup(fadingLayers);
 }
 
+function removeActiveRoute(map, routeState) {
+    if (!routeState) return;
+    const layer = routeState.layer ?? routeState;
+    map.removeLayer(layer);
+}
+
 export function drawTrips() {
     const map = getMap();
     const { tripsData, currentTimeMinutes, activeRoutes, city_timezone } = state;
@@ -34,27 +40,31 @@ export function drawTrips() {
     if (!tripsData || tripsData.length === 0) return;
 
     tripsData.forEach((trip, index) => {
-        const tripStart = new Date(trip.start_time);
-        const tripEnd = new Date(trip.end_time);
-        const tripStartMinutes = minutesSinceMidnight(tripStart, city_timezone);
-        const tripEndMinutes = minutesSinceMidnight(tripEnd, city_timezone);
+        const tripStartMinutes = trip.start_minute_city ?? minutesSinceMidnight(new Date(trip.start_time), city_timezone);
+        const tripEndMinutes = trip.end_minute_city ?? minutesSinceMidnight(new Date(trip.end_time), city_timezone);
 
         if (currentTimeMinutes >= tripStartMinutes && currentTimeMinutes <= tripEndMinutes) {
             const elapsed = (currentTimeMinutes - tripStartMinutes) / (tripEndMinutes - tripStartMinutes || 1);
             const segmentCount = Math.floor(elapsed * trip.coordinates.length); 
+            const activeRouteState = activeRoutes[index];
+
+            if (activeRouteState && activeRouteState.lastSegmentCount === segmentCount) {
+                return;
+            }
+
             const pathCoordinates = trip.coordinates.slice(0, Math.max(segmentCount, 0)).map(([lon, lat]) => [lat, lon]);
 
             if (pathCoordinates.length > 1) {
-                // Remove existing previous routes
-                if (activeRoutes[index]) {
-                    map.removeLayer(activeRoutes[index]);
-                }
+                removeActiveRoute(map, activeRouteState);
 
-                activeRoutes[index] = createFadingPolyline(pathCoordinates).addTo(map);
+                activeRoutes[index] = {
+                    layer: createFadingPolyline(pathCoordinates).addTo(map),
+                    lastSegmentCount: segmentCount,
+                };
             }
         } else {
             if (activeRoutes[index]) {
-                map.removeLayer(activeRoutes[index]);
+                removeActiveRoute(map, activeRoutes[index]);
                 delete activeRoutes[index];
             }
         }
@@ -66,10 +76,9 @@ export function highlightTripOnMap(index) {
     const map = getMap();
     const trip = state.tripsData[index];
     if (!trip) return;
-    const tripStartTime = new Date(trip.start_time);
-    state.currentTimeMinutes = minutesSinceMidnight(tripStartTime, state.city_timezone);
+    state.currentTimeMinutes = trip.start_minute_city ?? minutesSinceMidnight(new Date(trip.start_time), state.city_timezone);
 
-    Object.values(state.activeRoutes).forEach((route) => map.removeLayer(route));
+    Object.values(state.activeRoutes).forEach((routeState) => removeActiveRoute(map, routeState));
     state.activeRoutes = {};
 
     const pathCoordinates = trip.coordinates.map(([lon, lat]) => [lat, lon]);
@@ -79,5 +88,8 @@ export function highlightTripOnMap(index) {
         map.panTo(pathCoordinates[0]);
     }
 
-    state.activeRoutes[index] = selectedRoute;
+    state.activeRoutes[index] = {
+        layer: selectedRoute,
+        lastSegmentCount: trip.coordinates.length,
+    };
 }

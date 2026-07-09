@@ -1,6 +1,5 @@
 import state from './state.js';
 import { getMap } from "./map.js";
-import { minutesSinceMidnight } from './utils.js';
 
 export const plotStationsOnMap = () => {
     const map = getMap();
@@ -29,12 +28,12 @@ export const plotStationsOnMap = () => {
 
 
 export const updateStationMarkers = () => {
-    const { stationData, currentTimeMinutes, markerMap, city_timezone } = state;
+    const { stationData, currentTimeMinutes, markerMap } = state;
 
     if (!stationData || stationData.length === 0 || !markerMap) return;
 
-    stationData.forEach(({ id, minute, bike_count }) => {
-        const stationTime = minutesSinceMidnight(new Date(minute), city_timezone);
+    stationData.forEach(({ id, minute_city, bike_count }) => {
+        const stationTime = minute_city;
         if (stationTime <= currentTimeMinutes) {
             const stationMarkers = markerMap[id];
             if (stationMarkers && stationMarkers.labelMarker) {

@@ -1,4 +1,38 @@
 
+const minuteFormatterCache = new Map();
+const timeFormatterCache = new Map();
+
+const getMinuteFormatter = (timezone) => {
+    if (!minuteFormatterCache.has(timezone)) {
+        minuteFormatterCache.set(
+            timezone,
+            new Intl.DateTimeFormat('en-GB', {
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+            }),
+        );
+    }
+    return minuteFormatterCache.get(timezone);
+};
+
+const getTimeFormatter = (timezone) => {
+    if (!timeFormatterCache.has(timezone)) {
+        timeFormatterCache.set(
+            timezone,
+            new Intl.DateTimeFormat('en-GB', {
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hourCycle: 'h23',
+            }),
+        );
+    }
+    return timeFormatterCache.get(timezone);
+};
+
 export const formatTime = (minutes) => {
     const hrs = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -11,12 +45,7 @@ export const minutesSinceMidnight = (date, timezone = null) => {
         return date.getHours() * 60 + date.getMinutes();
     }
 
-    const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: timezone,
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-    }).formatToParts(date);
+    const parts = getMinuteFormatter(timezone).formatToParts(date);
 
     const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
     const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
@@ -25,11 +54,5 @@ export const minutesSinceMidnight = (date, timezone = null) => {
 
 
 export const formatTimeInTimezone = (dateString, timezone) => {
-    return new Intl.DateTimeFormat("en-GB", {
-        timeZone: timezone,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hourCycle: "h23",
-    }).format(new Date(dateString));
+    return getTimeFormatter(timezone).format(new Date(dateString));
 };

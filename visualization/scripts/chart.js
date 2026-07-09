@@ -4,8 +4,8 @@ import { minutesSinceMidnight } from './utils.js';
 export function buildTripsPerMinute(tripsData, timezone = null) {
     const counts = new Int16Array(1441); // index = minute 0..1440
     tripsData.forEach(trip => {
-        const startMin = minutesSinceMidnight(new Date(trip.start_time), timezone);
-        const endMin   = Math.min(minutesSinceMidnight(new Date(trip.end_time), timezone), 1440);
+        const startMin = trip.start_minute_city ?? minutesSinceMidnight(new Date(trip.start_time), timezone);
+        const endMin   = Math.min(trip.end_minute_city ?? minutesSinceMidnight(new Date(trip.end_time), timezone), 1440);
         for (let m = startMin; m <= endMin; m++) {
             counts[m]++;
         }
@@ -237,7 +237,7 @@ export function drawHourHistogram(canvas, tripsData, timezone = null) {
     const bucketCount = 24;
     const labels = Array.from({ length: 24 }, (_, i) => i % 3 === 0 ? String(i) : '');
     _drawHistogram(canvas, tripsData, {
-        valueFn:    trip => Math.floor(minutesSinceMidnight(new Date(trip.start_time), timezone) / 60),
+        valueFn:    trip => Math.floor((trip.start_minute_city ?? minutesSinceMidnight(new Date(trip.start_time), timezone)) / 60),
         bucketSize: 1,
         bucketCount,
         labels,

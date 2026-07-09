@@ -1,4 +1,5 @@
 import state from "./state.js";
+import { minutesSinceMidnight } from "./utils.js";
 
 /**
  * Parse CSV string to array of objects
@@ -216,8 +217,19 @@ export const loadTripsData = async () => {
 
       state.city_timezone = geojson.timezone ?? state.tripsData[0]?.timezone ?? "UTC";
 
-      state.city_lat = state.tripsData[0].coordinates[0][1];
-      state.city_lng = state.tripsData[0].coordinates[0][0];
+      state.tripsData = state.tripsData.map((trip) => {
+        const tripTimezone = trip.timezone || state.city_timezone || "UTC";
+        return {
+          ...trip,
+          start_minute_city: minutesSinceMidnight(new Date(trip.start_time), tripTimezone),
+          end_minute_city: minutesSinceMidnight(new Date(trip.end_time), tripTimezone),
+        };
+      });
+
+      if (state.tripsData.length > 0) {
+        state.city_lat = state.tripsData[0].coordinates[0][1];
+        state.city_lng = state.tripsData[0].coordinates[0][0];
+      }
     } else {
       const rows = await fetchAndParseGzipCSV(
         `data/${state.city_id}_trips_${state.date}.csv.gz`,
@@ -241,8 +253,20 @@ export const loadTripsData = async () => {
         };
       });
       state.city_timezone = state.tripsData[0]?.timezone || "UTC";
-      state.city_lat = state.tripsData[0].coordinates[0][1];
-      state.city_lng = state.tripsData[0].coordinates[0][0];
+
+      state.tripsData = state.tripsData.map((trip) => {
+        const tripTimezone = trip.timezone || state.city_timezone || "UTC";
+        return {
+          ...trip,
+          start_minute_city: minutesSinceMidnight(new Date(trip.start_time), tripTimezone),
+          end_minute_city: minutesSinceMidnight(new Date(trip.end_time), tripTimezone),
+        };
+      });
+
+      if (state.tripsData.length > 0) {
+        state.city_lat = state.tripsData[0].coordinates[0][1];
+        state.city_lng = state.tripsData[0].coordinates[0][0];
+      }
     }
 
     console.log("Trips data loaded:", state.tripsData);
@@ -273,6 +297,7 @@ export const loadStationData = async () => {
       rows = await response.json();
       state.stationData = rows.map((row) => ({
         minute: row.minute,
+        minute_city: minutesSinceMidnight(new Date(row.minute), row.timezone || state.city_timezone || "UTC"),
         id: row.id,
         uid: row.uid,
         latitude: row.latitude,
@@ -296,6 +321,7 @@ export const loadStationData = async () => {
       const csvData = await fetchAndParseGzipCSV(filePath);
       state.stationData = csvData.map((row) => ({
         minute: row.minute,
+        minute_city: minutesSinceMidnight(new Date(row.minute), row.timezone || state.city_timezone || "UTC"),
         id: Number(row.id),
         uid: Number(row.uid),
         latitude: Number(row.latitude),
