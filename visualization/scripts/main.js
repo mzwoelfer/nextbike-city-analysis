@@ -13,11 +13,16 @@ import { initCalendar, refreshCalendar } from './calendar.js';
 let updateThrottle;
 
 function updateInfoBox() {
-    const { tripsData, currentTimeMinutes } = state;
+    const { tripsData, currentTimeMinutes, city_timezone } = state;
 
     if (!tripsData || tripsData.length === 0) return;
 
-    const tripDate = new Date(tripsData[0].start_time).toLocaleDateString();
+    const tripDate = new Intl.DateTimeFormat('en-CA', {
+        timeZone: city_timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(new Date(tripsData[0].start_time));
     document.getElementById('trip-date').textContent = tripDate;
 
     let activeTrips = 0;
@@ -26,14 +31,14 @@ function updateInfoBox() {
         const tripStart = new Date(trip.start_time);
         const tripEnd = new Date(trip.end_time);
 
-        if (currentTimeMinutes >= minutesSinceMidnight(tripStart) &&
-            currentTimeMinutes <= minutesSinceMidnight(tripEnd)) {
+        if (currentTimeMinutes >= minutesSinceMidnight(tripStart, city_timezone) &&
+            currentTimeMinutes <= minutesSinceMidnight(tripEnd, city_timezone)) {
             activeTrips++;
         }
     });
     const latestCount = {};
         state.stationData.forEach(({ id, minute, bike_count }) => {
-            if (minutesSinceMidnight(new Date(minute)) <= currentTimeMinutes) {
+            if (minutesSinceMidnight(new Date(minute), city_timezone) <= currentTimeMinutes) {
                 latestCount[id] = bike_count;
             }
         });
@@ -158,7 +163,7 @@ async function loadCityData(city_id) {
     // Init the sidebar chart after layout has settled
     requestAnimationFrame(() => {
         const canvas = document.getElementById('trips-chart');
-        const counts = buildTripsPerMinute(state.tripsData);
+        const counts = buildTripsPerMinute(state.tripsData, state.city_timezone);
         initChart(canvas, counts, (minute) => {
             state.currentTimeMinutes = minute;
             updateAllComponents();
@@ -173,7 +178,8 @@ async function loadCityData(city_id) {
         );
         drawHourHistogram(
             document.getElementById('hour-chart'),
-            state.tripsData
+            state.tripsData,
+            state.city_timezone
         );
         refreshCalendar();
     });

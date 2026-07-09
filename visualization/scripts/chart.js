@@ -1,18 +1,16 @@
+import { minutesSinceMidnight } from './utils.js';
+
 // Pre-compute how many trips are active at each minute of the day
-export function buildTripsPerMinute(tripsData) {
+export function buildTripsPerMinute(tripsData, timezone = null) {
     const counts = new Int16Array(1441); // index = minute 0..1440
     tripsData.forEach(trip => {
-        const startMin = minutesOf(new Date(trip.start_time));
-        const endMin   = Math.min(minutesOf(new Date(trip.end_time)), 1440);
+        const startMin = minutesSinceMidnight(new Date(trip.start_time), timezone);
+        const endMin   = Math.min(minutesSinceMidnight(new Date(trip.end_time), timezone), 1440);
         for (let m = startMin; m <= endMin; m++) {
             counts[m]++;
         }
     });
     return counts;
-}
-
-function minutesOf(date) {
-    return date.getHours() * 60 + date.getMinutes();
 }
 
 let _canvas       = null;
@@ -235,11 +233,11 @@ export function drawDistanceHistogram(canvas, tripsData) {
     _drawHistogram(canvas, tripsData, { field: 'distance', bucketSize, bucketCount, labels });
 }
 
-export function drawHourHistogram(canvas, tripsData) {
+export function drawHourHistogram(canvas, tripsData, timezone = null) {
     const bucketCount = 24;
     const labels = Array.from({ length: 24 }, (_, i) => i % 3 === 0 ? String(i) : '');
     _drawHistogram(canvas, tripsData, {
-        valueFn:    trip => new Date(trip.start_time).getHours(),
+        valueFn:    trip => Math.floor(minutesSinceMidnight(new Date(trip.start_time), timezone) / 60),
         bucketSize: 1,
         bucketCount,
         labels,

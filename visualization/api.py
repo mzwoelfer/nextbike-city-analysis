@@ -132,19 +132,24 @@ def stations(city_id: int, date: str):
                            maintenance, terminal_type, city_id, city_name
                     FROM station_data WHERE rn = 1
                 ),
+                bike_source AS (
+                    SELECT (last_updated AT TIME ZONE %s) AS local_ts,
+                           station_number,
+                           bike_number
+                    FROM public.bikes
+                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
+                ),
                 bike_data AS (
-                    SELECT DATE_TRUNC('minute', last_updated AT TIME ZONE %s) AS minute,
+                    SELECT DATE_TRUNC('minute', local_ts) AS minute,
                            station_number,
                            COUNT(bike_number) AS bike_count,
                            STRING_AGG(bike_number::TEXT, ', ') AS bike_list
-                    FROM public.bikes
-                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
-                    GROUP BY DATE_TRUNC('minute', last_updated AT TIME ZONE %s), station_number
+                    FROM bike_source
+                    GROUP BY DATE_TRUNC('minute', local_ts), station_number
                 ),
                 distinct_minutes AS (
-                    SELECT DISTINCT DATE_TRUNC('minute', last_updated AT TIME ZONE %s) AS minute
-                    FROM public.bikes
-                    WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
+                    SELECT DISTINCT DATE_TRUNC('minute', local_ts) AS minute
+                    FROM bike_source
                 ),
                 station_minute_combinations AS (
                     SELECT dm.minute, fs.*
@@ -172,11 +177,7 @@ def stations(city_id: int, date: str):
                 ORDER BY station_number, minute
             """, (
                 city_tz, city_id, city_tz, latest_date,   # station_data
-                city_tz,                                    # bike_data DATE_TRUNC select
-                city_id, city_tz, latest_date,             # bike_data WHERE
-                city_tz,                                    # bike_data GROUP BY
-                city_tz,                                    # distinct_minutes DATE_TRUNC
-                city_id, city_tz, latest_date,             # distinct_minutes WHERE
+                city_tz, city_id, city_tz, latest_date,   # bike_source
             ))
             rows = cur.fetchall()
 

@@ -264,10 +264,12 @@ export const loadStationData = async () => {
       const response = await fetch(
         `/api/stations?city_id=${state.city_id}&date=${state.date}`,
       );
-      if (!response.ok)
+      if (!response.ok) {
+        const errorText = await response.text();
         throw new Error(
-          `API request failed for stations ${state.city_id} ${state.date}`,
+          `API request failed for stations ${state.city_id} ${state.date} (status ${response.status}): ${errorText}`,
         );
+      }
       rows = await response.json();
       state.stationData = rows.map((row) => ({
         minute: row.minute,
