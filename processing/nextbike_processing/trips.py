@@ -84,7 +84,6 @@ def fetch_trip_data(city_id, date):
     
     return df
 
-
 def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     """
     Compute the shortest bike-friendly route between two points using OSM graph.
@@ -184,19 +183,23 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         # Load city center and build street network graph
         city_lat, city_lng = get_city_coordinates_from_database(city_id)
         G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
+        # Use bidirectional graph - ignores one way signs
+        # okay here as OpenStreetMap might not have all correct one-way bike ways listed
+        # G = ox.convert.to_undirected(G)
         
         route_results = []
+        failed_pairs = []
+        skipped_routes = 0
         for idx, (_, row) in enumerate(uncached_pairs.iterrows(), 1):
             if idx % 50 == 0:
                 print(f"    Progress: {idx}/{len(uncached_pairs)}")
-            
+
             distance, segments = calculate_shortest_path(
-                G, 
+                G,
                 row["start_latitude"], row["start_longitude"],
                 row["end_latitude"], row["end_longitude"]
             )
-            
-            # Only store if we got a valid route
+
             if segments:
                 route_results.append({
                     "start_latitude": row["start_latitude"],
@@ -206,9 +209,32 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
                     "distance": distance,
                     "segments": segments,
                 })
-        
+            else:
+                skipped_routes += 1
+                failed_pairs.append({
+                    "start_latitude": float(row["start_latitude"]),
+                    "start_longitude": float(row["start_longitude"]),
+                    "end_latitude": float(row["end_latitude"]),
+                    "end_longitude": float(row["end_longitude"]),
+                })
+                # Print immediately for first failures so you see live evidence
+                if len(failed_pairs) <= 20:
+                    print(
+                        "    FAILED_PAIR "
+                        f"{len(failed_pairs)}: "
+                        f"({row['start_latitude']}, {row['start_longitude']}) -> "
+                        f"({row['end_latitude']}, {row['end_longitude']})"
+                    )
+
         new_routes = pd.DataFrame(route_results)
-        print(f"  Successfully computed {len(new_routes)} routes")
+        print(f"  Successfully computed {len(new_routes)} routes (skipped {skipped_routes})")
+        print(f"  Failed pairs: {len(failed_pairs)}")
+        for i, pair in enumerate(failed_pairs[:10], 1):
+            print(
+                f"    {i}: "
+                f"({pair['start_latitude']}, {pair['start_longitude']}) -> "
+                f"({pair['end_latitude']}, {pair['end_longitude']})"
+            )
         
         # Save to database for next time
         with get_connection() as conn:
