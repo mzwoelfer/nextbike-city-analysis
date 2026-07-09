@@ -5,10 +5,10 @@ const MONTHS = [
     'July','August','September','October','November','December'
 ];
 
-let _onDateSelect = null;
-let _calYear      = null;
-let _calMonth     = null;
-let _isOpen       = false;
+let _onDateSelect  = null;
+let _calendarYear  = null;
+let _calendarMonth = null;
+let _isOpen        = false;
 
 export function initCalendar(onDateSelect) {
     _onDateSelect = onDateSelect;
@@ -28,15 +28,15 @@ export function initCalendar(onDateSelect) {
 
     document.getElementById('cal-prev-month').addEventListener('click', (e) => {
         e.stopPropagation();
-        _calMonth--;
-        if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+        _calendarMonth--;
+        if (_calendarMonth < 0) { _calendarMonth = 11; _calendarYear--; }
         _renderCalendar();
     });
 
     document.getElementById('cal-next-month').addEventListener('click', (e) => {
         e.stopPropagation();
-        _calMonth++;
-        if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+        _calendarMonth++;
+        if (_calendarMonth > 11) { _calendarMonth = 0; _calendarYear++; }
         _renderCalendar();
     });
 }
@@ -52,9 +52,13 @@ function _toggleCalendar(e) {
 }
 
 function _openCalendar() {
-    const d = new Date((state.date || new Date().toISOString().split('T')[0]) + 'T00:00:00');
-    _calYear  = d.getFullYear();
-    _calMonth = d.getMonth();
+    const todayDateString    = new Date().toISOString().split('T')[0];
+    const selectedDateString = state.date || todayDateString;
+    const selectedDate       = new Date(selectedDateString + 'T00:00:00');
+
+    _calendarYear  = selectedDate.getFullYear();
+    _calendarMonth = selectedDate.getMonth();
+
     _renderCalendar();
     document.getElementById('date-picker').hidden = false;
     _isOpen = true;
@@ -72,29 +76,29 @@ function _availableDates() {
 
 function _renderCalendar() {
     document.getElementById('cal-month-label').textContent =
-        `${MONTHS[_calMonth]} ${_calYear}`;
+        `${MONTHS[_calendarMonth]} ${_calendarYear}`;
 
     const available   = _availableDates();
-    const firstDay    = new Date(_calYear, _calMonth, 1).getDay(); // 0=Sun
-    const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+    const firstWeekday = new Date(_calendarYear, _calendarMonth, 1).getDay(); // 0=Sun
+    const daysInMonth  = new Date(_calendarYear, _calendarMonth + 1, 0).getDate();
 
     const grid = document.getElementById('cal-days');
     grid.innerHTML = '';
 
     // Leading empty cells so day 1 lands on the right weekday column
-    for (let i = 0; i < firstDay; i++) {
+    for (let i = 0; i < firstWeekday; i++) {
         const empty = document.createElement('div');
         empty.className = 'cal-day cal-day-empty';
         grid.appendChild(empty);
     }
 
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${_calYear}-${String(_calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const hasData    = available.has(dateStr);
-        const isSelected = dateStr === state.date;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${_calendarYear}-${String(_calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasData    = available.has(dateString);
+        const isSelected = dateString === state.date;
 
         const cell = document.createElement('div');
-        cell.textContent = d;
+        cell.textContent = day;
         cell.className   = 'cal-day' +
             (hasData    ? ' cal-day-available'   : ' cal-day-unavailable') +
             (isSelected ? ' cal-day-selected'    : '');
@@ -103,7 +107,7 @@ function _renderCalendar() {
             cell.addEventListener('click', (e) => {
                 e.stopPropagation();
                 _closeCalendar();
-                _onDateSelect(dateStr);
+                _onDateSelect(dateString);
             });
         }
 
