@@ -14,7 +14,6 @@ const state = {
     currentTimeMinutes: 0,
     date: "",
     availableFiles: {},
-    useApi: true,
 
     nextDay() {
         const [year, month, day] = this.date.split('-').map(Number);
