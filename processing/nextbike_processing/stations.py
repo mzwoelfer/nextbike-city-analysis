@@ -14,17 +14,17 @@ def fetch_station_data(city_id, date):
         ),
         station_data AS (
             SELECT
-                id,
-                uid,
-                latitude,
-                longitude,
-                name,
-                spot,
-                station_number,
-                maintenance,
-                terminal_type,
-                city_id,
-                city_name,
+                public.stations.id,
+                public.stations.uid,
+                public.stations.latitude,
+                public.stations.longitude,
+                public.stations.name,
+                public.stations.spot,
+                public.stations.station_number,
+                public.stations.maintenance,
+                public.stations.terminal_type,
+                public.stations.city_id,
+                public.stations.city_name,
                 ROW_NUMBER() OVER (
                     PARTITION BY uid, latitude, longitude, name, spot, station_number, terminal_type,
                                  DATE(last_updated AT TIME ZONE cc.city_tz), maintenance

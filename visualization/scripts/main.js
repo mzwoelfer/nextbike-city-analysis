@@ -180,9 +180,18 @@ async function loadCityData(city_id) {
 }
 
 state.availableFiles = await loadAvailableFiles();
-await loadFirstAvailableData();
+const hasInitialData = await loadFirstAvailableData();
 populateCityDropdown();
-loadCityData(state.city_id);
+
+if (hasInitialData) {
+    loadCityData(state.city_id);
+} else {
+    const dateElement = document.getElementById('trip-date');
+    if (dateElement) {
+        dateElement.textContent = 'No processed data yet';
+    }
+}
+
 initializeBackToTop();
 initCalendar((dateStr) => {
     state.date = dateStr;

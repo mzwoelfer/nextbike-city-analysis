@@ -58,7 +58,7 @@ export const loadAvailableFiles = async () => {
       console.log("Loaded available data from API:", groupedFiles);
       return groupedFiles;
     }
-  } catch {
+  } catch (err) {
     console.warn("API failed, falling back to static:", err);
   }
 
@@ -146,9 +146,22 @@ const fetchAndParseGzipCSV = async (filePath) => {
 
 export const loadFirstAvailableData = async () => {
   const city_ids = Object.keys(state.availableFiles);
+  if (!city_ids.length) {
+    state.city_id = 0;
+    state.date = "";
+    return false;
+  }
+
   const first_city_id = city_ids[0];
+  const first_city_dates = state.availableFiles[first_city_id] || [];
+  if (!first_city_dates.length) {
+    state.city_id = Number(first_city_id);
+    state.date = "";
+    return false;
+  }
+
   state.city_id = first_city_id;
-  state.date = state.availableFiles[first_city_id][0];
+  state.date = first_city_dates[0];
 
   if (state.useApi) {
     // city names already populated from /api/available
@@ -170,6 +183,8 @@ export const loadFirstAvailableData = async () => {
   cities.forEach(({ city_name, city_id }) => {
     state.cities[city_name] = city_id;
   });
+
+  return true;
 };
 
 /**
