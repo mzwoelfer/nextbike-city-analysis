@@ -1,12 +1,17 @@
--- Migration: convert all naive TIMESTAMP columns to TIMESTAMPTZ.
---
--- Existing data was collected with the server running UTC and stored without
--- timezone info, so every value is UTC in disguise.  We annotate it as UTC
--- (AT TIME ZONE 'UTC') which produces a proper TIMESTAMPTZ that PostgreSQL
--- stores as one unambiguous instant.
---
+-- Migration: 
+--    - convert all naive TIMESTAMP columns to TIMESTAMPTZ.
+--    - Drop timestamps JSONB from trips. Unsued. Now in  frontend logic.
+-- 
+-- INSERT INTO public.schema_migrations (version, description, reason)
+-- VALUES ('001', 'Convert TIMESTAMP columns to TIMESTAMPTZ',
+--   'Existing data was collected with the server running UTC and stored without
+--   timezone info, so every value is UTC in disguise.  We annotate it as UTC
+--   (AT TIME ZONE ''UTC'') which produces a proper TIMESTAMPTZ that PostgreSQL stores as one unambiguous instant.
+--   timestamps were synthetic interpolated data computed only for the visualization animator.
+--   Replaced with fraction-based interpolation in frontend - trips.js using start_time/end_time/coordinates.');
+
 -- Run against the live database BEFORE restarting the collector:
---   psql -h localhost -p 5432 -U <user> -d <dbname> -f 004_timestamptz_migration.sql
+--   psql -h localhost -p 5432 -U <user> -d <dbname> -f 001_timestamptz_migration.sql
 
 BEGIN;
 
@@ -50,4 +55,29 @@ ALTER TABLE public.trips
     ADD CONSTRAINT trips_bike_number_city_id_start_time_key
     UNIQUE (bike_number, city_id, start_time);
 
+-- ============================================================
+-- Remove redundant timestamps column
+-- ============================================================
+ALTER TABLE public.trips DROP COLUMN timestamps;
+
 COMMIT;
+
+
+-- ============================================================
+-- VERIFICATION QUERIES (run after migration)
+-- ============================================================
+-- Check all timestamp columns have correct data types
+SELECT 
+  table_name,
+  column_name,
+  data_type
+FROM information_schema.columns
+WHERE table_schema = 'public' 
+  AND (column_name LIKE '%time%' OR column_name LIKE '%updated%')
+ORDER BY table_name, ordinal_position;
+
+-- Verify constraints are in place
+SELECT constraint_name, table_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_schema = 'public'
+ORDER BY table_name, constraint_name;
