@@ -1,5 +1,6 @@
 from database.base import DatabaseClient
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 import requests
 import argparse
 import datetime
@@ -23,15 +24,16 @@ class City:
     def from_api_data(cls, data: dict):
         country = data.get("countries", [{}])[0]
         city_data = country.get("cities", [{}])[0]
+        tz = country.get("timezone", "UTC")
         return cls(
             city_id=city_data.get("uid", 0),
             city_name=city_data.get("name", "Unknown"),
-            timezone=country.get("timezone", "Unknown"),
+            timezone=tz,
             latitude=country.get("lat", 0),
             longitude=country.get("lng", 0),
             set_point_bikes=country.get("set_point_bikes", 0),
             available_bikes=country.get("available_bikes", 0),
-            last_updated=datetime.datetime.now(),
+            last_updated=datetime.datetime.now(ZoneInfo(tz)),
         )
 
     def as_tuple(self) -> tuple:
@@ -266,16 +268,16 @@ class AppConfig:
         raise ValueError("No city ID provided. Use --city-ids or set CITY_IDS in .env.")
 
 
-def process_nextbike_data(nextbike_api: NextbikeAPI, last_updated):
+def process_nextbike_data(nextbike_api: NextbikeAPI):
     data = nextbike_api.fetch_data()
     city = City.from_api_data(data)
     places = nextbike_api.extract_places(data)
 
     bike_entries = Bike.bike_entries_from_place(
-        places, city.city_id, city.city_name, last_updated
+        places, city.city_id, city.city_name, city.last_updated
     )
     station_entries = Station.build_station_entries(
-        places, city.city_id, city.city_name, last_updated
+        places, city.city_id, city.city_name, city.last_updated
     )
 
     ConsolePrinter.print_summary(city, bike_entries, station_entries)
@@ -286,25 +288,24 @@ def process_nextbike_data(nextbike_api: NextbikeAPI, last_updated):
 def main():
     cli = NextbikeCLI()
     config = AppConfig(cli.city_ids)
-    last_updated = datetime.datetime.now()
 
     db = DatabaseClient(config)
 
     city_ids = config.city_ids
     for city_id in city_ids:
         api = NextbikeAPI(city_id)
-        city, bike_entries, station_entries = process_nextbike_data(api, last_updated)
+        city, bike_entries, station_entries = process_nextbike_data(api)
 
         if cli.save:
             db.insert_bike_entries(bike_entries)
 
             last_station_sync = db.get_last_station_sync(city_id)
-            if last_station_sync is None or (last_updated - last_station_sync).total_seconds() >= config.stations_sync_interval_hours * 3600:
+            if last_station_sync is None or (city.last_updated - last_station_sync).total_seconds() >= config.stations_sync_interval_hours * 3600:
                 db.insert_station_entries(station_entries)
                 print(f"Station data synced for city {city_id}")
 
             last_city_sync = db.get_last_city_sync(city_id)
-            if last_city_sync is None or (last_updated - last_city_sync).total_seconds() >= config.cities_sync_interval_hours * 3600:
+            if last_city_sync is None or (city.last_updated - last_city_sync).total_seconds() >= config.cities_sync_interval_hours * 3600:
                 db.insert_city_information(city)
                 print(f"City info synced for city {city_id}")
 

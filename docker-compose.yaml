@@ -10,6 +10,8 @@ services:
     image: postgres:15
     container_name: nextbike_postgres
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -52,8 +54,6 @@ services:
     restart: always
     env_file:
       - .env
-    environment:
-      - DB_HOST=${DB_HOST}
     depends_on:
       postgres:
         condition: service_healthy

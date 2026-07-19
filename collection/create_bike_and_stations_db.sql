@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.bikes (
     bike_type TEXT,
     station_number INTEGER,
     station_uid INTEGER,
-    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    last_updated TIMESTAMPTZ NOT NULL,
     city_id INTEGER NOT NULL,
     city_name TEXT NOT NULL
 );
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS public.stations (
     station_number INTEGER,
     maintenance BOOLEAN,
     terminal_type TEXT,
-    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    last_updated TIMESTAMPTZ NOT NULL,
     city_id INTEGER NOT NULL,
     city_name TEXT NOT NULL
 );
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.cities (
     longitude DOUBLE PRECISION,
     set_point_bikes INTEGER NOT NULL,
     available_bikes INTEGER NOT NULL,
-    last_updated TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    last_updated TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.routes (
@@ -55,10 +55,9 @@ CREATE TABLE IF NOT EXISTS public.trips (
     id SERIAL PRIMARY KEY,
     bike_number TEXT NOT NULL,
     city_id INTEGER NOT NULL,
-    start_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
     duration_seconds DOUBLE PRECISION NOT NULL,
     route_id INTEGER REFERENCES public.routes(id),
-    timestamps JSONB NOT NULL,
     UNIQUE (bike_number, city_id, start_time)
 );

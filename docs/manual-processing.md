@@ -22,6 +22,13 @@ docker run --rm \
   --city-id <CITY_ID> --date <YYYY-MM-DD>
 ```
 
+- `env-file`: your env file in repos root
+- `--network`: The full network name created by nerdctl using the [roots docker compose](../docker-compose.yaml).
+- `nextbike-city-analysis-processor`: full name to processor image build by the projects root `docker-compose.yaml`
+- `--city-id`: your city id (also defined in `.env`)
+- `--date`: date in ISO-8601 date only timestamp[1]
+
+
 Example for city 467, processing 30 May 2026:
 
 ```sh
@@ -78,3 +85,7 @@ for date in 2026-05-28 2026-05-29 2026-05-30; do
     --city-id 467 --date "$date"
 done
 ```
+
+
+## SOURCES
+[1] ISO 8601 - Date and time format; iso.org; https://www.iso.org/iso-8601-date-and-time-format.html (2026-07-10)

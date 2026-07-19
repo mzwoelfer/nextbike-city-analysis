@@ -1,5 +1,6 @@
 import unittest
 import datetime
+from zoneinfo import ZoneInfo
 from query_nextbike import City
 
 
@@ -23,9 +24,9 @@ class TestCityDataClass(unittest.TestCase):
             ]
         }
 
-        self.before = datetime.datetime.now()
+        self.before = datetime.datetime.now(ZoneInfo("UTC"))
         self.city = City.from_api_data(self.api_data)
-        self.after = datetime.datetime.now()
+        self.after = datetime.datetime.now(ZoneInfo("UTC"))
 
     def test_city_class_as_dict(self):
         last_updated = datetime.datetime.now()
@@ -136,9 +137,9 @@ class TestCity_as_tuple(unittest.TestCase):
 class TestCityDefaults(unittest.TestCase):
     def setUp(self):
         # empty payload – triggers all defaults
-        self.before = datetime.datetime.now()
+        self.before = datetime.datetime.now(ZoneInfo("UTC"))
         self.city = City.from_api_data({})
-        self.after = datetime.datetime.now()
+        self.after = datetime.datetime.now(ZoneInfo("UTC"))
 
     def test_default_city_id(self):
         self.assertEqual(self.city.city_id, 0)
@@ -147,7 +148,7 @@ class TestCityDefaults(unittest.TestCase):
         self.assertEqual(self.city.city_name, "Unknown")
 
     def test_default_timezone(self):
-        self.assertEqual(self.city.timezone, "Unknown")
+        self.assertEqual(self.city.timezone, "UTC")
 
     def test_default_latitude(self):
         self.assertEqual(self.city.latitude, 0)

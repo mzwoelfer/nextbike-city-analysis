@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import osmnx as ox
 import networkx as nx
+from zoneinfo import ZoneInfo
 from nextbike_processing.database import (
     get_connection, 
     get_cached_routes,
@@ -10,7 +11,17 @@ from nextbike_processing.database import (
     insert_trips
 )
 from nextbike_processing.utils import save_gzipped_geojson, save_gzipped_csv
-from nextbike_processing.cities import get_city_coordinates_from_database
+from nextbike_processing.cities import (
+    get_city_coordinates_from_database,
+    get_city_timezone_from_database,
+)
+
+
+def _to_city_isoformat(timestamp, city_zone):
+    ts = pd.Timestamp(timestamp)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return ts.tz_convert(city_zone).isoformat(timespec="seconds")
 
 
 def fetch_trip_data(city_id, date):
@@ -34,11 +45,12 @@ def fetch_trip_data(city_id, date):
     """
     query = """
         WITH ordered_bikes AS (
-            SELECT *
-            FROM public.bikes
-            WHERE city_id = %s
-            AND DATE(last_updated) = %s
-            ORDER BY bike_number, last_updated
+            SELECT b.*
+            FROM public.bikes b
+            JOIN public.cities c ON b.city_id = c.city_id
+            WHERE b.city_id = %s
+            AND DATE(b.last_updated AT TIME ZONE c.timezone) = %s
+            ORDER BY b.bike_number, b.last_updated
         ),
         bike_movements AS (
             SELECT bike_number,
@@ -71,7 +83,6 @@ def fetch_trip_data(city_id, date):
     df["duration"] = df["end_time"] - df["start_time"]
     
     return df
-
 
 def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     """
@@ -117,62 +128,6 @@ def calculate_shortest_path(G, start_lat, start_lon, end_lat, end_lon):
     path_segments = [[G.nodes[node]["y"], G.nodes[node]["x"]] for node in shortest_path]
 
     return shortest_path_length, path_segments
-
-
-def build_coordinates_and_timestamps(trips):
-    """
-    Interpolate timestamps along the route segments.
-    
-    Given a route with segments and a start time + duration,
-    creates a parallel timestamps array that evenly distributes
-    the time across all waypoints.
-    
-    Args:
-        trips (pd.DataFrame): Must have columns:
-            [start_time (datetime), duration (timedelta), segments (list of [lat, lon])]
-    
-    Returns:
-        pd.DataFrame: Same trips df with added columns:
-            - coordinates: [[lon, lat], [lon, lat], ...] (GeoJSON format, opposite of segments)
-            - timestamps: [ISO_string, ISO_string, ...]  (one per coordinate)
-    
-    Example:
-        Input segments: [[48.2, 16.3], [48.21, 16.31], [48.22, 16.32]]
-        Input start_time: 2025-06-13 10:00:00
-        Input duration: 300 seconds (5 minutes)
-        
-        Output timestamps: [
-            "2025-06-13T10:00:00",
-            "2025-06-13T10:02:30",
-            "2025-06-13T10:05:00"
-        ]
-    """
-    def process_row(row):
-        start_time = pd.to_datetime(row["start_time"])
-        duration = row["duration"]
-        segments = row["segments"]
-        num_segments = len(segments)
-        
-        # Distribute duration evenly across all waypoints
-        time_increment = duration / max(num_segments - 1, 1)
-
-        # Convert [lat, lon] to GeoJSON [lon, lat]
-        coordinates = [[lon, lat] for lat, lon in segments]
-        
-        # Create ISO 8601 timestamps for each waypoint
-        timestamps = [
-            (start_time + pd.to_timedelta(i * time_increment, unit="s")).isoformat()
-            for i in range(num_segments)
-        ]
-        
-        return pd.Series({"coordinates": coordinates, "timestamps": timestamps})
-
-    result = trips.apply(process_row, axis=1)
-    trips["coordinates"] = result["coordinates"]
-    trips["timestamps"] = result["timestamps"]
-    
-    return trips
-
 
 def process_and_save_trips(city_id, date, folder, export_files=False):
     """
@@ -228,19 +183,23 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         # Load city center and build street network graph
         city_lat, city_lng = get_city_coordinates_from_database(city_id)
         G = ox.graph_from_point((city_lat, city_lng), dist=10000, network_type="bike")
+        # Use bidirectional graph - ignores one way signs
+        # okay here as OpenStreetMap might not have all correct one-way bike ways listed
+        # G = ox.convert.to_undirected(G)
         
         route_results = []
+        failed_pairs = []
+        skipped_routes = 0
         for idx, (_, row) in enumerate(uncached_pairs.iterrows(), 1):
             if idx % 50 == 0:
                 print(f"    Progress: {idx}/{len(uncached_pairs)}")
-            
+
             distance, segments = calculate_shortest_path(
-                G, 
+                G,
                 row["start_latitude"], row["start_longitude"],
                 row["end_latitude"], row["end_longitude"]
             )
-            
-            # Only store if we got a valid route
+
             if segments:
                 route_results.append({
                     "start_latitude": row["start_latitude"],
@@ -250,9 +209,32 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
                     "distance": distance,
                     "segments": segments,
                 })
-        
+            else:
+                skipped_routes += 1
+                failed_pairs.append({
+                    "start_latitude": float(row["start_latitude"]),
+                    "start_longitude": float(row["start_longitude"]),
+                    "end_latitude": float(row["end_latitude"]),
+                    "end_longitude": float(row["end_longitude"]),
+                })
+                # Print immediately for first failures so you see live evidence
+                if len(failed_pairs) <= 20:
+                    print(
+                        "    FAILED_PAIR "
+                        f"{len(failed_pairs)}: "
+                        f"({row['start_latitude']}, {row['start_longitude']}) -> "
+                        f"({row['end_latitude']}, {row['end_longitude']})"
+                    )
+
         new_routes = pd.DataFrame(route_results)
-        print(f"  Successfully computed {len(new_routes)} routes")
+        print(f"  Successfully computed {len(new_routes)} routes (skipped {skipped_routes})")
+        print(f"  Failed pairs: {len(failed_pairs)}")
+        for i, pair in enumerate(failed_pairs[:10], 1):
+            print(
+                f"    {i}: "
+                f"({pair['start_latitude']}, {pair['start_longitude']}) -> "
+                f"({pair['end_latitude']}, {pair['end_longitude']})"
+            )
         
         # Save to database for next time
         with get_connection() as conn:
@@ -277,20 +259,18 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         how="left",
     )
     
-    # ===== STEP 6: Interpolate timestamps along route segments =====
-    trips = build_coordinates_and_timestamps(trips)
-    
-    # ===== STEP 7: Save to database =====
+    # ===== STEP 6: Save to database =====
     print(f"  Saving {len(trips)} trips to database...")
     with get_connection() as conn:
         insert_trips(trips, city_id, conn)
     print(f"  Done!")
     
-    # ===== STEP 8: Export files (optional) =====
+    # ===== STEP 7: Export files (optional) =====
     if not export_files:
         return
     
     print(f"  Exporting files...")
+    city_zone = ZoneInfo(get_city_timezone_from_database(city_id))
     
     # Export as GeoJSON for web mapping
     features = [
@@ -298,15 +278,15 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
-                "coordinates": row["coordinates"],
+                "coordinates": [[lon, lat] for lat, lon in row["segments"]],
             },
             "properties": {
                 "bike_number": row["bike_number"],
-                "start_time": row["start_time"],
-                "end_time": row["end_time"],
+                "start_time": _to_city_isoformat(row["start_time"], city_zone),
+                "end_time": _to_city_isoformat(row["end_time"], city_zone),
                 "duration": row["duration"],
                 "distance": row["distance"],
-                "timestamps": row["timestamps"],
+                "timezone": str(city_zone),
             },
         }
         for _, row in trips.iterrows()
@@ -321,14 +301,15 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     # Export as CSV for static visualization (GitHub Pages mode)
     trips_export = trips.copy()
     trips_export["date"] = date
-    # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
-    trips_export["segments"] = trips_export.apply(
-        lambda row: [
-            [lat, lon, ts] 
-            for [lon, lat], ts in zip(row["coordinates"], row["timestamps"])
-        ],
-        axis=1,
+    trips_export["timezone"] = str(city_zone)
+    trips_export["start_time"] = trips_export["start_time"].map(
+        lambda ts: _to_city_isoformat(ts, city_zone)
     )
+    trips_export["end_time"] = trips_export["end_time"].map(
+        lambda ts: _to_city_isoformat(ts, city_zone)
+    )
+    # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
+    trips_export["segments"] = trips_export["segments"]
     
     trips_export["route_id"] = trips_export.groupby(
         ["start_latitude", "start_longitude", "end_latitude", "end_longitude"]
@@ -336,7 +317,7 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
     csv_cols = [
         "bike_number", "start_latitude", "start_longitude", "start_time",
         "end_latitude", "end_longitude", "end_time", "duration", "date",
-        "distance", "segments", "route_id"
+        "distance", "segments", "route_id", "timezone"
     ]
     save_gzipped_csv(
         os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), 

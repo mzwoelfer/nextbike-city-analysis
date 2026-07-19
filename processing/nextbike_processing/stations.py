@@ -1,31 +1,39 @@
 import os
 import pandas as pd
+from zoneinfo import ZoneInfo
 from nextbike_processing.database import get_connection
 from nextbike_processing.utils import save_csv, save_gzipped_csv, save_json
 
 
 def fetch_station_data(city_id, date):
     query = """
-    WITH station_data AS (
+    WITH city_context AS (
+            SELECT city_id, COALESCE(timezone, 'UTC') AS city_tz
+            FROM public.cities
+            WHERE city_id = %s
+        ),
+        station_data AS (
             SELECT
-                id,
-                uid,
-                latitude,
-                longitude,
-                name,
-                spot,
-                station_number,
-                maintenance,
-                terminal_type,
-                city_id,
-                city_name,
+                public.stations.id,
+                public.stations.uid,
+                public.stations.latitude,
+                public.stations.longitude,
+                public.stations.name,
+                public.stations.spot,
+                public.stations.station_number,
+                public.stations.maintenance,
+                public.stations.terminal_type,
+                public.stations.city_id,
+                public.stations.city_name,
                 ROW_NUMBER() OVER (
-                    PARTITION BY uid, latitude, longitude, name, spot, station_number, terminal_type, DATE(last_updated), maintenance
+                    PARTITION BY uid, latitude, longitude, name, spot, station_number, terminal_type,
+                                 DATE(last_updated AT TIME ZONE cc.city_tz), maintenance
                     ORDER BY last_updated DESC
                 ) AS rn
             FROM public.stations
-            WHERE city_id = %s
-            AND DATE(last_updated) = %s
+            JOIN city_context cc ON cc.city_id = public.stations.city_id
+            WHERE public.stations.city_id = %s
+            AND DATE(last_updated AT TIME ZONE cc.city_tz) = %s
         ),
         filtered_stations AS (
             SELECT
@@ -45,24 +53,26 @@ def fetch_station_data(city_id, date):
         ),
         bike_data AS (
             SELECT
-                DATE_TRUNC('minute', b.last_updated) AS minute,
+                DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz) AS minute,
                 b.station_number,
                 COUNT(b.bike_number) AS bike_count,
                 STRING_AGG(b.bike_number::TEXT, ', ') AS bike_list
             FROM
                 public.bikes b
+            JOIN city_context cc ON cc.city_id = b.city_id
             WHERE
-                city_id = %s
-                AND DATE(b.last_updated) = %s
+                b.city_id = %s
+                AND DATE(b.last_updated AT TIME ZONE cc.city_tz) = %s
             GROUP BY
-                DATE_TRUNC('minute', b.last_updated), b.station_number
+                DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz), b.station_number
         ),
         distinct_minutes AS (
-            SELECT DISTINCT DATE_TRUNC('minute', b.last_updated) AS minute
+            SELECT DISTINCT DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz) AS minute
             FROM public.bikes b
+            JOIN city_context cc ON cc.city_id = b.city_id
             WHERE
-                city_id = %s
-                AND DATE(b.last_updated) = %s
+                b.city_id = %s
+                AND DATE(b.last_updated AT TIME ZONE cc.city_tz) = %s
         ),
         station_minute_combinations AS (
             SELECT
@@ -143,9 +153,27 @@ def fetch_station_data(city_id, date):
             station_number, minute;
 
     """
+    city_timezone = "UTC"
     with get_connection() as conn:
-        df = pd.read_sql_query(query, conn, params=(city_id, date, city_id, date, city_id, date))
-    df["minute"] = pd.to_datetime(df["minute"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COALESCE(timezone, 'UTC') FROM public.cities WHERE city_id = %s",
+                (city_id,),
+            )
+            row = cur.fetchone()
+            city_timezone = row[0] if row else "UTC"
+
+        df = pd.read_sql_query(
+            query,
+            conn,
+            params=(city_id, city_id, date, city_id, date, city_id, date),
+        )
+
+    city_zone = ZoneInfo(city_timezone)
+    df["minute"] = pd.to_datetime(df["minute"]).map(
+        lambda timestamp: timestamp.replace(tzinfo=city_zone).isoformat(timespec="seconds")
+    )
+    df["timezone"] = city_timezone
     return df
 
 

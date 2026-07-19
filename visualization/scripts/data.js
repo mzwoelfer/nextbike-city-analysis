@@ -1,312 +1,176 @@
 import state from "./state.js";
+import { apiSource } from "./dataSources/apiSource.js";
+import { staticSource } from "./dataSources/staticSource.js";
+import { minutesSinceMidnight } from "./utils.js";
+
+let _dataSource = null;
 
 /**
- * Parse CSV string to array of objects
- * @param {string} csvText - CSV text.
- * @returns {Array<Object>}
+ * Picks data source for the session: 
+ * the live API if reachable,
+ * otherwise the static CSV export bundled for the GitHub Pages demo.
+ * @returns {Promise<Object<string, string[]>>} Dates grouped by city id.
  */
-const parseCSV = async (csvText) => {
-  const lines = csvText.trim().split("\n");
-  const headers = lines[0].split(",");
-
-  // Rawdogging CSV parsing... in the name of personal improvement
-  return lines.slice(1).map((line) => {
-    const values = [];
-    let current = "";
-    let insideQuotes = false;
-
-    for (let char of line) {
-      if (char === '"' && insideQuotes) {
-        insideQuotes = false;
-      } else if (char === '"' && !insideQuotes) {
-        insideQuotes = true;
-      } else if (char === "," && !insideQuotes) {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-
-    return headers.reduce((acc, header, index) => {
-      acc[header] = values[index];
-      return acc;
-    }, {});
-  });
-};
-
-export const loadAvailableFiles = async () => {
-  /**
-   * Load available files either from:
-   * - /api/available (production docker mode - uses database)
-   * - manifest.json file (if it exists)
-   * - or the directory listing from the server.
-   */
-  let groupedFiles = {};
-
-  // Try the database API first (production mode)
+export async function loadAvailableFiles() {
   try {
-    const response = await fetch("/api/available");
-    if (response.ok) {
-      const data = await response.json();
-      data.forEach(({ city_id, city_name, dates }) => {
-        groupedFiles[city_id] = dates;
-        state.cities[city_name] = city_id;
-      });
-      state.useApi = true;
-      console.log("Loaded available data from API:", groupedFiles);
-      return groupedFiles;
+    const availableFiles = await apiSource.loadAvailableDates();
+    if (availableFiles) {
+      _dataSource = apiSource;
+      console.log("Data source: live API.", availableFiles);
+      return availableFiles;
     }
-  } catch {
-    console.warn("API failed, falling back to static:", err);
-  }
-
-  // Fall back to static file discovery (GitHub Pages / plain http.server mode)
-  state.useApi = false;
-
-  try {
-    const response = await fetch("data/manifest.json");
-    if (!response.ok) {
-      throw new Error("Manifest file not found");
-    }
-    const files = await response.json();
-
-    files.forEach((file) => {
-      const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.csv.gz/);
-      if (match) {
-        const [_, cityId, date] = match;
-        if (!groupedFiles[cityId]) {
-          groupedFiles[cityId] = [];
-        }
-        groupedFiles[cityId].push(date);
-      }
-    });
-
-    console.log("Loaded files from manifest:", groupedFiles);
-    return groupedFiles;
   } catch (err) {
-    console.warn(
-      "Manifest.json not found or failed to load. Falling back to server-based file fetching:",
-      err,
-    );
-
-    try {
-      const response = await fetch("data/");
-      const html = await response.text();
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-
-      const files = Array.from(doc.querySelectorAll("a"))
-        .map((link) => link.getAttribute("href"))
-        .filter((file) => file.endsWith(".csv.gz"));
-
-      files.forEach((file) => {
-        const match = file.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.csv.gz/);
-        if (match) {
-          const [_, cityId, date] = match;
-          if (!groupedFiles[cityId]) {
-            groupedFiles[cityId] = [];
-          }
-          groupedFiles[cityId].push(date);
-        }
-      });
-
-      console.log("Loaded files from server directory:", groupedFiles);
-    } catch (dirErr) {
-      console.error("Failed to fetch directory listing as fallback:", dirErr);
-    }
+    console.warn("Live API unreachable. Falling back to static CSV export.", err);
   }
 
-  return groupedFiles;
-};
+  _dataSource = staticSource;
+  const availableFiles = await staticSource.loadAvailableDates();
+  console.log("Data source: static CSV export.", availableFiles);
+  return availableFiles;
+}
 
 /**
- * Fetch and parse gzipped CSV file.
- * @param {string} filePath - Path to .csv.gz file
- * @returns {Promise<Array<Object>>}
+ * Set the initial city and date, then register city display names.
+ * @returns {Promise<boolean>} True when a usable city/date selection exists.
  */
-const fetchAndParseGzipCSV = async (filePath) => {
-  try {
-    const response = await fetch(filePath);
-    if (!response.ok) throw new Error(`Failed to load ${filePath}`);
+export async function loadFirstAvailableData() {
+  const initialSelection = selectInitialCityAndDate(state.availableFiles);
+  state.city_id = initialSelection.cityId;
+  state.date = initialSelection.date;
 
-    const decompressedStream = response.body.pipeThrough(
-      new DecompressionStream("gzip"),
-    );
-    const text = await new Response(decompressedStream).text();
-    const parsedCSV = await parseCSV(text);
-    return parsedCSV;
-  } catch (err) {
-    console.error(`ERROR: Loading CSV file ${filePath}`, err);
-    return [];
-  }
-};
-
-export const loadFirstAvailableData = async () => {
-  const city_ids = Object.keys(state.availableFiles);
-  const first_city_id = city_ids[0];
-  state.city_id = first_city_id;
-  state.date = state.availableFiles[first_city_id][0];
-
-  if (state.useApi) {
-    // city names already populated from /api/available
-    return;
+  if (!initialSelection.hasData) {
+    return false;
   }
 
-  // existing CSV fallback for static / GitHub Pages mode
-  const cityPromises = city_ids.map(async (city_id) => {
-    const stationData = await fetchAndParseGzipCSV(
-      `data/${city_id}_stations_${state.date}.csv.gz`,
-    );
-    console.log("RESPONSE:", stationData);
-    const city_name = stationData[0]["city_name"];
-    return { city_name, city_id };
+  const cityNames = await _dataSource.discoverCityNames(
+    Object.keys(state.availableFiles),
+    state.date,
+  );
+  cityNames.forEach(({ cityId, cityName }) => {
+    if (cityName) state.cities[cityName] = cityId;
   });
 
-  const cities = await Promise.all(cityPromises);
-
-  cities.forEach(({ city_name, city_id }) => {
-    state.cities[city_name] = city_id;
-  });
-};
+  return true;
+}
 
 /**
- * Load trips and convert it to the original JSON format
- * @returns {Promise<Array<Trip>>}
+ * Choose the first city and date from the available file index.
+ * @param {Object<string, string[]>} availableFiles - Dates grouped by city id.
+ * @returns {{ cityId: string|number, date: string, hasData: boolean }} Initial selection.
  */
-export const loadTripsData = async () => {
+function selectInitialCityAndDate(availableFiles) {
+  const cityIds = Object.keys(availableFiles);
+  if (!cityIds.length) {
+    return { cityId: 0, date: "", hasData: false };
+  }
+
+  const firstCityId = cityIds[0];
+  const firstCityDates = availableFiles[firstCityId] || [];
+  if (!firstCityDates.length) {
+    return { cityId: Number(firstCityId), date: "", hasData: false };
+  }
+
+  return {
+    cityId: firstCityId,
+    date: firstCityDates[0],
+    hasData: true,
+  };
+}
+
+/**
+ * Load trip data for the current city and date via the selected source.
+ * @returns {Promise<void>}
+ */
+export async function loadTripsData() {
   try {
-    if (state.useApi) {
-      const response = await fetch(
-        `/api/trips?city_id=${state.city_id}&date=${state.date}`,
-      );
-      if (!response.ok)
-        throw new Error(
-          `API request failed for trips ${state.city_id} ${state.date}`,
-        );
-      const geojson = await response.json();
-
-      state.tripsData = geojson.features.map((feature) => ({
-        bike_number: feature.properties.bike_number,
-        start_time: feature.properties.start_time,
-        end_time: feature.properties.end_time,
-        duration: feature.properties.duration,
-        distance: feature.properties.distance,
-        coordinates: feature.geometry.coordinates, // [[lon, lat], ...]
-        timestamps: feature.properties.timestamps,
-        route_id: feature.properties.route_id ?? null,
-      }));
-
-      state.city_lat = state.tripsData[0].coordinates[0][1];
-      state.city_lng = state.tripsData[0].coordinates[0][0];
-    } else {
-      const rows = await fetchAndParseGzipCSV(
-        `data/${state.city_id}_trips_${state.date}.csv.gz`,
-      );
-      if (!rows.length)
-        throw new Error(
-          `No trip data for city ${state.city_id} on ${state.date}`,
-        );
-      state.tripsData = rows.map((row) => {
-        // segments is a Python-repr list: [[lat, lon, 'timestamp'], ...]
-        const segments = JSON.parse(row.segments.replace(/'/g, '"'));
-        return {
-          bike_number: row.bike_number,
-          start_time: row.start_time,
-          end_time: row.end_time,
-          duration: Number(row.duration),
-          distance: Number(row.distance),
-          coordinates: segments.map(([lat, lon]) => [lon, lat]), // GeoJSON: [lon, lat]
-          timestamps: segments.map(([, , ts]) => ts),
-          route_id: row.route_id != null ? Number(row.route_id) : null,
-        };
-      });
-      state.city_lat = state.tripsData[0].coordinates[0][1];
-      state.city_lng = state.tripsData[0].coordinates[0][0];
-    }
-
+    const { trips, timezone } = await _dataSource.loadTrips(state.city_id, state.date);
+    applyTripsToState(trips, timezone);
     console.log("Trips data loaded:", state.tripsData);
-    return;
   } catch (err) {
     console.error("Error loading trip data:", err);
   }
-};
+}
 
 /**
- * Load station data and convert to match the original JSON format
- * @returns {Promise<Array<Station>>}
+ * Save normalized trips into state, attaching timing fields.
+ * @param {Object[]} trips - Normalized trips.
+ * @param {string} timezone - City timezone.
  */
-export const loadStationData = async () => {
+function applyTripsToState(trips, timezone) {
+  state.city_timezone = timezone;
+  state.tripsData = trips.map((trip) =>
+    attachTripTimingFields(trip, trip.timezone || timezone),
+  );
+
+  if (state.tripsData.length > 0) {
+    state.city_lat = state.tripsData[0].coordinates[0][1];
+    state.city_lng = state.tripsData[0].coordinates[0][0];
+  }
+}
+
+/**
+ * Attach city-local minute fields to a trip.
+ * @param {Object} trip - Normalized trip.
+ * @param {string} timezone - City timezone.
+ * @returns {Object} Trip with derived timing fields.
+ */
+function attachTripTimingFields(trip, timezone) {
+  return {
+    ...trip,
+    start_minute_city: minutesSinceMidnight(new Date(trip.start_time), timezone),
+    end_minute_city: minutesSinceMidnight(new Date(trip.end_time), timezone),
+  };
+}
+
+/**
+ * Load station data for the current city and date via the selected source.
+ * @returns {Promise<void>}
+ */
+export async function loadStationData() {
   try {
-    let rows;
-
-    if (state.useApi) {
-      const response = await fetch(
-        `/api/stations?city_id=${state.city_id}&date=${state.date}`,
-      );
-      if (!response.ok)
-        throw new Error(
-          `API request failed for stations ${state.city_id} ${state.date}`,
-        );
-      rows = await response.json();
-      state.stationData = rows.map((row) => ({
-        minute: row.minute,
-        id: row.id,
-        uid: row.uid,
-        latitude: row.latitude,
-        longitude: row.longitude,
-        name: row.name,
-        spot: row.spot,
-        station_number: row.station_number,
-        maintenance: row.maintenance,
-        terminal_type: row.terminal_type,
-        city_id: row.city_id,
-        city_name: row.city_name,
-        bike_count: row.bike_count,
-        bike_list: row.bike_list || "",
-      }));
-    } else {
-      const filePath = `data/${state.city_id}_stations_${state.date}.csv.gz`;
-      const csvData = await fetchAndParseGzipCSV(filePath);
-      state.stationData = csvData.map((row) => ({
-        minute: row.minute,
-        id: Number(row.id),
-        uid: Number(row.uid),
-        latitude: Number(row.latitude),
-        longitude: Number(row.longitude),
-        name: row.name,
-        spot: row.spot === "True",
-        station_number: Number(row.station_number),
-        maintenance: row.maintenance === "True",
-        terminal_type: row.terminal_type,
-        city_id: Number(row.city_id),
-        city_name: row.city_name,
-        bike_count: Number(row.bike_count),
-        bike_list: row.bike_list || "",
-      }));
-    }
-
+    const { stations, timezone } = await _dataSource.loadStations(state.city_id, state.date);
+    applyStationsToState(stations, timezone);
     console.log("Station data loaded:", state.stationData);
-    return;
   } catch (err) {
     console.error("Error loading station data:", err);
   }
-};
+}
 
-export const checkTripsDataExists = async (date) => {
-  if (state.useApi) {
-    return state.availableFiles[state.city_id]?.includes(date) ?? false;
-  }
+/**
+ * Save normalized stations into state, attaching timing fields.
+ * @param {Object[]} stations - Normalized stations.
+ * @param {string} timezone - City timezone.
+ */
+function applyStationsToState(stations, timezone) {
+  state.city_timezone = timezone || state.city_timezone || "UTC";
+  state.stationData = stations.map((station) =>
+    attachStationTimingFields(station, station.timezone || state.city_timezone),
+  );
+}
+
+/**
+ * Attach city-local minute fields to a station row.
+ * @param {Object} station - Normalized station row.
+ * @param {string} timezone - City timezone.
+ * @returns {Object} Station with derived timing fields.
+ */
+function attachStationTimingFields(station, timezone) {
+  return {
+    ...station,
+    minute_city: minutesSinceMidnight(new Date(station.minute), timezone),
+  };
+}
+
+/**
+ * Check whether trip data exists for a date, via the selected source.
+ * @param {string} date - Date to check.
+ * @returns {Promise<boolean>} True when trip data exists.
+ */
+export async function checkTripsDataExists(date) {
   try {
-    const response = await fetch(
-      `data/${state.city_id}_trips_${date}.geojson.gz`,
-      { method: "HEAD" },
-    );
-    return response.ok;
+    return await _dataSource.checkTripExists(state.city_id, date);
   } catch (err) {
     console.error("Error checking trip data file:", err);
     return false;
   }
-};
+}
