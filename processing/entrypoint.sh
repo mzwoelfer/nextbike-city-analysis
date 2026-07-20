@@ -9,9 +9,9 @@ fi
 # Otherwise, run the scheduled loop.
 # TEST_RUN_SECONDS=1 shortens the wait so the midnight path can be verified quickly.
 while true; do
-  if [ "${TEST_RUN_SECONDS:-60}" = "1" ]; then
+  if [ -n "${TEST_RUN_SECONDS:-}" ]; then
     sleep_seconds="$TEST_RUN_SECONDS"
-    process_date=$(date -d 'yesterday' +%Y-%m-%d)
+    process_date=$(date -d 'today' +%Y-%m-%d)
     echo "Test mode enabled. Running scheduled processing for $process_date in $sleep_seconds seconds"
   else
     sleep_seconds=$(( $(date -d 'tomorrow 00:00' +%s) - $(date +%s) ))
