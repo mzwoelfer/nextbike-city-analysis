@@ -10,8 +10,6 @@ services:
     image: postgres:15
     container_name: nextbike_postgres
     restart: always
-    env_file:
-      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -35,8 +33,6 @@ services:
       dockerfile: CONTAINERFILE
     container_name: nextbike_collector
     restart: always
-    env_file:
-      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,41 +42,30 @@ services:
       - nextbike_network
 
   processor:
-    # Runs at midnight every day for each city in CITY_IDS
     build:
       context: ./processing
       dockerfile: CONTAINERFILE
     container_name: nextbike_processor
     restart: always
-    env_file:
-      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - trip_data:/data
     networks:
       - nextbike_network
 
   visualization:
-    build:
-      context: ./visualization
-      dockerfile: CONTAINERFILE
+    image: python:3.11-alpine
     container_name: nextbike_visualization
     restart: always
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=${DB_HOST}
     ports:
       - "${VISUALIZATION_PORT:-8080}:8080"
     volumes:
       - ./visualization:/app:ro
-      - trip_data:/app/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: uvicorn api:app --host 0.0.0.0 --port 8080
+      - trip_data:/app/data:ro
+    working_dir: /app
+    command: python -m http.server 8080
     networks:
       - nextbike_network
 
