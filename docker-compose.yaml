@@ -59,6 +59,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - trip_data:/data
     networks:
       - nextbike_network
 
