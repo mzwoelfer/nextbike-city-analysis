@@ -15,11 +15,14 @@ while true; do
     echo "Test mode enabled. Running scheduled processing for $process_date in $sleep_seconds seconds"
   else
     sleep_seconds=$(( $(date -d 'tomorrow 00:00' +%s) - $(date +%s) ))
-    process_date=$(date -d 'yesterday' +%Y-%m-%d)
     echo "Next auto-processing at midnight in $sleep_seconds seconds"
   fi
 
   sleep "$sleep_seconds"
+
+  if [ -z "${TEST_RUN_SECONDS:-}" ]; then
+    process_date=$(date -d 'yesterday' +%Y-%m-%d)
+  fi
 
   echo "Running scheduled processing for $process_date"
 
