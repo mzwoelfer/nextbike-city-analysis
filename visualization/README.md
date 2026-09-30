@@ -34,6 +34,16 @@ docker compose up -d
 
 Visit `http://localhost:8080` (or the port set by `VISUALIZATION_PORT` in `.env`).
 
+## Tests and coverage
+
+From `visualization/`, install requirements and run the API tests with coverage:
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 -m coverage run --source=api -m unittest discover -s tests
+python3 -m coverage report --show-missing
+```
+
 ## Updating the visualization container
 ```sh
 docker compose up -d --no-deps --build visualization
