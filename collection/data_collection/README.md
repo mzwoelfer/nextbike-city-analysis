@@ -51,13 +51,9 @@ Run specific tests:
 - `python3 -m unittest tests/test_city_class.py`
 
 #### Run coverage tests
-Change directory to `collection/data_collection`:
-
-Make sure `coverage` is installed:
-```BASH
-pip install coverage
-```
-
-```BASH
-coverage run -m unittest discover -s tests && coverage report --show-missing
+From `collection/data_collection`, install requirements and run coverage:
+```bash
+python3 -m pip install -r requirements.txt
+python3 -m coverage run --source=database,query_nextbike -m unittest discover -s tests
+python3 -m coverage report --show-missing
 ```
