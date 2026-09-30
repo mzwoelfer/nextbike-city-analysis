@@ -95,3 +95,12 @@ pip install -r requirements.txt pytest
 pytest tests/ -v
 ```
 
+## Measuring test coverage
+
+From `processing/`, run the unittest suite under coverage and show uncovered lines:
+
+```sh
+python -m coverage run --source=nextbike_processing -m unittest discover -s tests
+python -m coverage report --show-missing
+```
+
