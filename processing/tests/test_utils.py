@@ -4,7 +4,42 @@ import os
 import tempfile
 import unittest
 
-from nextbike_processing.utils import ensure_directory_exists, save_gzipped_geojson
+import pandas as pd
+
+from nextbike_processing.utils import (
+    ensure_directory_exists,
+    save_csv,
+    save_gzipped_csv,
+    save_gzipped_geojson,
+    save_json,
+)
+
+
+class TestFileWriters(unittest.TestCase):
+    def test_save_json_roundtrip(self):
+        data = {"city_id": 467, "dates": ["2026-06-08"]}
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "data.json")
+            save_json(path, data)
+
+            with open(path, encoding="utf-8") as file:
+                self.assertEqual(json.load(file), data)
+
+    def test_save_csv_roundtrip(self):
+        data = pd.DataFrame({"city_id": [467], "city_name": ["Gießen"]})
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "data.csv")
+            save_csv(path, data)
+
+            pd.testing.assert_frame_equal(pd.read_csv(path), data)
+
+    def test_save_gzipped_csv_roundtrip(self):
+        data = pd.DataFrame({"city_id": [467], "bike_count": [12]})
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "data.csv.gz")
+            save_gzipped_csv(path, data)
+
+            pd.testing.assert_frame_equal(pd.read_csv(path, compression="gzip"), data)
 
 
 class TestSaveGzippedGeojson(unittest.TestCase):
