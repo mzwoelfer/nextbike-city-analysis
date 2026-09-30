@@ -8,8 +8,42 @@ from database.base import AbstractDatabaseClient, register_backend
 class PostgresClient(AbstractDatabaseClient):
     """Handle postgres entries"""
 
-    # TODO: static methods are duplicated....
-    # unify: 3 list with db columns, take data model to generate values
+    _CITY_COLUMNS = (
+        "city_id",
+        "city_name",
+        "timezone",
+        "latitude",
+        "longitude",
+        "set_point_bikes",
+        "available_bikes",
+        "last_updated",
+    )
+    _BIKE_COLUMNS = (
+        "bike_number",
+        "latitude",
+        "longitude",
+        "active",
+        "state",
+        "bike_type",
+        "station_number",
+        "station_uid",
+        "last_updated",
+        "city_id",
+        "city_name",
+    )
+    _STATION_COLUMNS = (
+        "uid",
+        "latitude",
+        "longitude",
+        "name",
+        "spot",
+        "station_number",
+        "maintenance",
+        "terminal_type",
+        "last_updated",
+        "city_id",
+        "city_name",
+    )
 
     def __init__(self, config):
         self.config = config
@@ -27,16 +61,20 @@ class PostgresClient(AbstractDatabaseClient):
             connection.commit()
 
     @staticmethod
-    def city_sql_insert_statement(table_name):
-        city_sql = f"""
+    def _sql_insert_statement(table_name, columns):
+        column_list = ", ".join(columns)
+        value_list = ", ".join(f"%({column})s" for column in columns)
+        return f"""
         INSERT INTO {table_name} (
-            city_id, city_name, timezone, latitude, longitude, set_point_bikes, available_bikes, last_updated
+            {column_list}
         )
-        VALUES (%(city_id)s, %(city_name)s, %(timezone)s, %(latitude)s, %(longitude)s, %(set_point_bikes)s, %(available_bikes)s, %(last_updated)s)
+        VALUES ({value_list})
         ON CONFLICT DO NOTHING;
         """
 
-        return city_sql
+    @classmethod
+    def city_sql_insert_statement(cls, table_name):
+        return cls._sql_insert_statement(table_name, cls._CITY_COLUMNS)
 
     # ----- BIKES -----
     def insert_bike_entries(self, bike_entries):
@@ -50,17 +88,9 @@ class PostgresClient(AbstractDatabaseClient):
             cursor.executemany(sql_statement, bikes)
             connection.commit()
 
-    @staticmethod
-    def bike_sql_insert_statement(table_name):
-        bike_sql = f"""
-        INSERT INTO {table_name} (
-            bike_number, latitude, longitude, active, state, bike_type, station_number, station_uid, last_updated, city_id, city_name
-        )
-        VALUES (%(bike_number)s, %(latitude)s, %(longitude)s, %(active)s, %(state)s, %(bike_type)s, %(station_number)s, %(station_uid)s, %(last_updated)s, %(city_id)s, %(city_name)s)
-        ON CONFLICT DO NOTHING;
-        """
-
-        return bike_sql
+    @classmethod
+    def bike_sql_insert_statement(cls, table_name):
+        return cls._sql_insert_statement(table_name, cls._BIKE_COLUMNS)
 
     # ----- STATIONS -----
     def insert_station_entries(self, station_entries: list[tuple]):
@@ -74,17 +104,9 @@ class PostgresClient(AbstractDatabaseClient):
             cursor.executemany(sql_statement, stations)
             connection.commit()
 
-    @staticmethod
-    def station_sql_insert_statement(table_name):
-        station_sql = f"""
-        INSERT INTO {table_name} (
-                uid, latitude, longitude, name, spot, station_number, maintenance, terminal_type, last_updated, city_id, city_name
-            )
-            VALUES (%(uid)s, %(latitude)s, %(longitude)s, %(name)s, %(spot)s, %(station_number)s, %(maintenance)s, %(terminal_type)s, %(last_updated)s, %(city_id)s, %(city_name)s)
-            ON CONFLICT DO NOTHING;
-        """
-
-        return station_sql
+    @classmethod
+    def station_sql_insert_statement(cls, table_name):
+        return cls._sql_insert_statement(table_name, cls._STATION_COLUMNS)
 
     # ----- SYNC TIMESTAMPS -----
     def get_last_station_sync(self, city_id: int) -> datetime.datetime | None:

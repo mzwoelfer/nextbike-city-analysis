@@ -27,7 +27,7 @@ class TestCityInsertSQL(unittest.TestCase):
             self.assertIn(f"%({city_key})s", self.sql_statement)
 
     def test_no_unknown_placeholders(self):
-        placeholders = re.findall(r"$\((.*?)\)s", self.sql_statement)
+        placeholders = re.findall(r"%\((.*?)\)s", self.sql_statement)
         for placeholder in placeholders:
             self.assertIn(placeholder, self.city.__dict__)
 
@@ -57,7 +57,7 @@ class TestBikesInsertStatement(unittest.TestCase):
             self.assertIn(f"%({bike_key})s", self.sql_statement)
 
     def test_no_unknown_placeholders(self):
-        placeholders = re.findall(r"$\((.*?)\)s", self.sql_statement)
+        placeholders = re.findall(r"%\((.*?)\)s", self.sql_statement)
         for placeholder in placeholders:
             self.assertIn(placeholder, self.bike.__dict__)
 
@@ -85,10 +85,10 @@ class TestStationInsertStatement(unittest.TestCase):
         )
 
     def test_bike_keys_Present_in_sql_statement(self):
-        for bike_key in self.station.__dict__.keys():
-            self.assertIn(f"%({bike_key})s", self.sql_statement)
+        for station_key in self.station.__dict__.keys():
+            self.assertIn(f"%({station_key})s", self.sql_statement)
 
     def test_no_unknown_placeholders(self):
-        placeholders = re.findall(r"$\((.*?)\)s", self.sql_statement)
+        placeholders = re.findall(r"%\((.*?)\)s", self.sql_statement)
         for placeholder in placeholders:
-            self.assertIn(placeholder, self.bike.__dict__)
+            self.assertIn(placeholder, self.station.__dict__)
