@@ -4,65 +4,27 @@
     <p><a href="https://mzwoelfer.github.io/nextbike-city-analysis/">🔴 Live Preview</a></p>
 </div>
 
-## Overview
+## Quick Start
 
-```SHELL
-- collection/       # Setup data collection
-- data/             # Stored trips data
-- docs/             # Documentation
-- processing/       # Calculate trips
-- visualization/    # Web visualization
-```
+Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.docker.com/engine/install/)).
 
-## Prerequisites
-- Docker with Compose ([Install Docker](https://docs.docker.com/engine/install/))
-
-## 🚀 Install
-
-1. Clone the repository:
+1. Clone the repository and enter it:
    ```sh
    git clone https://github.com/zwoefler/nextbike-city-analysis.git
    cd nextbike-city-analysis
    ```
-
-2. Create your `.env` file:
+2. Create local configuration and set a private database password and the city IDs to collect:
    ```sh
    cp .env.example .env
    ```
-   Edit `.env` and set your values:
-
-   | Variable | Description |
-   |---|---|
-   | `DB_USER` | Postgres username |
-   | `DB_PASSWORD` | Postgres password |
-   | `DB_NAME` | Postgres database name |
-   | `DB_HOST` | Postgres host (`nextbike_postgres` when using compose) |
-   | `DB_PORT` | Postgres port (default: `5432`) |
-   | `DB_BIKES_TABLE` | Table name for raw bike data |
-   | `DB_STATIONS_TABLE` | Table name for station data |
-   | `DB_CITIES_TABLE` | Table name for city data |
-   | `CITY_IDS` | Comma-separated Nextbike city IDs to collect, e.g. `467,210` |
-   | `STATIONS_SYNC_INTERVAL_HOURS` | How often to sync stations |
-   | `CITIES_SYNC_INTERVAL_HOURS` | How often to sync city metadata |
-   | `EXPORT_DIR` | Output folder for processed trip files (default: `/data`) |
-   | `VISUALIZATION_PORT` | Port for the web UI (default: `8080`) |
-
-   Find your city ID in [`city_ids_2025_02_15.md`](city_ids_2025_02_15.md).
-
-3. Start everything:
+   Find city IDs in [`city_ids_2025_02_15.md`](city_ids_2025_02_15.md). Configuration details are in [deployment and data contract](docs/deployment-and-data-contract.md).
+3. Build and start the services:
    ```sh
-   docker compose up -d
+   docker compose up -d --build
    ```
+4. Open `http://localhost:8080` (or the configured `VISUALIZATION_PORT`). The collector polls once per minute. Scheduled trip processing runs at midnight; for immediate or historical processing, follow [manual processing](docs/manual-processing.md).
 
-   This starts four services:
-   - **postgres** - database for raw bike, station, route, and trip data
-   - **collector** - polls the Nextbike API every 60 seconds and writes to postgres
-   - **processor** - runs at midnight; calculates trips for each city in `CITY_IDS`, caches OSM routes in the database, and writes `.geojson.gz` files to the `trip_data` volume
-   - **visualization** - FastAPI app at `http://localhost:${VISUALIZATION_PORT}` that serves trip and station data live from the database
-
-4. Open `http://localhost:8080` (or your configured `VISUALIZATION_PORT`) in your browser.
-
-   > ⚠ To trigger `processing` manually, see [docs/manual-processing.md](docs/manual-processing.md).
+The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Static `.csv.gz` and `.geojson.gz` exports are generated only when file export is requested. GitHub Pages serves the bundled static sample, not the live database.
 
 ## Stop / destroy
 
@@ -70,7 +32,7 @@
 # Stop containers
 docker compose down
 
-# Stop and delete all data (including the database volume)
+# Stop and permanently delete all data (including the database volume)
 docker compose down -v --remove-orphans
 ```
 

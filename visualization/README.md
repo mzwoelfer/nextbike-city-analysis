@@ -9,13 +9,15 @@ Interactive map. VIzualizes trips for Nextbike data.
 Browser → FastAPI (api.py) → PostgreSQL
                 ↓
          /app (static files: index.html, CSS, JS)
-         /app/data (trip_data volume: .geojson.gz fallback files)
+         /app/data (optional static CSV bundle)
 ```
 
-The frontend detects if the PAI is available:
+The frontend detects whether the API is available:
 
 - **API mode** (production): queries trip and station data from database via `/api/*` endpoints.
-- **Static mode** (GitHub Pages / local dev): loads pre-generated `.geojson.gz` and `.csv.gz` data files in the `data/` directory.
+- **Static mode** (GitHub Pages / local dev): discovers `*_trips_*.csv.gz` and `*_stations_*.csv.gz` files from `data/manifest.json`. Static mode does not load GeoJSON files.
+
+The public GitHub Pages site uses bundled sample CSV files; it does not connect to a public live database. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for file schemas and onboarding.
 
 ## API endpoints
 
@@ -57,7 +59,7 @@ python3 -m http.server 8000
 ```
 
 Open `http://localhost:8000`. 
-Trip data must be present in `visualization/data/` as `.geojson.gz` files. 
+Trip and station data must be present in `visualization/data/` as `.csv.gz` files.
 Generate a manifest so the file listing works without directory listing support:
 ```sh
 bash create_manifest.sh
