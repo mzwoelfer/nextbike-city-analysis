@@ -9,8 +9,41 @@ services:
       - "55432:5432"
     tmpfs:
       - /var/lib/postgresql/data
+    volumes:
+      - ../../collection/create_bike_and_stations_db.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U test -d nextbike_api_test"]
       interval: 2s
       timeout: 5s
       retries: 20
+
+  tests:
+    build:
+      context: ..
+      dockerfile: CONTAINERFILE
+    working_dir: /workspace/visualization
+    volumes:
+      - ../..:/workspace
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: nextbike_api_test
+      DB_USER: test
+      DB_PASSWORD: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        attempt=0
+        until python -c 'import os, psycopg; psycopg.connect(host=os.environ["DB_HOST"], port=os.environ["DB_PORT"], dbname=os.environ["DB_NAME"], user=os.environ["DB_USER"], password=os.environ["DB_PASSWORD"]).close()' >/dev/null 2>&1; do
+          attempt=$$((attempt + 1))
+          if [ "$$attempt" -ge 60 ]; then
+            echo "PostgreSQL did not become ready within 60 seconds" >&2
+            exit 1
+          fi
+          sleep 1
+        done
+        exec python -m unittest discover -s tests -v
