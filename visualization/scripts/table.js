@@ -23,6 +23,63 @@ export function populateRouteTable() {
     });
 }
 
+export function populateUniqueRoutesTable() {
+    const tableBody = document.querySelector('#unique-routes-table tbody');
+    const routes = new Map();
+
+    state.tripsData.forEach((trip) => {
+        if (trip.route_id == null) return;
+
+        const routeKey = String(trip.route_id);
+        const route = routes.get(routeKey);
+        if (route) {
+            route.tripCount += 1;
+            return;
+        }
+
+        routes.set(routeKey, {
+            routeId: trip.route_id,
+            distance: Number.isFinite(Number(trip.distance)) ? Number(trip.distance) : null,
+            start: trip.coordinates?.[0],
+            end: trip.coordinates?.at(-1),
+            tripCount: 1,
+        });
+    });
+
+    tableBody.replaceChildren();
+    const sortedRoutes = [...routes.values()].sort((routeA, routeB) => Number(routeA.routeId) - Number(routeB.routeId));
+
+    if (sortedRoutes.length === 0) {
+        const row = tableBody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 5;
+        cell.textContent = 'No routed trips for this date.';
+        return;
+    }
+
+    sortedRoutes.forEach((route) => {
+        const row = tableBody.insertRow();
+        const values = [
+            route.routeId,
+            route.distance == null ? 'N/A' : route.distance.toFixed(2),
+            formatRouteEndpoint(route.start),
+            formatRouteEndpoint(route.end),
+            route.tripCount,
+        ];
+
+        values.forEach((value) => {
+            row.insertCell().textContent = String(value);
+        });
+    });
+}
+
+function formatRouteEndpoint(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return 'N/A';
+    const [longitude, latitude] = coordinates.map(Number);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return 'N/A';
+    return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+}
+
 export function highlightTableRow(index) {
     document.querySelectorAll('#route-table tbody tr').forEach((row) => row.classList.remove('active'));
     document.querySelector(`[data-index='${index}']`).classList.add('active');

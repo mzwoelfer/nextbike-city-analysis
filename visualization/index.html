@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nextbike City Analysis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="main.css?v=3">
+  <link rel="stylesheet" href="main.css?v=4">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="scripts/main.js?v=3"></script>
+  <script type="module" src="scripts/main.js?v=4"></script>
 </head>
 
 <body>
@@ -209,7 +209,11 @@
   </section>
 
   <!-- ===== TRIPS TABLE ===== -->
-  <div id="route-table-container">
+  <div id="table-view-controls" role="group" aria-label="Table view">
+    <button type="button" data-table-view="trips" aria-pressed="true">Trips</button>
+    <button type="button" data-table-view="routes" aria-pressed="false">Unique routes</button>
+  </div>
+  <div id="route-table-container" data-table-panel="trips">
     <table id="route-table">
       <thead>
         <tr>
@@ -218,6 +222,20 @@
           <th data-column="end_time"    data-order="">End Time</th>
           <th data-column="distance"    data-order="">Distance (m)</th>
           <th data-column="duration"    data-order="">Duration (min)</th>
+        </tr>
+      </thead>
+      <tbody><!-- dynamically populated --></tbody>
+    </table>
+  </div>
+  <div id="unique-routes-container" data-table-panel="routes" hidden>
+    <table id="unique-routes-table">
+      <thead>
+        <tr>
+          <th>Route ID</th>
+          <th>Distance (m)</th>
+          <th>Start (lat, lon)</th>
+          <th>End (lat, lon)</th>
+          <th>Trip Count</th>
         </tr>
       </thead>
       <tbody><!-- dynamically populated --></tbody>

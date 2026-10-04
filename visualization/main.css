@@ -505,27 +505,62 @@ html, body {
 /* ==============================================
    ROUTE TABLE
 =============================================== */
-#route-table-container {
+#table-view-controls {
+    display: flex;
+    width: 90%;
+    max-width: 780px;
+    margin: 0 auto 12px;
+}
+
+#table-view-controls button {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-light);
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+#table-view-controls button:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+#table-view-controls button:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+#table-view-controls button[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+
+#route-table-container,
+#unique-routes-container {
     margin: 0 auto 48px;
     width: 90%;
     max-width: 780px;
     overflow-x: auto;
 }
 
-#route-table {
+#route-table,
+#unique-routes-table {
     border-collapse: collapse;
     width: 100%;
     font-size: 13px;
 }
 
 #route-table th,
-#route-table td {
+#route-table td,
+#unique-routes-table th,
+#unique-routes-table td {
     border: 1px solid var(--border-light);
     text-align: left;
     padding: 9px 12px;
 }
 
-#route-table th {
+#route-table th,
+#unique-routes-table th {
     background: var(--bg-dark);
     color: var(--text-light);
     font-size: 11px;
@@ -544,7 +579,15 @@ html, body {
     background: #f9f9f9;
 }
 
+#unique-routes-table tr:nth-child(even) td {
+    background: #f9f9f9;
+}
+
 #route-table tr:hover td {
+    background: #ffe8d8;
+}
+
+#unique-routes-table tr:hover td {
     background: #ffe8d8;
 }
 

@@ -3,7 +3,7 @@ import { getMap, initializeMap } from './map.js';
 import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js?v=2';
 import { buildMonthlyTripsCsv } from './csvExport.js?v=2';
 import { togglePlay, updateSlider } from './playback.js';
-import { populateRouteTable, highlightTableRow } from './table.js';
+import { populateRouteTable, populateUniqueRoutesTable, highlightTableRow } from './table.js?v=2';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
 import { drawTripsOnMap, highlightTripOnMap } from './trips.js';
@@ -251,6 +251,7 @@ async function loadCityVisualization(cityId) {
     );
     initializeMap(state.city_lat, state.city_lng);
     populateRouteTable();
+    populateUniqueRoutesTable();
 
     await loadStationData();
     if (!hasRoutedTrips) {
@@ -352,6 +353,23 @@ function bindPlaybackControls() {
     playButton.addEventListener('click', () => togglePlay());
 }
 
+function bindTableViews() {
+    const buttons = document.querySelectorAll('#table-view-controls button');
+    const panels = document.querySelectorAll('[data-table-panel]');
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.tableView;
+            buttons.forEach((otherButton) => {
+                otherButton.setAttribute('aria-pressed', String(otherButton === button));
+            });
+            panels.forEach((panel) => {
+                panel.hidden = panel.dataset.tablePanel !== view;
+            });
+        });
+    });
+}
+
 function bindExportControls() {
     exportButton.addEventListener('click', downloadMonthlyTrips);
 }
@@ -375,6 +393,7 @@ async function initializeVisualizationApp() {
     bindCitySelectionDropdown();
     bindDayNavigationControls();
     bindPlaybackControls();
+    bindTableViews();
     bindExportControls();
     initializeBackToTop();
     bindCalendar();
