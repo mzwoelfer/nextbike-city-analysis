@@ -27,9 +27,25 @@ export function stopPlayback() {
     updatePlayButtonUI();
 }
 
+function firstAvailableMinute() {
+    const minutes = [
+        ...state.stationData.map((station) => station.minute_city),
+        ...state.bikeData.map((bike) => bike.minute_city),
+        ...state.tripsData.map((trip) => trip.start_minute_city),
+    ].filter(Number.isFinite);
+
+    return minutes.length ? Math.min(...minutes) : null;
+}
+
 export function startPlayback() {
     const playback_interval_milliseconds = 100;
     const maxTime = parseInt(document.getElementById('time-slider').max, 10);
+    const firstMinute = firstAvailableMinute();
+
+    if (firstMinute !== null && state.currentTimeMinutes < firstMinute) {
+        state.currentTimeMinutes = firstMinute;
+        updateAllComponents();
+    }
 
     state.timer = setInterval(() => {
         if (state.currentTimeMinutes >= maxTime) {
