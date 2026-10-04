@@ -47,6 +47,8 @@ python3 -m coverage run --source=api -m unittest discover -s tests
 python3 -m coverage report --show-missing
 ```
 
+The HTTP validation and timezone tests run without PostgreSQL. Endpoint integration tests run only when `DB_NAME=nextbike_api_test`; they create and remove fixture records in that database. Point these tests only at a disposable PostgreSQL database. CI starts an isolated PostgreSQL service for them.
+
 ## Updating the visualization container
 ```sh
 docker compose up -d --no-deps --build visualization
