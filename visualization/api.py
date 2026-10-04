@@ -293,7 +293,11 @@ def stations(city_id: int, date: str):
 
 # Serve optional GeoJSON exports from the shared data directory.
 app_directory = Path(__file__).resolve().parent
-app.mount("/data", StaticFiles(directory=app_directory / "data"), name="data")
+app.mount(
+    "/data",
+    StaticFiles(directory=app_directory / "data", check_dir=False),
+    name="data",
+)
 
 # Serve visualization static files - must be last (catch-all)
 app.mount("/", StaticFiles(directory=app_directory, html=True), name="static")
