@@ -728,6 +728,7 @@ th[data-order=""]::after     { content: ""; }
     }
 
     #city-selection {
+        position: absolute;
         top: 8px;
         right: 8px;
         padding: 6px 10px;
