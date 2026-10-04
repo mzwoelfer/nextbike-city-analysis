@@ -1,7 +1,6 @@
 <div align="center" width="100%">
     <h2>Nextbike City Analysis</h2>
     <p>Analyze NextBike trips in your city: collect, process, and visualize bike trips.</p>
-    <p><a href="https://mzwoelfer.github.io/nextbike-city-analysis/">🔴 Live Preview</a></p>
 </div>
 
 ## Quick Start
@@ -24,7 +23,7 @@ Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.
    ```
 4. Open `http://localhost:8080` (or the configured `VISUALIZATION_PORT`). The collector polls once per minute. Scheduled trip processing runs at midnight; for immediate or historical processing, follow [manual processing](docs/manual-processing.md).
 
-The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Static `.csv.gz` and `.geojson.gz` exports are generated only when file export is requested. GitHub Pages serves the bundled static sample, not the live database.
+The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Optional trip GeoJSON exports can be written with `--export-files`; the visualization reads processed data from the database-backed API.
 
 ## Stop / destroy
 

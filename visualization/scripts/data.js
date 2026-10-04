@@ -1,32 +1,26 @@
 import state from "./state.js";
 import { apiSource } from "./dataSources/apiSource.js";
-import { staticSource } from "./dataSources/staticSource.js";
 import { minutesSinceMidnight } from "./utils.js";
 
 let _dataSource = null;
 
 /**
- * Picks data source for the session: 
- * the live API if reachable,
- * otherwise the static CSV export bundled for the GitHub Pages demo.
+ * Load available trip dates from the live API.
  * @returns {Promise<Object<string, string[]>>} Dates grouped by city id.
  */
 export async function loadAvailableFiles() {
+  _dataSource = apiSource;
   try {
     const availableFiles = await apiSource.loadAvailableDates();
     if (availableFiles) {
-      _dataSource = apiSource;
       console.log("Data source: live API.", availableFiles);
       return availableFiles;
     }
   } catch (err) {
-    console.warn("Live API unreachable. Falling back to static CSV export.", err);
+    console.error("Live API unavailable.", err);
   }
 
-  _dataSource = staticSource;
-  const availableFiles = await staticSource.loadAvailableDates();
-  console.log("Data source: static CSV export.", availableFiles);
-  return availableFiles;
+  return {};
 }
 
 export function getAvailableMonths(cityId) {

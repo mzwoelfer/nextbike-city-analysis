@@ -291,7 +291,7 @@ def stations(city_id: int, date: str):
     ]
 
 
-# Serve data files (geojson.gz, csv.gz, manifest) - also used for station files
+# Serve optional GeoJSON exports from the shared data directory.
 app_directory = Path(__file__).resolve().parent
 app.mount("/data", StaticFiles(directory=app_directory / "data"), name="data")
 

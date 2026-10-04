@@ -207,7 +207,6 @@ class TestProcessAndSaveTrips(unittest.TestCase):
         inserted_df = mock_insert_trips.call_args.args[0]
         self.assertAlmostEqual(inserted_df.iloc[0]["duration"], 300.0)
 
-    @patch("nextbike_processing.trips.save_gzipped_csv")
     @patch("nextbike_processing.trips.save_gzipped_geojson")
     @patch("nextbike_processing.trips.get_city_timezone_from_database")
     @patch("nextbike_processing.trips.insert_trips")
@@ -224,7 +223,6 @@ class TestProcessAndSaveTrips(unittest.TestCase):
         _mock_insert_trips,
         mock_get_city_timezone,
         mock_save_geojson,
-        mock_save_csv,
     ):
         mock_fetch_trip_data.return_value = self._sample_trip_rows()
         mock_get_connection.return_value = self._connection_cm()
@@ -241,11 +239,6 @@ class TestProcessAndSaveTrips(unittest.TestCase):
         self.assertEqual(props["timezone"], "Europe/Berlin")
         self.assertTrue(props["start_time"].endswith("+02:00"))
         self.assertTrue(props["end_time"].endswith("+02:00"))
-
-        csv_df = mock_save_csv.call_args.args[1]
-        self.assertIn("timezone", csv_df.columns)
-        self.assertEqual(csv_df.iloc[0]["timezone"], "Europe/Berlin")
-        self.assertTrue(csv_df.iloc[0]["start_time"].endswith("+02:00"))
 
     def test_computes_and_caches_uncached_routes(self):
         trip_rows = pd.concat(

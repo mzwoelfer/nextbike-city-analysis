@@ -9,15 +9,9 @@ Interactive map. VIzualizes trips for Nextbike data.
 Browser → FastAPI (api.py) → PostgreSQL
                 ↓
          /app (static files: index.html, CSS, JS)
-         /app/data (optional static CSV bundle)
 ```
 
-The frontend detects whether the API is available:
-
-- **API mode** (production): queries trip, station, and bike data from database via `/api/*` endpoints.
-- **Static mode** (GitHub Pages / local dev): discovers trip and station CSV files, plus optional `*_bikes_*.csv.gz` files, from `data/manifest.json`. Static mode does not load GeoJSON files.
-
-The public GitHub Pages site uses bundled sample CSV files; it does not connect to a public live database. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for file schemas and onboarding.
+The visualization uses the live API for trip, station, and bike data. Static-file mode is not supported. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for API schemas and onboarding.
 
 ## API endpoints
 
@@ -53,23 +47,3 @@ The HTTP validation and timezone tests run without PostgreSQL. Endpoint integrat
 ```sh
 docker compose up -d --no-deps --build visualization
 ```
-
-## Local development (static mode, no Docker)
-
-```sh
-cd visualization/
-python3 -m http.server 8000
-```
-
-Open `http://localhost:8000`. 
-Trip and station data must be present in `visualization/data/` as `.csv.gz` files. Bike CSVs are optional; without them, the visualization shows no standalone-bike markers.
-Generate a manifest so the file listing works without directory listing support:
-```sh
-bash create_manifest.sh
-```
-
-## Deployment on GitHub Pages
-
-GitHub Pages does not support directory listing. Therefore `manifest.json` in `visualization/data/` lists available data files for the frontend to discover.
-
-The manifest is generated automatically in the GitHub Actions workflow that publishes to GitHub Pages.

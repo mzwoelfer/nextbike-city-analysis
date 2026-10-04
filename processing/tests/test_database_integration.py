@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 
 from nextbike_processing import database
-from nextbike_processing.stations import fetch_station_data
 
 
 TEST_CITY_ID = 987654321
@@ -46,22 +45,10 @@ class TestProcessingDatabaseIntegration(unittest.TestCase):
                     (TEST_CITY_ID,),
                 )
                 cursor.execute(
-                    "DELETE FROM public.bikes WHERE city_id = %s",
-                    (TEST_CITY_ID,),
-                )
-                cursor.execute(
-                    "DELETE FROM public.stations WHERE city_id = %s",
-                    (TEST_CITY_ID,),
-                )
-                cursor.execute(
                     """DELETE FROM public.routes
                        WHERE start_latitude = %s AND start_longitude = %s
                          AND end_latitude = %s AND end_longitude = %s""",
                     (*ROUTE_START, *ROUTE_END),
-                )
-                cursor.execute(
-                    "DELETE FROM public.cities WHERE city_id = %s",
-                    (TEST_CITY_ID,),
                 )
 
     @staticmethod
@@ -161,89 +148,6 @@ class TestProcessingDatabaseIntegration(unittest.TestCase):
         self.assertEqual(trip_count, 1)
         self.assertIsNotNone(route_id)
         self.assertEqual(route_id, joined_route_id)
-
-    def test_fetch_station_data_aggregates_bikes_and_types(self):
-        observation_time = datetime(2026, 6, 8, 10, 30, tzinfo=timezone.utc)
-        with database.get_connection() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """INSERT INTO public.cities
-                       (city_id, city_name, timezone, set_point_bikes,
-                        available_bikes, last_updated)
-                       VALUES (%s, %s, %s, %s, %s, %s)""",
-                    (
-                        TEST_CITY_ID,
-                        "Processing Test City",
-                        "Europe/Berlin",
-                        10,
-                        2,
-                        observation_time,
-                    ),
-                )
-                cursor.execute(
-                    """INSERT INTO public.stations
-                       (uid, latitude, longitude, name, spot, station_number,
-                        maintenance, terminal_type, last_updated, city_id, city_name)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (
-                        101,
-                        52.5,
-                        13.4,
-                        "Processing Test Station",
-                        True,
-                        101,
-                        False,
-                        "virtual",
-                        observation_time,
-                        TEST_CITY_ID,
-                        "Processing Test City",
-                    ),
-                )
-                cursor.executemany(
-                    """INSERT INTO public.bikes
-                       (bike_number, latitude, longitude, bike_type,
-                        station_number, last_updated, city_id, city_name)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                    [
-                        (
-                            "station-bike-150",
-                            52.5,
-                            13.4,
-                            "150",
-                            101,
-                            observation_time,
-                            TEST_CITY_ID,
-                            "Processing Test City",
-                        ),
-                        (
-                            "station-bike-237",
-                            52.5,
-                            13.4,
-                            "237",
-                            101,
-                            observation_time,
-                            TEST_CITY_ID,
-                            "Processing Test City",
-                        ),
-                    ],
-                )
-
-        stations = fetch_station_data(TEST_CITY_ID, "2026-06-08")
-
-        self.assertEqual(len(stations), 1)
-        station = stations.iloc[0]
-        self.assertEqual(station["name"], "Processing Test Station")
-        self.assertEqual(station["bike_count"], 2)
-        self.assertEqual(
-            set(station["bike_list"].split(", ")),
-            {"station-bike-150", "station-bike-237"},
-        )
-        self.assertEqual(
-            dict(item.split("=") for item in station["bike_type_counts"].split(";")),
-            {"150": "1", "237": "1"},
-        )
-        self.assertEqual(station["minute"], "2026-06-08T12:30:00+02:00")
-
 
 if __name__ == "__main__":
     unittest.main()
