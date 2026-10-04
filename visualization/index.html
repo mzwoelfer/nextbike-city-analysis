@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nextbike City Analysis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="main.css?v=2">
+  <link rel="stylesheet" href="main.css?v=3">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="scripts/main.js"></script>
+  <script type="module" src="scripts/main.js?v=3"></script>
 </head>
 
 <body>
@@ -199,8 +199,13 @@
 
   <!-- ===== DATA ===== -->
   <section id="data-section">
-    <h2>Data</h2>
-    <p>More charts coming soon.</p>
+    <h2>Monthly Trip Export</h2>
+    <div id="trip-export-controls">
+      <label for="trip-export-month">Month</label>
+      <select id="trip-export-month"></select>
+      <button id="download-trip-csv" type="button">Download CSV</button>
+      <span id="trip-export-status" role="status" aria-live="polite"></span>
+    </div>
   </section>
 
   <!-- ===== TRIPS TABLE ===== -->

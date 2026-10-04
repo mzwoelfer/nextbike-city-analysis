@@ -35,7 +35,7 @@ async function loadDatesFromManifest() {
   }
 
   const fileNames = await response.json();
-  return groupStationFilesByCityAndDate(fileNames);
+  return groupTripFilesByCityAndDate(fileNames);
 }
 
 /**
@@ -50,19 +50,19 @@ async function loadDatesFromDirectoryListing() {
     .map((link) => link.getAttribute("href"))
     .filter((fileName) => fileName.endsWith(".csv.gz"));
 
-  return groupStationFilesByCityAndDate(fileNames);
+  return groupTripFilesByCityAndDate(fileNames);
 }
 
 /**
- * Group static station file names by city and date.
- * @param {string[]} fileNames - Station file names.
+ * Group static trip file names by city and date.
+ * @param {string[]} fileNames - Trip file names.
  * @returns {Object<string, string[]>} Dates grouped by city id.
  */
-function groupStationFilesByCityAndDate(fileNames) {
+function groupTripFilesByCityAndDate(fileNames) {
   const availableFiles = {};
 
   fileNames.forEach((fileName) => {
-    const match = fileName.match(/(\d+)_stations_(\d{4}-\d{2}-\d{2})\.csv\.gz/);
+    const match = fileName.match(/(\d+)_trips_(\d{4}-\d{2}-\d{2})\.csv\.gz/);
     if (!match) return;
 
     const [, cityId, availableDate] = match;
@@ -114,15 +114,15 @@ async function loadTrips(cityId, selectedDate) {
  * @returns {Object} Normalized trip.
  */
 function normalizeTripRow(row) {
-  const segments = JSON.parse(row.segments.replace(/'/g, '"'));
+  const segments = row.segments ? JSON.parse(row.segments.replace(/'/g, '"')) : [];
   return {
     bike_number: row.bike_number,
     start_time: row.start_time,
     end_time: row.end_time,
     duration: Number(row.duration),
-    distance: Number(row.distance),
+    distance: row.distance ? Number(row.distance) : 0,
     coordinates: segments.map(([lat, lon]) => [lon, lat]),
-    route_id: row.route_id != null ? Number(row.route_id) : null,
+    route_id: row.route_id ? Number(row.route_id) : null,
     timezone: row.timezone || "UTC",
   };
 }
@@ -168,16 +168,13 @@ function normalizeStationRow(row, defaultTimezone) {
 
 /**
  * Check whether static trip data exists for a date.
- * NOTE: checks for a `.geojson.gz` file, but loadTrips() above reads a
- * `.csv.gz` file - this mismatch exists in the current export naming and
- * is carried over unchanged here. Flagging it; not silently "fixed".
  * @param {string|number} cityId - Selected city id.
  * @param {string} selectedDate - Date to check.
  * @returns {Promise<boolean>} True when the trip file exists.
  */
 async function checkTripExists(cityId, selectedDate) {
   const response = await fetch(
-    `data/${cityId}_trips_${selectedDate}.geojson.gz`,
+    `data/${cityId}_trips_${selectedDate}.csv.gz`,
     { method: "HEAD" },
   );
   return response.ok;

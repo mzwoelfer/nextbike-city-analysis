@@ -1,6 +1,6 @@
 import state from "./state.js";
 import { apiSource } from "./dataSources/apiSource.js";
-import { staticSource } from "./dataSources/staticSource.js";
+import { staticSource } from "./dataSources/staticSource.js?v=2";
 import { minutesSinceMidnight } from "./utils.js";
 
 let _dataSource = null;
@@ -27,6 +27,32 @@ export async function loadAvailableFiles() {
   const availableFiles = await staticSource.loadAvailableDates();
   console.log("Data source: static CSV export.", availableFiles);
   return availableFiles;
+}
+
+export function getAvailableMonths(cityId) {
+  return [...new Set((state.availableFiles[cityId] || []).map((date) => date.slice(0, 7)))]
+    .sort()
+    .reverse();
+}
+
+export async function loadTripsForMonth(cityId, month) {
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    throw new Error("Invalid month. Use YYYY-MM format.");
+  }
+
+  const dates = (state.availableFiles[cityId] || [])
+    .filter((date) => date.startsWith(`${month}-`))
+    .sort();
+  const trips = [];
+  let timezone = "UTC";
+
+  for (const date of dates) {
+    const dailyData = await _dataSource.loadTrips(cityId, date);
+    trips.push(...dailyData.trips);
+    timezone = dailyData.timezone || timezone;
+  }
+
+  return { trips, timezone };
 }
 
 /**

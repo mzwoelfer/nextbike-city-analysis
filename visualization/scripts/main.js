@@ -1,6 +1,7 @@
 import state from './state.js';
 import { getMap, initializeMap } from './map.js';
-import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles } from './data.js';
+import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js?v=2';
+import { buildMonthlyTripsCsv } from './csvExport.js?v=2';
 import { togglePlay, updateSlider } from './playback.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
 import { plotStationsOnMap, updateStationMarkers } from './stations.js';
@@ -16,6 +17,9 @@ const nextDayButton = document.getElementById('next-day');
 const citySelector = document.getElementById('city-selector');
 const timeSlider = document.getElementById('time-slider');
 const playButton = document.getElementById('play-button');
+const exportMonthSelector = document.getElementById('trip-export-month');
+const exportButton = document.getElementById('download-trip-csv');
+const exportStatus = document.getElementById('trip-export-status');
 
 /**
  * Render the selected trip date label.
@@ -180,6 +184,59 @@ function renderCityOptions() {
     });
 }
 
+function renderExportMonths(cityId) {
+    const months = getAvailableMonths(cityId);
+    exportMonthSelector.replaceChildren();
+
+    months.forEach((month) => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = new Intl.DateTimeFormat(undefined, {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }).format(new Date(`${month}-01T00:00:00Z`));
+        exportMonthSelector.appendChild(option);
+    });
+
+    exportButton.disabled = months.length === 0;
+    exportStatus.textContent = '';
+}
+
+async function downloadMonthlyTrips() {
+    const month = exportMonthSelector.value;
+    if (!month) return;
+
+    exportButton.disabled = true;
+    exportStatus.textContent = 'Preparing CSV...';
+
+    try {
+        const { trips } = await loadTripsForMonth(state.city_id, month);
+        if (trips.length === 0) {
+            exportStatus.textContent = 'No trips available for this month.';
+            return;
+        }
+
+        const cityName = citySelector.selectedOptions[0]?.textContent || state.city_id;
+        const csv = buildMonthlyTripsCsv(trips, state.city_id, cityName);
+        const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `nextbike_trips_${state.city_id}_${month}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        exportStatus.textContent = `${trips.length} trips exported.`;
+    } catch (error) {
+        console.error('Error exporting monthly trips:', error);
+        exportStatus.textContent = 'CSV export failed. Check the available trip data and retry.';
+    } finally {
+        exportButton.disabled = getAvailableMonths(state.city_id).length === 0;
+    }
+}
+
 /**
  * Load all visualization data for the selected city.
  * @param {string|number} cityId - Selected city id.
@@ -187,6 +244,7 @@ function renderCityOptions() {
  */
 async function loadCityVisualization(cityId) {
     state.city_id = cityId;
+    renderExportMonths(cityId);
     await loadTripsData();
     const hasRoutedTrips = state.tripsData.some(
         (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
@@ -294,6 +352,10 @@ function bindPlaybackControls() {
     playButton.addEventListener('click', () => togglePlay());
 }
 
+function bindExportControls() {
+    exportButton.addEventListener('click', downloadMonthlyTrips);
+}
+
 /**
  * Bind calendar callbacks.
  * @returns {void}
@@ -313,12 +375,14 @@ async function initializeVisualizationApp() {
     bindCitySelectionDropdown();
     bindDayNavigationControls();
     bindPlaybackControls();
+    bindExportControls();
     initializeBackToTop();
     bindCalendar();
 
     state.availableFiles = await loadAvailableFiles();
     const hasInitialData = await loadFirstAvailableData();
     renderCityOptions();
+    renderExportMonths(state.city_id);
 
     if (hasInitialData) {
         await loadCityVisualization(state.city_id);
