@@ -502,6 +502,33 @@ html, body {
     color: #555;
 }
 
+[hidden] {
+    display: none !important;
+}
+
+#empty-data-state {
+    margin: 32px 0;
+    padding: 24px 5%;
+    border-block: 1px solid var(--border-light);
+    background: var(--bg-light);
+}
+
+#empty-data-state h2,
+#empty-data-state p {
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+#empty-data-state h2 {
+    margin-bottom: 8px;
+    font-size: 20px;
+}
+
+#empty-data-state p {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
 /* ==============================================
    ROUTE TABLE
 =============================================== */

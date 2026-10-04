@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nextbike City Analysis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="main.css?v=4">
+  <link rel="stylesheet" href="main.css?v=6">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="scripts/main.js?v=4"></script>
+  <script type="module" src="scripts/main.js?v=5"></script>
 </head>
 
 <body>
@@ -17,6 +17,11 @@
     <label for="city-selector">City</label>
     <select name="city" id="city-selector"></select>
   </div>
+
+  <section id="empty-data-state" role="status" aria-live="polite" hidden>
+    <h2>No processed trip data</h2>
+    <p>Verify the collector and processor, then refresh after data becomes available.</p>
+  </section>
 
   <div id="main-layout">
 

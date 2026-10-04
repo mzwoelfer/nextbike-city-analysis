@@ -136,6 +136,15 @@ function renderCharts() {
  */
 function renderNoDataState() {
     renderTripDateLabel('No processed data yet');
+    const emptyDataState = document.getElementById('empty-data-state');
+    emptyDataState.hidden = false;
+    document.getElementById('main-layout').hidden = true;
+    document.getElementById('data-section').hidden = true;
+    document.getElementById('table-view-controls').hidden = true;
+    document.getElementById('route-table-container').hidden = true;
+    document.getElementById('unique-routes-container').hidden = true;
+    exportMonthSelector.disabled = true;
+    exportButton.disabled = true;
 }
 
 /**
@@ -173,7 +182,18 @@ function renderCityOptions() {
     citySelector.innerHTML = "";
 
     console.log('CITIES IN DROPDOWN', Object.keys(state.cities));
-    Object.entries(state.cities).forEach(([cityName, cityId]) => {
+    const cities = Object.entries(state.cities);
+    if (cities.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No cities available';
+        citySelector.appendChild(option);
+        citySelector.disabled = true;
+        return;
+    }
+
+    citySelector.disabled = false;
+    cities.forEach(([cityName, cityId]) => {
         const option = document.createElement('option');
         option.value = cityId;
         option.textContent = cityName;
