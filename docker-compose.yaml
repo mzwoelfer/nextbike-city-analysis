@@ -34,9 +34,9 @@ services:
       context: ./collection
       dockerfile: CONTAINERFILE
     container_name: nextbike_collector
-    restart: always
     env_file:
       - .env
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +46,6 @@ services:
       - nextbike_network
 
   processor:
-    # Runs at midnight every day for each city in CITY_IDS
     build:
       context: ./processing
       dockerfile: CONTAINERFILE
@@ -54,6 +53,9 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - TEST_RUN_SECONDS=${TEST_RUN_SECONDS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,8 +72,6 @@ services:
     restart: always
     env_file:
       - .env
-    environment:
-      - DB_HOST=${DB_HOST}
     ports:
       - "${VISUALIZATION_PORT:-8080}:8080"
     volumes:

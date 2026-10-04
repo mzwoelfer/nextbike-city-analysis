@@ -9,9 +9,12 @@ export const initializeMap = (lat, lng) => {
         center: [lat, lng],
         zoom: 13,
         zoomSnap: 0.2,
-        attributionControl: false,
+        attributionControl: true,
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+    }).addTo(map);
 }
 
 export const getMap = () => map;

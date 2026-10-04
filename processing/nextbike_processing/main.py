@@ -4,7 +4,7 @@ from nextbike_processing.stations import process_and_save_stations
 from nextbike_processing.trips import process_and_save_trips
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Nextbike data processing application."
     )
@@ -23,7 +23,7 @@ def main():
         required=True,
         help="Date to process data for. (format: YYYY-MM-DD).",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.export_files and not args.export_folder:
         parser.error("--export-files requires --export-folder to be set.")
