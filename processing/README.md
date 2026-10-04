@@ -88,8 +88,17 @@ docker compose up -d --build processor
 
 ## Running tests
 
+Run the full suite in the processing container from `processing/`:
+
 ```sh
-cd processing/
+docker compose -f tests/docker-compose.yml run --build --rm tests
+```
+
+The container uses the processing image and mounts the local `processing/` directory, so source edits are picked up without rebuilding. Run the command again to rerun tests; it does not watch files or rerun automatically on save. PostgreSQL is not started because the current suite mocks database connections.
+
+To run tests with a local Python environment instead:
+
+```sh
 python3 -m venv Env
 source Env/bin/activate
 pip install -r requirements.txt pytest

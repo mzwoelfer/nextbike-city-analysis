@@ -1,0 +1,16 @@
+services:
+  tests:
+    build:
+      context: ..
+      dockerfile: CONTAINERFILE
+    working_dir: /app
+    volumes:
+      - ..:/app
+    entrypoint:
+      - python
+      - -m
+      - unittest
+      - discover
+      - -s
+      - tests
+      - -v
