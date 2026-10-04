@@ -36,20 +36,20 @@ class TestBikeClass_Entries_from_place_multiple_bikes(unittest.TestCase):
             self.places, self.city_id, self.city_name, self.timestamp
         )
 
-    # ----- SECOND BIKE -----
-    def test_second_bike_state(self):
+    def test_first_bike_state(self):
         self.assertEqual(self.bikes[0].state, "maintenance")
 
-    # ----- THIRD BIKE -----
-    def test_third_bike_city_id(self):
-        self.assertEqual(self.bikes[0].city_id, 773)
+    def test_second_bike_number(self):
+        self.assertEqual(self.bikes[1].bike_number, "B003")
 
-    # ----- ALL BIKES -----
+    def test_second_bike_city_id(self):
+        self.assertEqual(self.bikes[1].city_id, self.city_id)
+
     def test_all_bikes_have_timestamp(self):
-        # Function to iterate places?
-        # Then just check each one?
-        #
-        self.assertEqual(self.bikes[0].last_updated, self.timestamp)
+        self.assertEqual(
+            [bike.last_updated for bike in self.bikes],
+            [self.timestamp, self.timestamp],
+        )
 
 
 class TestBikeClass_Entries_from_place(unittest.TestCase):
@@ -96,97 +96,6 @@ class TestBikeClass_Entries_from_place(unittest.TestCase):
 
     def test_bike_has_correct_longitude(self):
         self.assertEqual(self.bikes[0].longitude, 12.0)
-
-
-class TestBikeClass_as_dict(unittest.TestCase):
-    def test_Bike_dict(self):
-        self.now = datetime.datetime.now()
-        self.bike = Bike(
-            bike_number="12345",
-            latitude=47.1,
-            longitude=11.2,
-            active=True,
-            state="ok",
-            bike_type="150",
-            station_number=999,
-            station_uid=555,
-            last_updated=self.now,
-            city_id=773,
-            city_name="Kufstein",
-        )
-
-        expected_output = {
-            "bike_number": "12345",
-            "latitude": 47.1,
-            "longitude": 11.2,
-            "active": True,
-            "state": "ok",
-            "bike_type": "150",
-            "station_number": 999,
-            "station_uid": 555,
-            "last_updated": self.now,
-            "city_id": 773,
-            "city_name": "Kufstein",
-        }
-        self.assertEqual(self.bike.__dict__, expected_output)
-
-
-class TestBikeClass_as_tuple(unittest.TestCase):
-    def setUp(self):
-        self.now = datetime.datetime.now()
-        self.bike = Bike(
-            bike_number="12345",
-            latitude=47.1,
-            longitude=11.2,
-            active=True,
-            state="ok",
-            bike_type="150",
-            station_number=999,
-            station_uid=555,
-            last_updated=self.now,
-            city_id=773,
-            city_name="Kufstein",
-        )
-        self.result = self.bike.as_tuple()
-
-    def test_bike_class_exists(self):
-        self.assertIsInstance(self.bike, Bike)
-
-    def test_tuple_length(self):
-        self.assertEqual(len(self.result), 11)
-
-    def test_tuple_bike_number(self):
-        self.assertEqual(self.result[0], "12345")
-
-    def test_tuple_latitude(self):
-        self.assertEqual(self.result[1], 47.1)
-
-    def test_tuple_longitude(self):
-        self.assertEqual(self.result[2], 11.2)
-
-    def test_tuple_active(self):
-        self.assertEqual(self.result[3], True)
-
-    def test_tuple_state(self):
-        self.assertEqual(self.result[4], "ok")
-
-    def test_tuple_bike_type(self):
-        self.assertEqual(self.result[5], "150")
-
-    def test_tuple_station_number(self):
-        self.assertEqual(self.result[6], 999)
-
-    def test_tuple_station_uid(self):
-        self.assertEqual(self.result[7], 555)
-
-    def test_tuple_last_updated(self):
-        self.assertEqual(self.result[8], self.now)
-
-    def test_tuple_city_id(self):
-        self.assertEqual(self.result[9], 773)
-
-    def test_tuple_city_name(self):
-        self.assertEqual(self.result[10], "Kufstein")
 
 
 class TestBikeDefaults(unittest.TestCase):

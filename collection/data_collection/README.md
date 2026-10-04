@@ -42,13 +42,21 @@ python3 query_nextbike.py --save
 - `--save`: Save data to database 
 
 ## Run tests
-Change directory to `collection/data_collection`:
+From `collection/data_collection`, run the unit tests:
 
-- Enable vitual environment: `source Env/bin/activate`
-- run tests: `python3 -m unittest discover .`
+```sh
+python3 -m unittest discover -s tests
+```
 
-Run specific tests:
-- `python3 -m unittest tests/test_city_class.py`
+The PostgreSQL integration tests run when `TEST_DATABASE_URL` points to a dedicated test database. Initialize it with the collection schema before running the suite:
+
+```sh
+export TEST_DATABASE_URL=postgresql://user:password@localhost:5432/nextbike_test
+psql "$TEST_DATABASE_URL" -f ../create_bike_and_stations_db.sql
+python3 -m unittest discover -s tests
+```
+
+Do not point `TEST_DATABASE_URL` at production; tests clean up their own inserted rows.
 
 #### Run coverage tests
 From `collection/data_collection`, install requirements and run coverage:
