@@ -190,3 +190,43 @@ jobs:
 
       - name: Run API unit and PostgreSQL integration tests
         run: python -m unittest discover -s tests -v
+
+  test_processing:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: nextbike_processing_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d nextbike_processing_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: processing
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: nextbike_processing_test
+      DB_USER: test
+      DB_PASSWORD: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: processing/requirements.txt
+
+      - name: Install processing dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run processing unit and PostgreSQL integration tests
+        run: python -m unittest discover -s tests -v

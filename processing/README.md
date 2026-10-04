@@ -88,13 +88,19 @@ docker compose up -d --build processor
 
 ## Running tests
 
-Run the full suite in the processing container from `processing/`:
+Run the full suite, including PostgreSQL integration tests, from `processing/`:
 
 ```sh
 docker compose -f tests/docker-compose.yml run --build --rm tests
 ```
 
-The container uses the processing image and mounts the local `processing/` directory, so source edits are picked up without rebuilding. Run the command again to rerun tests; it does not watch files or rerun automatically on save. PostgreSQL is not started because the current suite mocks database connections.
+Compose starts an isolated PostgreSQL 15 database from the canonical schema and runs the tests in the processing container. Fast unit tests still use mocks for external boundaries; integration tests exercise route caching and trip persistence against real PostgreSQL. The processing source and schema are bind-mounted, so edits are available without rebuilding. Rerun the command to run tests again; it does not watch files or rerun automatically on save.
+
+Stop any remaining test services with:
+
+```sh
+docker compose -f tests/docker-compose.yml down
+```
 
 To run tests with a local Python environment instead:
 
