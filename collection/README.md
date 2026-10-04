@@ -1,9 +1,11 @@
 # Nextbike Data Collection
 
-Collects bike and station data from the Nextbike API every minute. Stores it in PostgreSQL.
+Collects bike and station data from the Nextbike API every minute and stores it in PostgreSQL.
 
-- Runs as part of the root `docker compose` stack. 
+- Runs as part of the root `docker compose` stack.
 - Standalone `docker-compose.yaml` for isolated testing.
+
+See the [project README](../README.md) for the root stack quick start and configuration.
 
 ## Database schema
 
@@ -11,7 +13,7 @@ The collection service writes to three tables:
 
 | Table | Description |
 |---|---|
-| `public.cities` | City metadata (id, name, country) |
+| `public.cities` | City ID, name, timezone, location, and bike counts |
 | `public.bikes` | One row per bike per poll |
 | `public.stations` | One row per station per poll |
 
@@ -22,22 +24,12 @@ Two additional tables are created by the same init script and used by the proces
 | `public.routes` | Cached OSM routes between station pairs |
 | `public.trips` | Extracted trips with route references |
 
-The schema is initialised automatically on a fresh container via `create_bike_and_stations_db.sql`.
+Both Compose files mount [`create_bike_and_stations_db.sql`](create_bike_and_stations_db.sql) into PostgreSQL's initialization directory. PostgreSQL runs it when creating a database in an empty data volume.
 
-To apply the schema to an already-running database:
+From the repository root, create missing tables in an already-running database (existing tables are unchanged):
 ```sh
-docker exec -i nextbike_postgres psql -U $DB_USER -d $DB_NAME < collection/create_bike_and_stations_db.sql
+docker exec -i nextbike_postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < collection/create_bike_and_stations_db.sql
 ```
-
-## Production setup
-
-The collector is started automatically as part of the root stack:
-```sh
-# From the project root
-docker compose up -d
-```
-
-See the root [README](../README.md) for the full `.env` variable reference.
 
 ## Standalone / demo setup
 
@@ -45,17 +37,19 @@ For testing the collector in isolation:
 ```sh
 cd collection/
 cp .env.example .env   # adjust values
+docker build -f CONTAINERFILE -t nextbike_collector:multiple_cities .
 docker compose -f docker-compose.yaml up -d
 ```
 
 ## Updating the collector image
+From the repository root:
 ```sh
 docker compose up -d --no-deps --build collector
 ```
 
 ## Finding your city ID
 
-Requires `curl` and `jq`:
+From the repository root; requires `curl` and `jq`:
 ```sh
 echo '|Country Code|City Name|Bikeshare Name|City ID|' > city_ids_$(date +%Y_%m_%d).md && \
 echo '|----|----|----|---|' >> city_ids_$(date +%Y_%m_%d).md && \
