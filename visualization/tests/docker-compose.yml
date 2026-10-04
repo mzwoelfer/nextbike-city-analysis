@@ -1,3 +1,5 @@
+name: nextbike-visualization-tests
+
 services:
   postgres:
     image: postgres:15
