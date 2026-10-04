@@ -39,6 +39,24 @@ docker run --rm \
   --city-id 467 --date 2026-05-30
 ```
 
+## Process all configured cities today
+
+Run from the repository root. This reads comma-separated `CITY_IDS` from `.env` and processes each city for today's date:
+
+```sh
+process_date=$(date +%F)
+docker compose run --rm --no-deps \
+  -e PROCESS_DATE="$process_date" \
+  --entrypoint sh processor -c '
+    set -eu
+    : "${CITY_IDS:?Set CITY_IDS in .env}"
+    for city_id in $(printf "%s" "$CITY_IDS" | tr "," " "); do
+      printf "Processing city %s for %s\n" "$city_id" "$PROCESS_DATE"
+      python -m nextbike_processing.main --city-id "$city_id" --date "$PROCESS_DATE"
+    done
+  '
+```
+
 ## Export trip GeoJSON
 
 Add `--export-files` and `--export-folder` to write compressed GeoJSON to the shared volume:
