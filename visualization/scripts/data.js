@@ -1,6 +1,6 @@
 import state from "./state.js";
-import { apiSource } from "./dataSources/apiSource.js?v=3";
-import { staticSource } from "./dataSources/staticSource.js?v=3";
+import { apiSource } from "./dataSources/apiSource.js";
+import { staticSource } from "./dataSources/staticSource.js";
 import { minutesSinceMidnight } from "./utils.js";
 
 let _dataSource = null;
