@@ -1,6 +1,7 @@
 import os
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from psycopg.types.json import Jsonb
@@ -14,58 +15,10 @@ TEST_TIMESTAMP = datetime(2026, 6, 8, 10, 30, tzinfo=timezone.utc)
 ROUTE_START = (52.5, 13.4)
 ROUTE_END = (52.51, 13.41)
 ROUTE_COORDINATES = [[13.4, 52.5], [13.41, 52.51]]
-TEST_SCHEMA = (
-    """CREATE TABLE IF NOT EXISTS public.cities (
-        city_id INTEGER PRIMARY KEY,
-        city_name TEXT NOT NULL,
-        timezone TEXT NOT NULL,
-        set_point_bikes INTEGER NOT NULL,
-        available_bikes INTEGER NOT NULL,
-        last_updated TIMESTAMPTZ NOT NULL
-    )""",
-    """CREATE TABLE IF NOT EXISTS public.routes (
-        id SERIAL PRIMARY KEY,
-        start_latitude DOUBLE PRECISION NOT NULL,
-        start_longitude DOUBLE PRECISION NOT NULL,
-        end_latitude DOUBLE PRECISION NOT NULL,
-        end_longitude DOUBLE PRECISION NOT NULL,
-        distance_meters DOUBLE PRECISION NOT NULL,
-        coordinates JSONB NOT NULL
-    )""",
-    """CREATE TABLE IF NOT EXISTS public.trips (
-        id SERIAL PRIMARY KEY,
-        bike_number TEXT NOT NULL,
-        city_id INTEGER NOT NULL,
-        start_time TIMESTAMPTZ NOT NULL,
-        end_time TIMESTAMPTZ NOT NULL,
-        duration_seconds DOUBLE PRECISION NOT NULL,
-        route_id INTEGER REFERENCES public.routes(id)
-    )""",
-    """CREATE TABLE IF NOT EXISTS public.stations (
-        id SERIAL PRIMARY KEY,
-        uid INTEGER NOT NULL,
-        latitude DOUBLE PRECISION NOT NULL,
-        longitude DOUBLE PRECISION NOT NULL,
-        name TEXT NOT NULL,
-        spot BOOLEAN NOT NULL,
-        station_number INTEGER,
-        maintenance BOOLEAN,
-        terminal_type TEXT,
-        last_updated TIMESTAMPTZ NOT NULL,
-        city_id INTEGER NOT NULL,
-        city_name TEXT NOT NULL
-    )""",
-    """CREATE TABLE IF NOT EXISTS public.bikes (
-        id SERIAL PRIMARY KEY,
-        bike_number TEXT NOT NULL,
-        latitude DOUBLE PRECISION NOT NULL,
-        longitude DOUBLE PRECISION NOT NULL,
-        bike_type TEXT,
-        station_number INTEGER,
-        last_updated TIMESTAMPTZ NOT NULL,
-        city_id INTEGER NOT NULL,
-        city_name TEXT NOT NULL
-    )""",
+TEST_SCHEMA_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "collection"
+    / "create_bike_and_stations_db.sql"
 )
 
 
@@ -78,8 +31,7 @@ class TestApiPostgresIntegration(unittest.TestCase):
     def setUpClass(cls):
         with get_connection() as connection:
             with connection.cursor() as cursor:
-                for statement in TEST_SCHEMA:
-                    cursor.execute(statement)
+                cursor.execute(TEST_SCHEMA_PATH.read_text())
 
     def setUp(self):
         self.clear_fixture()

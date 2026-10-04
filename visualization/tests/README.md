@@ -27,5 +27,5 @@
 		DB_USER=test DB_PASSWORD=test python -m unittest discover -s tests -v
 	```
 
-- Tests create required tables and seed then remove fixture rows. Remove the temporary database with `docker rm -f nextbike-api-test-db`.
+- Tests load the canonical schema from `collection/create_bike_and_stations_db.sql`, then seed and remove fixture rows. Remove the temporary database with `docker rm -f nextbike-api-test-db`.
 - Never point integration tests at the persistent application database. Use `nerdctl` instead of `docker` when that is your container runtime.
