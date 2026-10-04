@@ -16,7 +16,7 @@ Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.
    ```sh
    cp .env.example .env
    ```
-   Find city IDs in [`city_ids_2025_02_15.md`](city_ids_2025_02_15.md). Configuration details are in [deployment and data contract](docs/deployment-and-data-contract.md).
+   Find city IDs in [`city_ids_2026_10_04.md`](city_ids_2026_10_04.md). Configuration details are in [deployment and data contract](docs/deployment-and-data-contract.md).
 3. Build and start the services:
    ```sh
    docker compose up -d --build

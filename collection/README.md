@@ -60,10 +60,10 @@ Requires `curl` and `jq`:
 echo '|Country Code|City Name|Bikeshare Name|City ID|' > city_ids_$(date +%Y_%m_%d).md && \
 echo '|----|----|----|---|' >> city_ids_$(date +%Y_%m_%d).md && \
 curl -s https://api.nextbike.net/maps/nextbike-live.json | \
-jq -r '.countries[] | select(.cities[0].uid) | "| \(.country) | \(.cities[0].name) | \(.name) | \(.cities[0].uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).md
+jq -r '.countries[] as $provider | $provider.cities[]? | select(.uid | type == "number") | "| \($provider.country) | \(.name) | \($provider.name) | \(.uid) |"' | sort >> city_ids_$(date +%Y_%m_%d).md
 ```
 
-A pre-generated list is available at [city_ids_2025_02_15.md](../city_ids_2025_02_15.md).
+A pre-generated list is available at [city_ids_2026_10_04.md](../city_ids_2026_10_04.md).
 
 ## Sources
 - [Nextbike API City IDs](https://github.com/ubahnverleih/WoBike/blob/master/Nextbike.md)

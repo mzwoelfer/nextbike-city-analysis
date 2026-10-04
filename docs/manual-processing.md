@@ -61,7 +61,7 @@ Files written to the volume:
 
 | Argument | Required | Description |
 |---|---|---|
-| `--city-id` | yes | Nextbike city ID (see [`city_ids_2025_02_15.md`](../city_ids_2025_02_15.md)) |
+| `--city-id` | yes | Nextbike city ID (see [`city_ids_2026_10_04.md`](../city_ids_2026_10_04.md)) |
 | `--date` | yes | Date in `YYYY-MM-DD` format |
 | `--export-files` | no | Also write a `.geojson.gz` trip file |
 | `--export-folder` | no* | Output folder inside the container. Required when `--export-files` is set. |
