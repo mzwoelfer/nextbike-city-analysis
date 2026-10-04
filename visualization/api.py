@@ -92,6 +92,67 @@ def trips(city_id: int, date: str):
     }
 
 
+@app.get("/api/bikes")
+def bikes(city_id: int, date: str):
+    if not date:
+        raise HTTPException(status_code=400, detail="date parameter is required")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                WITH city_context AS (
+                    SELECT COALESCE(timezone, 'UTC') AS city_timezone
+                    FROM public.cities
+                    WHERE city_id = %s
+                ),
+                standalone_bike_ids AS (
+                    SELECT DISTINCT b.bike_number
+                    FROM public.bikes b
+                    JOIN city_context cc ON TRUE
+                    WHERE b.city_id = %s
+                      AND DATE(b.last_updated AT TIME ZONE cc.city_timezone) = %s
+                      AND COALESCE(b.station_number, 0) = 0
+                ),
+                bike_observations AS (
+                    SELECT b.bike_number,
+                           b.latitude,
+                           b.longitude,
+                           b.station_number,
+                           COALESCE(b.bike_type, '') AS bike_type,
+                           DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_timezone) AS minute,
+                           b.last_updated,
+                           cc.city_timezone
+                    FROM public.bikes b
+                    JOIN city_context cc ON TRUE
+                    WHERE b.city_id = %s
+                      AND DATE(b.last_updated AT TIME ZONE cc.city_timezone) = %s
+                      AND b.bike_number IN (SELECT bike_number FROM standalone_bike_ids)
+                )
+                SELECT DISTINCT ON (minute, bike_number)
+                       bike_number, latitude, longitude, station_number,
+                       bike_type, minute, city_timezone
+                FROM bike_observations
+                ORDER BY minute, bike_number, last_updated DESC
+            """, (city_id, city_id, date, city_id, date))
+            rows = cur.fetchall()
+
+    city_timezone = rows[0][6] if rows else "UTC"
+    return {
+        "timezone": city_timezone,
+        "bikes": [
+            {
+                "bike_number": row[0],
+                "latitude": row[1],
+                "longitude": row[2],
+                "station_number": row[3],
+                "bike_type": row[4],
+                "minute": row[5].replace(tzinfo=ZoneInfo(row[6])).isoformat(timespec="seconds"),
+                "timezone": row[6],
+            }
+            for row in rows
+        ],
+    }
+
+
 @app.get("/api/stations")
 def stations(city_id: int, date: str):
     if not date:
@@ -135,9 +196,23 @@ def stations(city_id: int, date: str):
                 bike_source AS (
                     SELECT (last_updated AT TIME ZONE %s) AS local_ts,
                            station_number,
-                           bike_number
+                           bike_number,
+                           COALESCE(NULLIF(bike_type, ''), 'unknown') AS bike_type
                     FROM public.bikes
                     WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
+                ),
+                bike_type_data AS (
+                    SELECT minute, station_number,
+                           jsonb_object_agg(bike_type, type_count) AS bike_type_counts
+                    FROM (
+                        SELECT DATE_TRUNC('minute', local_ts) AS minute,
+                               station_number,
+                               bike_type,
+                               COUNT(*) AS type_count
+                        FROM bike_source
+                        GROUP BY DATE_TRUNC('minute', local_ts), station_number, bike_type
+                    ) type_counts
+                    GROUP BY minute, station_number
                 ),
                 bike_data AS (
                     SELECT DATE_TRUNC('minute', local_ts) AS minute,
@@ -160,20 +235,26 @@ def stations(city_id: int, date: str):
                            smc.name, smc.spot, smc.station_number, smc.maintenance,
                            smc.terminal_type, smc.city_id, smc.city_name,
                            COALESCE(bd.bike_count, 0) AS bike_count,
-                           COALESCE(bd.bike_list, '') AS bike_list
+                              COALESCE(bd.bike_list, '') AS bike_list,
+                              COALESCE(btd.bike_type_counts, '{}'::jsonb) AS bike_type_counts
                     FROM station_minute_combinations smc
                     LEFT JOIN bike_data bd
                         ON smc.station_number = bd.station_number AND smc.minute = bd.minute
+                          LEFT JOIN bike_type_data btd
+                           ON smc.station_number = btd.station_number AND smc.minute = btd.minute
                 ),
                 bike_changes AS (
                     SELECT *,
-                           LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count
+                              LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count,
+                              LAG(bike_type_counts) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_type_counts
                     FROM station_bike_combined
                 )
                 SELECT minute, id, uid, latitude, longitude, name, spot, station_number,
-                       maintenance, terminal_type, city_id, city_name, bike_count, bike_list
+                          maintenance, terminal_type, city_id, city_name, bike_count, bike_list,
+                          bike_type_counts
                 FROM bike_changes
-                WHERE bike_count IS DISTINCT FROM previous_bike_count
+                      WHERE bike_count IS DISTINCT FROM previous_bike_count
+                         OR bike_type_counts IS DISTINCT FROM previous_bike_type_counts
                 ORDER BY station_number, minute
             """, (
                 city_tz, city_id, city_tz, latest_date,   # station_data
@@ -197,6 +278,7 @@ def stations(city_id: int, date: str):
             "city_name": row[11],
             "bike_count": row[12],
             "bike_list": row[13] or "",
+            "bike_type_counts": row[14] or {},
             "timezone": city_tz,
         }
         for row in rows

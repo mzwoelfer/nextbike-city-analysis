@@ -1,10 +1,10 @@
 import state from './state.js';
 import { getMap, initializeMap } from './map.js';
-import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js?v=2';
+import { loadBikeData, loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js?v=4';
 import { buildMonthlyTripsCsv } from './csvExport.js?v=2';
 import { togglePlay, updateSlider } from './playback.js';
 import { populateRouteTable, populateUniqueRoutesTable, highlightTableRow } from './table.js?v=2';
-import { plotStationsOnMap, updateStationMarkers } from './stations.js';
+import { plotStationsOnMap, updateBikeMarkers, updateStationMarkers } from './stations.js?v=5';
 import { initializeBackToTop } from './navigation.js';
 import { drawTripsOnMap, highlightTripOnMap } from './trips.js';
 import { buildTripsPerMinute, initChart, updateChartDot, drawDurationHistogram, drawDistanceHistogram, drawHourHistogram } from './chart.js';
@@ -160,6 +160,7 @@ export function updateAllComponents() {
     updateThrottle = requestAnimationFrame(() => {
         drawTripsOnMap();
         updateStationMarkers();
+        updateBikeMarkers();
         renderDashboardStats();
     });
 }
@@ -264,6 +265,9 @@ async function downloadMonthlyTrips() {
  */
 async function loadCityVisualization(cityId) {
     state.city_id = cityId;
+    state.currentTimeMinutes = 0;
+    state.stationData = [];
+    state.bikeData = [];
     renderExportMonths(cityId);
     await loadTripsData();
     const hasRoutedTrips = state.tripsData.some(
@@ -274,6 +278,7 @@ async function loadCityVisualization(cityId) {
     populateUniqueRoutesTable();
 
     await loadStationData();
+    await loadBikeData();
     if (!hasRoutedTrips) {
         const station = state.stationData.find(
             ({ latitude, longitude }) => Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude)),

@@ -1,6 +1,6 @@
 import state from "./state.js";
-import { apiSource } from "./dataSources/apiSource.js";
-import { staticSource } from "./dataSources/staticSource.js?v=2";
+import { apiSource } from "./dataSources/apiSource.js?v=3";
+import { staticSource } from "./dataSources/staticSource.js?v=3";
 import { minutesSinceMidnight } from "./utils.js";
 
 let _dataSource = null;
@@ -165,6 +165,16 @@ export async function loadStationData() {
   }
 }
 
+export async function loadBikeData() {
+  try {
+    const { bikes, timezone } = await _dataSource.loadBikes(state.city_id, state.date);
+    state.bikeData = bikes.map((bike) => attachBikeTimingFields(bike, bike.timezone || timezone));
+  } catch (err) {
+    console.error("Error loading bike data:", err);
+    state.bikeData = [];
+  }
+}
+
 /**
  * Save normalized stations into state, attaching timing fields.
  * @param {Object[]} stations - Normalized stations.
@@ -187,6 +197,13 @@ function attachStationTimingFields(station, timezone) {
   return {
     ...station,
     minute_city: minutesSinceMidnight(new Date(station.minute), timezone),
+  };
+}
+
+function attachBikeTimingFields(bike, timezone) {
+  return {
+    ...bike,
+    minute_city: minutesSinceMidnight(new Date(bike.minute), timezone),
   };
 }
 

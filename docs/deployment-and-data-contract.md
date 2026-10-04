@@ -34,7 +34,9 @@ The live visualization reads from the API. The GitHub Pages visualization is a s
 
 `GET /api/trips?city_id=467&date=2026-10-04` returns a GeoJSON FeatureCollection. Each feature has bike number, start and end timestamps, duration in seconds, distance in meters, route ID, and timezone. GeoJSON coordinates use `[longitude, latitude]` order. When routing failed, the trip remains in the response with `route_id: null` and an empty coordinate array; the API reports distance as `0` when no route distance exists.
 
-`GET /api/stations?city_id=467&date=2026-10-04` returns station observations with minute, station identifiers and coordinates, station metadata, bike count, bike list, and timezone. Bike counts are change points rather than a repeated row for every unchanged minute.
+`GET /api/stations?city_id=467&date=2026-10-04` returns station observations with minute, station identifiers and coordinates, station metadata, bike count, bike list, raw bike-type counts, and timezone. Bike counts and type counts are change points rather than repeated rows for unchanged minutes.
+
+`GET /api/bikes?city_id=467&date=2026-10-04` returns minute-indexed observations for bikes that are unassigned at some point that day. Each observation includes bike number, coordinates, station assignment, raw `bike_type`, minute, and timezone. The visualization shows these bikes only while unassigned and synchronizes them with playback.
 
 ## Static CSV Bundle
 
@@ -42,7 +44,11 @@ Static mode reads `data/manifest.json`, which lists available filenames. Trip fi
 
 Trip CSV columns, in order: `bike_number`, `start_latitude`, `start_longitude`, `start_time`, `end_latitude`, `end_longitude`, `end_time`, `duration`, `date`, `distance`, `segments`, `route_id`, `timezone`.
 
-Station CSV columns: `minute`, `id`, `uid`, `latitude`, `longitude`, `name`, `spot`, `station_number`, `maintenance`, `terminal_type`, `city_id`, `city_name`, `bike_count`, `bike_list`, `timezone`.
+Station CSV columns: `minute`, `id`, `uid`, `latitude`, `longitude`, `name`, `spot`, `station_number`, `maintenance`, `terminal_type`, `city_id`, `city_name`, `bike_count`, `bike_list`, `bike_type_counts`, `timezone`.
+
+Bike CSV files use `{city_id}_bikes_{date}.csv.gz` and contain `minute`, `bike_number`, `latitude`, `longitude`, `station_number`, `bike_type`, and `timezone`. Older static bundles without bike files remain valid; they show station counts but no standalone bike markers.
+
+The current bundled Pages sample has no bike CSV, so standalone-bike markers appear only where live bike data or a matching static bike file is available.
 
 Timestamps are ISO 8601 with the city's UTC offset. Trip duration is seconds and distance is meters. Route segments are stored as coordinate pairs and converted to `[longitude, latitude]` for display. Empty route ID/segments indicate an unrouted trip. Static route IDs are grouped within an exported date and are not persistent database route IDs.
 

@@ -14,8 +14,8 @@ Browser → FastAPI (api.py) → PostgreSQL
 
 The frontend detects whether the API is available:
 
-- **API mode** (production): queries trip and station data from database via `/api/*` endpoints.
-- **Static mode** (GitHub Pages / local dev): discovers `*_trips_*.csv.gz` and `*_stations_*.csv.gz` files from `data/manifest.json`. Static mode does not load GeoJSON files.
+- **API mode** (production): queries trip, station, and bike data from database via `/api/*` endpoints.
+- **Static mode** (GitHub Pages / local dev): discovers trip and station CSV files, plus optional `*_bikes_*.csv.gz` files, from `data/manifest.json`. Static mode does not load GeoJSON files.
 
 The public GitHub Pages site uses bundled sample CSV files; it does not connect to a public live database. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for file schemas and onboarding.
 
@@ -25,7 +25,8 @@ The public GitHub Pages site uses bundled sample CSV files; it does not connect 
 |---|---|
 | `GET /api/available` | List of `{city_id, dates}` with processed data |
 | `GET /api/trips?city_id=X&date=Y` | GeoJSON FeatureCollection of trips for a given city and date |
-| `GET /api/stations?city_id=X&date=Y` | Station bike-count timeline (one row per station per change) |
+| `GET /api/bikes?city_id=X&date=Y` | Time-indexed bike observations for bikes that are unassigned at some point that day |
+| `GET /api/stations?city_id=X&date=Y` | Station bike-count and bike-type timeline (one row per station per change) |
 
 ## Production
 
@@ -59,7 +60,7 @@ python3 -m http.server 8000
 ```
 
 Open `http://localhost:8000`. 
-Trip and station data must be present in `visualization/data/` as `.csv.gz` files.
+Trip and station data must be present in `visualization/data/` as `.csv.gz` files. Bike CSVs are optional; without them, the visualization shows no standalone-bike markers.
 Generate a manifest so the file listing works without directory listing support:
 ```sh
 bash create_manifest.sh

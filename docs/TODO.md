@@ -1,15 +1,13 @@
 # TODO
 
 
-### Distinguish Stations from bikes
-Bikes and stations are both "places".
-Make stations slightly bigger than standalone bikes.
-- Stations: Circles with amount of bikes in them
-- Bike: Just a circle in the accent color
+### Distinguish Stations from Bikes
+- [x] Stations use larger circles with their available bike count.
+- [x] Unassigned bikes use smaller accent-color circles and follow playback time.
 
-### Stations should show available bikes and parking spots, and occupation
-- IN the app stations show available bikes, how many parking spaces are still available AND on click the amount of cargo bikes
-- Do the on click see station details for cargo bikes and subtypes of bikes as well.
+### Station Occupancy and Bike Types
+- [x] Station popups show available bike counts and raw bike-type counts.
+- Parking capacity is not collected; v1 intentionally shows bike counts only.
 
 
 ## IDEAS

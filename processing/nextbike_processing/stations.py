@@ -51,6 +51,23 @@ def fetch_station_data(city_id, date):
             FROM station_data
             WHERE rn = 1
         ),
+        bike_type_data AS (
+            SELECT minute, station_number,
+                   jsonb_object_agg(bike_type, type_count) AS bike_type_counts
+            FROM (
+                SELECT DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz) AS minute,
+                       b.station_number,
+                       COALESCE(NULLIF(b.bike_type, ''), 'unknown') AS bike_type,
+                       COUNT(*) AS type_count
+                FROM public.bikes b
+                JOIN city_context cc ON cc.city_id = b.city_id
+                WHERE b.city_id = %s
+                  AND DATE(b.last_updated AT TIME ZONE cc.city_tz) = %s
+                GROUP BY DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz),
+                         b.station_number, COALESCE(NULLIF(b.bike_type, ''), 'unknown')
+            ) type_counts
+            GROUP BY minute, station_number
+        ),
         bike_data AS (
             SELECT
                 DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz) AS minute,
@@ -89,7 +106,8 @@ def fetch_station_data(city_id, date):
                 fs.city_id,
                 fs.city_name
             FROM
-                distinct_minutes dm
+                COALESCE(bd.bike_list, '') AS bike_list,
+                COALESCE(btd.bike_type_counts, '{}'::jsonb) AS bike_type_counts
             CROSS JOIN
                 filtered_stations fs
         ),
@@ -116,11 +134,17 @@ def fetch_station_data(city_id, date):
             ON
                 smc.station_number = bd.station_number
                 AND smc.minute = bd.minute
+            LEFT JOIN
+                bike_type_data btd
+            ON
+                smc.station_number = btd.station_number
+                AND smc.minute = btd.minute
         ),
         bike_changes AS (
             SELECT
                 sbc.*,
-                LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count
+                LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count,
+                LAG(bike_type_counts) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_type_counts
             FROM
                 station_bike_combined sbc
         ),
@@ -131,6 +155,7 @@ def fetch_station_data(city_id, date):
                 bike_changes
             WHERE
                 bike_count IS DISTINCT FROM previous_bike_count
+                OR bike_type_counts IS DISTINCT FROM previous_bike_type_counts
         )
         SELECT
             minute,
@@ -146,7 +171,8 @@ def fetch_station_data(city_id, date):
             city_id,
             city_name,
             bike_count,
-            bike_list
+            bike_list,
+            bike_type_counts
         FROM
             filtered_changes
         ORDER BY
@@ -166,10 +192,15 @@ def fetch_station_data(city_id, date):
         df = pd.read_sql_query(
             query,
             conn,
-            params=(city_id, city_id, date, city_id, date, city_id, date),
+            params=(city_id, city_id, date, city_id, date, city_id, date, city_id, date),
         )
 
     city_zone = ZoneInfo(city_timezone)
+    df["bike_type_counts"] = df["bike_type_counts"].map(
+        lambda counts: ";".join(
+            f"{bike_type}={count}" for bike_type, count in (counts or {}).items()
+        )
+    )
     df["minute"] = pd.to_datetime(df["minute"]).map(
         lambda timestamp: timestamp.replace(tzinfo=city_zone).isoformat(timespec="seconds")
     )
@@ -177,7 +208,68 @@ def fetch_station_data(city_id, date):
     return df
 
 
+def fetch_standalone_bike_data(city_id, date):
+    query = """
+    WITH city_context AS (
+        SELECT city_id, COALESCE(timezone, 'UTC') AS city_tz
+        FROM public.cities
+        WHERE city_id = %s
+    ),
+    standalone_bike_ids AS (
+        SELECT DISTINCT b.bike_number
+        FROM public.bikes b
+        JOIN city_context cc ON cc.city_id = b.city_id
+        WHERE b.city_id = %s
+          AND DATE(b.last_updated AT TIME ZONE cc.city_tz) = %s
+          AND COALESCE(b.station_number, 0) = 0
+    ),
+    observations AS (
+        SELECT b.bike_number,
+               b.latitude,
+               b.longitude,
+               b.station_number,
+               COALESCE(b.bike_type, '') AS bike_type,
+               DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_tz) AS minute,
+               b.last_updated,
+               cc.city_tz AS timezone
+        FROM public.bikes b
+        JOIN city_context cc ON cc.city_id = b.city_id
+        WHERE b.city_id = %s
+          AND DATE(b.last_updated AT TIME ZONE cc.city_tz) = %s
+          AND b.bike_number IN (SELECT bike_number FROM standalone_bike_ids)
+    )
+    SELECT DISTINCT ON (minute, bike_number)
+           minute, bike_number, latitude, longitude, station_number, bike_type,
+           timezone, last_updated
+    FROM observations
+    ORDER BY minute, bike_number, last_updated DESC
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COALESCE(timezone, 'UTC') FROM public.cities WHERE city_id = %s",
+                (city_id,),
+            )
+            row = cur.fetchone()
+            city_timezone = row[0] if row else "UTC"
+
+        df = pd.read_sql_query(
+            query,
+            conn,
+            params=(city_id, city_id, date, city_id, date),
+        )
+
+    city_zone = ZoneInfo(city_timezone)
+    df["minute"] = pd.to_datetime(df["minute"]).map(
+        lambda timestamp: timestamp.replace(tzinfo=city_zone).isoformat(timespec="seconds")
+    )
+    df["timezone"] = city_timezone
+    return df.drop(columns=["last_updated"])
+
+
 def process_and_save_stations(city_id, date, folder, export_files=False):
     df = fetch_station_data(city_id, date)
     if export_files:
         save_gzipped_csv(os.path.join(folder, f"{city_id}_stations_{date}.csv.gz"), df)
+        bike_df = fetch_standalone_bike_data(city_id, date)
+        save_gzipped_csv(os.path.join(folder, f"{city_id}_bikes_{date}.csv.gz"), bike_df)

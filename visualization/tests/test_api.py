@@ -120,6 +120,7 @@ class TestTimezoneAwareEndpoints(unittest.TestCase):
                     "Gießen",
                     3,
                     "42, 43, 44",
+                    {"150": 2, "237": 1},
                 )
             ],
         )
@@ -127,6 +128,27 @@ class TestTimezoneAwareEndpoints(unittest.TestCase):
         payload = client.get("/api/stations?city_id=467&date=2026-06-08").json()
         self.assertEqual(payload[0]["timezone"], "Europe/Berlin")
         self.assertRegex(payload[0]["minute"], r"[+-]\d{2}:\d{2}$")
+        self.assertEqual(payload[0]["bike_type_counts"], {"150": 2, "237": 1})
+
+
+class TestBikesEndpoint(unittest.TestCase):
+
+    @patch("api.get_connection")
+    def test_response_includes_unassigned_bike_timeline(self, mock_get_conn):
+        minute = datetime(2026, 6, 8, 12, 30)
+        mock_get_conn.return_value = _mock_conn([
+            ("42", 52.5, 13.4, 0, "237", minute, "Europe/Berlin"),
+        ])
+
+        payload = client.get("/api/bikes?city_id=467&date=2026-06-08").json()
+
+        self.assertEqual(payload["timezone"], "Europe/Berlin")
+        self.assertEqual(len(payload["bikes"]), 1)
+        bike = payload["bikes"][0]
+        self.assertEqual(bike["bike_number"], "42")
+        self.assertEqual(bike["bike_type"], "237")
+        self.assertEqual(bike["station_number"], 0)
+        self.assertRegex(bike["minute"], r"[+-]\d{2}:\d{2}$")
 
 
 if __name__ == "__main__":

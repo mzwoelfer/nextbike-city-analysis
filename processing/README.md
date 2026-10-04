@@ -12,7 +12,9 @@ For a given city and date:
   - Caches calculated trip routes in the `public.routes` table.
   - Reuses cached geometry to reduce calls to OSMnx.
 4. Writes trips and available route references to `public.trips`. Failed route lookups do not provide route geometry.
-5. With `--export-files`, writes `{city_id}_trips_{date}.geojson.gz` and `{city_id}_trips_{date}.csv.gz` to the requested export folder. Station exports use `{city_id}_stations_{date}.csv.gz`.
+5. With `--export-files`, writes `{city_id}_trips_{date}.geojson.gz`, `{city_id}_trips_{date}.csv.gz`, `{city_id}_stations_{date}.csv.gz`, and `{city_id}_bikes_{date}.csv.gz` to the requested export folder.
+
+Station CSVs include per-minute bike counts and semicolon-separated raw bike-type counts (`bike_type=count`). Bike CSVs include minute, bike number, coordinates, station assignment, raw bike type, and timezone for bikes observed unassigned at least once that day.
 
 ## Output format
 

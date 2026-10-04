@@ -4,6 +4,7 @@ export const staticSource = {
   loadAvailableDates,
   discoverCityNames,
   loadTrips,
+  loadBikes,
   loadStations,
   checkTripExists,
 };
@@ -108,6 +109,16 @@ async function loadTrips(cityId, selectedDate) {
   return { trips, timezone };
 }
 
+async function loadBikes(cityId, selectedDate) {
+  if (!(await checkBikeExists(cityId, selectedDate))) {
+    return { bikes: [], timezone: "UTC" };
+  }
+
+  const rows = await fetchAndParseGzipCsv(`data/${cityId}_bikes_${selectedDate}.csv.gz`);
+  const bikes = rows.map(normalizeBikeRow);
+  return { bikes, timezone: bikes[0]?.timezone || "UTC" };
+}
+
 /**
  * Normalize one static trip CSV row into the common trip shape.
  * @param {Object} row - Parsed CSV row.
@@ -123,6 +134,18 @@ function normalizeTripRow(row) {
     distance: row.distance ? Number(row.distance) : 0,
     coordinates: segments.map(([lat, lon]) => [lon, lat]),
     route_id: row.route_id ? Number(row.route_id) : null,
+    timezone: row.timezone || "UTC",
+  };
+}
+
+function normalizeBikeRow(row) {
+  return {
+    bike_number: row.bike_number,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    station_number: row.station_number === "" ? null : Number(row.station_number),
+    bike_type: row.bike_type || "unknown",
+    minute: row.minute,
     timezone: row.timezone || "UTC",
   };
 }
@@ -162,8 +185,17 @@ function normalizeStationRow(row, defaultTimezone) {
     city_name: row.city_name,
     bike_count: Number(row.bike_count),
     bike_list: row.bike_list || "",
+    bike_type_counts: parseBikeTypeCounts(row.bike_type_counts),
     timezone: row.timezone || defaultTimezone || "UTC",
   };
+}
+
+function parseBikeTypeCounts(value) {
+  if (!value) return {};
+  return Object.fromEntries(value.split(";").map((entry) => {
+    const [bikeType, count] = entry.split("=");
+    return [bikeType, Number(count)];
+  }));
 }
 
 /**
@@ -175,6 +207,14 @@ function normalizeStationRow(row, defaultTimezone) {
 async function checkTripExists(cityId, selectedDate) {
   const response = await fetch(
     `data/${cityId}_trips_${selectedDate}.csv.gz`,
+    { method: "HEAD" },
+  );
+  return response.ok;
+}
+
+async function checkBikeExists(cityId, selectedDate) {
+  const response = await fetch(
+    `data/${cityId}_bikes_${selectedDate}.csv.gz`,
     { method: "HEAD" },
   );
   return response.ok;
