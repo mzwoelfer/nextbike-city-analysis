@@ -106,8 +106,7 @@ def fetch_station_data(city_id, date):
                 fs.city_id,
                 fs.city_name
             FROM
-                COALESCE(bd.bike_list, '') AS bike_list,
-                COALESCE(btd.bike_type_counts, '{}'::jsonb) AS bike_type_counts
+                distinct_minutes dm
             CROSS JOIN
                 filtered_stations fs
         ),
@@ -126,7 +125,8 @@ def fetch_station_data(city_id, date):
                 smc.city_id,
                 smc.city_name,
                 COALESCE(bd.bike_count, 0) AS bike_count,
-                COALESCE(bd.bike_list, '') AS bike_list
+                COALESCE(bd.bike_list, '') AS bike_list,
+                COALESCE(btd.bike_type_counts, '{}'::jsonb) AS bike_type_counts
             FROM
                 station_minute_combinations smc
             LEFT JOIN
