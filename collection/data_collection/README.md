@@ -42,26 +42,13 @@ python3 query_nextbike.py --save
 - `--save`: Save data to database 
 
 ## Run tests
-From `collection/data_collection`, run the unit tests:
+From the repository root, run the collection tests with an isolated PostgreSQL database:
 
 ```sh
-python3 -m unittest discover -s tests
+docker compose -f collection/docker-compose-test-collection.yaml run --build --rm tests
 ```
 
-The PostgreSQL integration tests run when `TEST_DATABASE_URL` points to a dedicated test database. Initialize it with the collection schema before running the suite:
-
+Remove the test containers and database after the run:
 ```sh
-export TEST_DATABASE_URL=postgresql://user:password@localhost:5432/nextbike_test
-psql "$TEST_DATABASE_URL" -f ../create_bike_and_stations_db.sql
-python3 -m unittest discover -s tests
-```
-
-Do not point `TEST_DATABASE_URL` at production; tests clean up their own inserted rows.
-
-#### Run coverage tests
-From `collection/data_collection`, install requirements and run coverage:
-```bash
-python3 -m pip install -r requirements.txt
-python3 -m coverage run --source=database,query_nextbike -m unittest discover -s tests
-python3 -m coverage report --show-missing
+docker compose -f collection/docker-compose-test-collection.yaml down --volumes
 ```

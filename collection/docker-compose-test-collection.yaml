@@ -1,0 +1,32 @@
+name: nextbike-collection-tests
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: nextbike_collection_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./create_bike_and_stations_db.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d nextbike_collection_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  tests:
+    build:
+      context: .
+      dockerfile: CONTAINERFILE
+    working_dir: /workspace/collection/data_collection
+    volumes:
+      - ../:/workspace
+    environment:
+      TEST_DATABASE_URL: postgresql://test:test@postgres:5432/nextbike_collection_test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "unittest", "discover", "-s", "tests", "-v"]
