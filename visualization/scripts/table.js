@@ -1,8 +1,7 @@
 import state from "./state.js";
-import { highlightTrip } from "./main.js";
 import { formatTimeInTimezone } from "./utils.js";
 
-export function populateRouteTable() {
+export function populateRouteTable(onHighlightTrip) {
     const tableBody = document.querySelector('#route-table tbody');
     tableBody.innerHTML = '';
 
@@ -18,7 +17,7 @@ export function populateRouteTable() {
             <td>${Math.floor(trip.duration / 60)}</td>
         `;
 
-        row.addEventListener('click', () => highlightTrip(index));
+        row.addEventListener('click', () => onHighlightTrip(index));
         tableBody.appendChild(row);
     });
 }

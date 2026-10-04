@@ -2,8 +2,8 @@ import state from './state.js';
 import { getMap, initializeMap } from './map.js';
 import { loadBikeData, loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js?v=4';
 import { buildMonthlyTripsCsv } from './csvExport.js?v=2';
-import { togglePlay, updateSlider } from './playback.js';
-import { populateRouteTable, populateUniqueRoutesTable, highlightTableRow } from './table.js?v=2';
+import { togglePlay, updateSlider } from './playback.js?v=3';
+import { populateRouteTable, populateUniqueRoutesTable, highlightTableRow } from './table.js?v=3';
 import { plotStationsOnMap, updateBikeMarkers, updateStationMarkers } from './stations.js?v=5';
 import { initializeBackToTop } from './navigation.js';
 import { drawTripsOnMap, highlightTripOnMap } from './trips.js';
@@ -274,7 +274,7 @@ async function loadCityVisualization(cityId) {
         (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
     );
     initializeMap(state.city_lat, state.city_lng);
-    populateRouteTable();
+    populateRouteTable(highlightTrip);
     populateUniqueRoutesTable();
 
     await loadStationData();
@@ -375,7 +375,7 @@ function bindDayNavigationControls() {
  */
 function bindPlaybackControls() {
     timeSlider.addEventListener('input', handleTimeSliderInput);
-    playButton.addEventListener('click', () => togglePlay());
+    playButton.addEventListener('click', () => togglePlay(updateAllComponents));
 }
 
 function bindTableViews() {
