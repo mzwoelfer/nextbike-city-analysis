@@ -1,5 +1,5 @@
 import state from './state.js';
-import { initializeMap } from './map.js';
+import { getMap, initializeMap } from './map.js';
 import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles } from './data.js';
 import { togglePlay, updateSlider } from './playback.js';
 import { populateRouteTable, highlightTableRow } from './table.js';
@@ -188,10 +188,24 @@ function renderCityOptions() {
 async function loadCityVisualization(cityId) {
     state.city_id = cityId;
     await loadTripsData();
+    const hasRoutedTrips = state.tripsData.some(
+        (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
+    );
     initializeMap(state.city_lat, state.city_lng);
     populateRouteTable();
 
     await loadStationData();
+    if (!hasRoutedTrips) {
+        const station = state.stationData.find(
+            ({ latitude, longitude }) => Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude)),
+        );
+        if (station) {
+            state.city_lat = Number(station.latitude);
+            state.city_lng = Number(station.longitude);
+            getMap().setView([state.city_lat, state.city_lng]);
+        }
+    }
+
     plotStationsOnMap();
     await updateDateNavigationAvailability();
     updateAllComponents();

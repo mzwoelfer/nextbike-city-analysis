@@ -102,9 +102,12 @@ function applyTripsToState(trips, timezone) {
     attachTripTimingFields(trip, trip.timezone || timezone),
   );
 
-  if (state.tripsData.length > 0) {
-    state.city_lat = state.tripsData[0].coordinates[0][1];
-    state.city_lng = state.tripsData[0].coordinates[0][0];
+  const firstRoutedTrip = state.tripsData.find(
+    (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
+  );
+  if (firstRoutedTrip) {
+    state.city_lat = firstRoutedTrip.coordinates[0][1];
+    state.city_lng = firstRoutedTrip.coordinates[0][0];
   }
 }
 
