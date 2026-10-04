@@ -1,13 +1,6 @@
 # TODO
 
 
-### Basemap not supported anymore
-Carto.com basemaps now requires and API key. 
-IDEA: Use standard OpenStreetMap maps instead.
-- No API keys
-- No Auth
-- Just work
-
 ### Distinguish Stations from bikes
 Bikes and stations are both "places".
 Make stations slightly bigger than standalone bikes.
