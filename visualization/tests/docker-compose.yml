@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: nextbike_api_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d nextbike_api_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
