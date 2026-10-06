@@ -18,13 +18,6 @@ def save_csv(file_path, df):
     df.to_csv(file_path, index=False)
 
 
-def save_gzipped_csv(file_path, df):
-    """
-    Save Dataframe to gzipped CSV file
-    """
-    df.to_csv(file_path, index=False, compression="gzip")
-
-
 def save_gzipped_geojson(file_path, data):
     """
     Save a GeoJSON-serialisable dict to a gzipped file

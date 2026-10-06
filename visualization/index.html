@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nextbike City Analysis</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="main.css?v=2">
+  <link rel="stylesheet" href="main.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="scripts/main.js"></script>
 </head>
@@ -17,6 +17,11 @@
     <label for="city-selector">City</label>
     <select name="city" id="city-selector"></select>
   </div>
+
+  <section id="empty-data-state" role="status" aria-live="polite" hidden>
+    <h2>No processed trip data</h2>
+    <p>Verify the collector and processor, then refresh after data becomes available.</p>
+  </section>
 
   <div id="main-layout">
 
@@ -199,12 +204,21 @@
 
   <!-- ===== DATA ===== -->
   <section id="data-section">
-    <h2>Data</h2>
-    <p>More charts coming soon.</p>
+    <h2>Monthly Trip Export</h2>
+    <div id="trip-export-controls">
+      <label for="trip-export-month">Month</label>
+      <select id="trip-export-month"></select>
+      <button id="download-trip-csv" type="button">Download CSV</button>
+      <span id="trip-export-status" role="status" aria-live="polite"></span>
+    </div>
   </section>
 
   <!-- ===== TRIPS TABLE ===== -->
-  <div id="route-table-container">
+  <div id="table-view-controls" role="group" aria-label="Table view">
+    <button type="button" data-table-view="trips" aria-pressed="true">Trips</button>
+    <button type="button" data-table-view="routes" aria-pressed="false">Unique routes</button>
+  </div>
+  <div id="route-table-container" data-table-panel="trips">
     <table id="route-table">
       <thead>
         <tr>
@@ -213,6 +227,20 @@
           <th data-column="end_time"    data-order="">End Time</th>
           <th data-column="distance"    data-order="">Distance (m)</th>
           <th data-column="duration"    data-order="">Duration (min)</th>
+        </tr>
+      </thead>
+      <tbody><!-- dynamically populated --></tbody>
+    </table>
+  </div>
+  <div id="unique-routes-container" data-table-panel="routes" hidden>
+    <table id="unique-routes-table">
+      <thead>
+        <tr>
+          <th>Route ID</th>
+          <th>Distance (m)</th>
+          <th>Start (lat, lon)</th>
+          <th>End (lat, lon)</th>
+          <th>Trip Count</th>
         </tr>
       </thead>
       <tbody><!-- dynamically populated --></tbody>

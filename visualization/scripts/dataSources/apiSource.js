@@ -4,6 +4,7 @@ export const apiSource = {
   loadAvailableDates,
   discoverCityNames,
   loadTrips,
+  loadBikes,
   loadStations,
   checkTripExists,
 };
@@ -55,6 +56,14 @@ async function loadTrips(cityId, selectedDate) {
   const timezone = geojson.timezone ?? geojson.features[0]?.properties?.timezone ?? "UTC";
   const trips = geojson.features.map((feature) => normalizeTripFeature(feature, timezone));
   return { trips, timezone };
+}
+
+async function loadBikes(cityId, selectedDate) {
+  const response = await fetch(`/api/bikes?city_id=${cityId}&date=${selectedDate}`);
+  if (!response.ok) {
+    throw new Error(`API request failed for bikes ${cityId} ${selectedDate}`);
+  }
+  return response.json();
 }
 
 /**
@@ -119,6 +128,7 @@ function normalizeStationRow(row, defaultTimezone) {
     city_name: row.city_name,
     bike_count: row.bike_count,
     bike_list: row.bike_list || "",
+    bike_type_counts: row.bike_type_counts || {},
     timezone: row.timezone || defaultTimezone || "UTC",
   };
 }

@@ -69,6 +69,10 @@ export function highlightTripOnMap(index) {
     });
     state.activeRoutes = {};
 
+    if (!Array.isArray(trip.coordinates) || trip.coordinates.length < 2) {
+        return;
+    }
+
     const fullTripPathCoordinates = trip.coordinates.map(([lon, lat]) => [lat, lon]);
     const selectedRoute = L.polyline(fullTripPathCoordinates, {
         color: 'var(--accent)',

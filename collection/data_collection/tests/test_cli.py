@@ -28,12 +28,14 @@ class TestNextbikeCLI(unittest.TestCase):
 
 class TestAppConfig(unittest.TestCase):
     def setUp(self) -> None:
-        """Never start a test with set CITY_IDS!"""
+        self.original_city_ids = os.environ.get("CITY_IDS")
         os.environ["CITY_IDS"] = ""
 
     def tearDown(self):
-        """Always remove CITY_IDS after each test"""
-        os.environ["CITY_IDS"] = ""
+        if self.original_city_ids is None:
+            os.environ.pop("CITY_IDS", None)
+        else:
+            os.environ["CITY_IDS"] = self.original_city_ids
 
     def test_read_env_ids(self):
         os.environ["CITY_IDS"] = "100,200"
@@ -54,11 +56,6 @@ class TestAppConfig(unittest.TestCase):
         config = AppConfig(cli_city_ids=cli_ids)
 
         self.assertEqual(config.city_ids, cli_ids)
-
-    def test_no_city_ids_raises_error_message(self):
-        os.environ["CITY_IDS"] = ""
-        with self.assertRaises(ValueError):
-            AppConfig(cli_city_ids=[])
 
     def test_no_city_ids_return_error_message(self):
         os.environ["CITY_IDS"] = ""
@@ -97,62 +94,107 @@ class TestMain(unittest.TestCase):
         ):
             query_nextbike.main()
 
-    def test_no_save_skips_database_writes_and_sync_lookups(self):
+    def test_no_save_skips_bike_writes(self):
         self.cli.save = False
 
         self.run_main()
 
         self.database.insert_bike_entries.assert_not_called()
+
+    def test_no_save_skips_station_sync_lookup(self):
+        self.cli.save = False
+
+        self.run_main()
+
         self.database.get_last_station_sync.assert_not_called()
+
+    def test_no_save_skips_city_sync_lookup(self):
+        self.cli.save = False
+
+        self.run_main()
+
         self.database.get_last_city_sync.assert_not_called()
 
-    def test_first_save_inserts_bikes_stations_and_city(self):
+    def test_first_save_inserts_bikes(self):
         self.run_main()
 
         self.database.insert_bike_entries.assert_called_once_with(self.bikes)
+
+    def test_first_save_inserts_stations(self):
+        self.run_main()
+
         self.database.insert_station_entries.assert_called_once_with(self.stations)
+
+    def test_first_save_inserts_city(self):
+        self.run_main()
+
         self.database.insert_city_information.assert_called_once_with(self.city)
 
-    def test_sync_intervals_are_checked_independently(self):
+    def test_expired_station_interval_syncs_stations(self):
         self.database.get_last_station_sync.return_value = self.now - timedelta(hours=25)
         self.database.get_last_city_sync.return_value = self.now - timedelta(hours=1)
 
         self.run_main()
 
         self.database.insert_station_entries.assert_called_once_with(self.stations)
+
+    def test_station_expiry_does_not_sync_city(self):
+        self.database.get_last_station_sync.return_value = self.now - timedelta(hours=25)
+        self.database.get_last_city_sync.return_value = self.now - timedelta(hours=1)
+
+        self.run_main()
+
         self.database.insert_city_information.assert_not_called()
 
-    def test_city_sync_occurs_when_its_interval_expires(self):
+    def test_expired_city_interval_syncs_city(self):
         self.database.get_last_station_sync.return_value = self.now - timedelta(hours=1)
         self.database.get_last_city_sync.return_value = self.now - timedelta(hours=721)
 
         self.run_main()
 
-        self.database.insert_station_entries.assert_not_called()
         self.database.insert_city_information.assert_called_once_with(self.city)
 
-    def test_sync_is_skipped_when_intervals_have_not_expired(self):
+    def test_recent_station_interval_skips_station_write(self):
         self.database.get_last_station_sync.return_value = self.now - timedelta(hours=1)
         self.database.get_last_city_sync.return_value = self.now - timedelta(hours=719)
 
         self.run_main()
 
         self.database.insert_station_entries.assert_not_called()
+
+    def test_recent_city_interval_skips_city_write(self):
+        self.database.get_last_station_sync.return_value = self.now - timedelta(hours=1)
+        self.database.get_last_city_sync.return_value = self.now - timedelta(hours=719)
+
+        self.run_main()
+
         self.database.insert_city_information.assert_not_called()
 
 
 class TestScriptEntrypoint(unittest.TestCase):
-    def test_help_invocation_reaches_cli_entrypoint_without_database_access(self):
+    def help_result(self):
         output = StringIO()
 
         with patch.object(sys, "argv", [query_nextbike.__file__, "--help"]):
             with redirect_stdout(output):
-                with self.assertRaises(SystemExit) as raised:
+                try:
                     runpy.run_path(query_nextbike.__file__, run_name="__main__")
+                except SystemExit as error:
+                    exit_code = error.code
+                else:
+                    exit_code = None
 
-        self.assertEqual(raised.exception.code, 0)
-        self.assertIn("--city-ids", output.getvalue())
+        return exit_code, output.getvalue()
 
+    def test_help_invocation_exits_successfully(self):
+        exit_code, _ = self.help_result()
+
+        self.assertEqual(exit_code, 0)
+
+    def test_help_lists_city_ids_argument(self):
+        _, output = self.help_result()
+
+        self.assertIn("--city-ids", output)
 
 if __name__ == "__main__":
     unittest.main()

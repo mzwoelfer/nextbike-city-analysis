@@ -39,9 +39,27 @@ docker run --rm \
   --city-id 467 --date 2026-05-30
 ```
 
-## With static file export (GitHub Pages / local testing)
+## Process all configured cities today
 
-Add `--export-files` and `--export-folder` to also write `.geojson.gz` and `.csv.gz` to the shared volume:
+Run from the repository root. This reads comma-separated `CITY_IDS` from `.env` and processes each city for today's date:
+
+```sh
+process_date=$(date +%F)
+docker compose run --rm --no-deps \
+  -e PROCESS_DATE="$process_date" \
+  --entrypoint sh processor -c '
+    set -eu
+    : "${CITY_IDS:?Set CITY_IDS in .env}"
+    for city_id in $(printf "%s" "$CITY_IDS" | tr "," " "); do
+      printf "Processing city %s for %s\n" "$city_id" "$PROCESS_DATE"
+      python -m nextbike_processing.main --city-id "$city_id" --date "$PROCESS_DATE"
+    done
+  '
+```
+
+## Export trip GeoJSON
+
+Add `--export-files` and `--export-folder` to write compressed GeoJSON to the shared volume:
 
 ```sh
 docker run --rm \
@@ -55,21 +73,15 @@ docker run --rm \
 Files written to the volume:
 ```
 /data/{city_id}_trips_{date}.geojson.gz
-/data/{city_id}_stations_{date}.csv.gz
-```
-
-After exporting files, regenerate the manifest so the webapp can discover them:
-```sh
-docker exec nextbike_visualization sh -c "cd /app/data && sh /app/create_manifest.sh"
 ```
 
 ## Arguments
 
 | Argument | Required | Description |
 |---|---|---|
-| `--city-id` | yes | Nextbike city ID (see [`city_ids_2025_02_15.md`](../city_ids_2025_02_15.md)) |
+| `--city-id` | yes | Nextbike city ID (see [`city_ids_2026_10_04.md`](../city_ids_2026_10_04.md)) |
 | `--date` | yes | Date in `YYYY-MM-DD` format |
-| `--export-files` | no | Also write static `.geojson.gz` / `.csv.gz` files |
+| `--export-files` | no | Also write a `.geojson.gz` trip file |
 | `--export-folder` | no* | Output folder inside the container. Required when `--export-files` is set. |
 
 The processor image has `ENTRYPOINT ["python", "-m", "nextbike_processing.main"]`, so pass only the arguments.

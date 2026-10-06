@@ -1,32 +1,52 @@
 import state from "./state.js";
 import { apiSource } from "./dataSources/apiSource.js";
-import { staticSource } from "./dataSources/staticSource.js";
 import { minutesSinceMidnight } from "./utils.js";
 
 let _dataSource = null;
 
 /**
- * Picks data source for the session: 
- * the live API if reachable,
- * otherwise the static CSV export bundled for the GitHub Pages demo.
+ * Load available trip dates from the live API.
  * @returns {Promise<Object<string, string[]>>} Dates grouped by city id.
  */
 export async function loadAvailableFiles() {
+  _dataSource = apiSource;
   try {
     const availableFiles = await apiSource.loadAvailableDates();
     if (availableFiles) {
-      _dataSource = apiSource;
       console.log("Data source: live API.", availableFiles);
       return availableFiles;
     }
   } catch (err) {
-    console.warn("Live API unreachable. Falling back to static CSV export.", err);
+    console.error("Live API unavailable.", err);
   }
 
-  _dataSource = staticSource;
-  const availableFiles = await staticSource.loadAvailableDates();
-  console.log("Data source: static CSV export.", availableFiles);
-  return availableFiles;
+  return {};
+}
+
+export function getAvailableMonths(cityId) {
+  return [...new Set((state.availableFiles[cityId] || []).map((date) => date.slice(0, 7)))]
+    .sort()
+    .reverse();
+}
+
+export async function loadTripsForMonth(cityId, month) {
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    throw new Error("Invalid month. Use YYYY-MM format.");
+  }
+
+  const dates = (state.availableFiles[cityId] || [])
+    .filter((date) => date.startsWith(`${month}-`))
+    .sort();
+  const trips = [];
+  let timezone = "UTC";
+
+  for (const date of dates) {
+    const dailyData = await _dataSource.loadTrips(cityId, date);
+    trips.push(...dailyData.trips);
+    timezone = dailyData.timezone || timezone;
+  }
+
+  return { trips, timezone };
 }
 
 /**
@@ -102,9 +122,12 @@ function applyTripsToState(trips, timezone) {
     attachTripTimingFields(trip, trip.timezone || timezone),
   );
 
-  if (state.tripsData.length > 0) {
-    state.city_lat = state.tripsData[0].coordinates[0][1];
-    state.city_lng = state.tripsData[0].coordinates[0][0];
+  const firstRoutedTrip = state.tripsData.find(
+    (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
+  );
+  if (firstRoutedTrip) {
+    state.city_lat = firstRoutedTrip.coordinates[0][1];
+    state.city_lng = firstRoutedTrip.coordinates[0][0];
   }
 }
 
@@ -136,6 +159,16 @@ export async function loadStationData() {
   }
 }
 
+export async function loadBikeData() {
+  try {
+    const { bikes, timezone } = await _dataSource.loadBikes(state.city_id, state.date);
+    state.bikeData = bikes.map((bike) => attachBikeTimingFields(bike, bike.timezone || timezone));
+  } catch (err) {
+    console.error("Error loading bike data:", err);
+    state.bikeData = [];
+  }
+}
+
 /**
  * Save normalized stations into state, attaching timing fields.
  * @param {Object[]} stations - Normalized stations.
@@ -158,6 +191,13 @@ function attachStationTimingFields(station, timezone) {
   return {
     ...station,
     minute_city: minutesSinceMidnight(new Date(station.minute), timezone),
+  };
+}
+
+function attachBikeTimingFields(bike, timezone) {
+  return {
+    ...bike,
+    minute_city: minutesSinceMidnight(new Date(bike.minute), timezone),
   };
 }
 

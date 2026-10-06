@@ -1,9 +1,42 @@
+import json
+import threading
 import unittest
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
+
+import requests
 
 from query_nextbike import ConsolePrinter, NextbikeAPI, process_nextbike_data
+
+
+class _StubResponseHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.server.request_path = self.path
+        self.send_response(self.server.status)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(self.server.payload).encode())
+
+    def log_message(self, format, *args):
+        pass
+
+
+@contextmanager
+def local_api_server(payload, status=200):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _StubResponseHandler)
+    server.payload = payload
+    server.status = status
+    server.request_path = None
+    thread = threading.Thread(target=server.serve_forever)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}", server
+    finally:
+        server.shutdown()
+        thread.join()
+        server.server_close()
 
 
 class TestNextbikeAPI(unittest.TestCase):
@@ -32,7 +65,7 @@ class TestNextbikeAPI(unittest.TestCase):
 
     def test_extract_places_returns_list(self):
         places = NextbikeAPI.extract_places(self.sample_response)
-        self.assertEqual(len(places), 2)
+        self.assertEqual(places, self.sample_response["countries"][0]["cities"][0]["places"])
 
     def test_extract_places_returns_empty_list_for_missing_all_keys(self):
         data = {}
@@ -57,31 +90,34 @@ class TestNextbikeAPI(unittest.TestCase):
     def test_extract_places_returns_empty_list_for_empty_countries(self):
         self.assertEqual(NextbikeAPI.extract_places({"countries": []}), [])
 
-    @patch("query_nextbike.requests.get")
-    def test_fetch_data_uses_city_parameter_and_returns_json(self, mock_get):
-        response = MagicMock()
-        response.json.return_value = self.sample_response
-        mock_get.return_value = response
+    def test_fetch_data_returns_json_response(self):
+        with local_api_server(self.sample_response) as (url, _):
+            api = NextbikeAPI(467)
+            api.BASE_URL = url
 
-        result = NextbikeAPI(467).fetch_data()
+            result = api.fetch_data()
 
-        mock_get.assert_called_once_with(NextbikeAPI.BASE_URL, params={"city": 467})
-        response.raise_for_status.assert_called_once_with()
         self.assertEqual(result, self.sample_response)
 
-    @patch("query_nextbike.requests.get")
-    def test_fetch_data_propagates_http_error(self, mock_get):
-        response = MagicMock()
-        response.raise_for_status.side_effect = ValueError("bad response")
-        mock_get.return_value = response
+    def test_fetch_data_sends_city_id_as_query_parameter(self):
+        with local_api_server(self.sample_response) as (url, server):
+            api = NextbikeAPI(467)
+            api.BASE_URL = url
+            api.fetch_data()
 
-        with self.assertRaisesRegex(ValueError, "bad response"):
-            NextbikeAPI(467).fetch_data()
+        self.assertEqual(server.request_path, "/?city=467")
 
-        response.json.assert_not_called()
+    def test_fetch_data_raises_for_http_error(self):
+        with local_api_server({}, status=400) as (url, _):
+            api = NextbikeAPI(467)
+            api.BASE_URL = url
 
-    @patch("query_nextbike.ConsolePrinter.print_summary")
-    def test_process_nextbike_data_builds_city_bikes_and_stations(self, mock_summary):
+            with self.assertRaises(requests.HTTPError):
+                api.fetch_data()
+
+
+class TestProcessNextbikeData(unittest.TestCase):
+    def setUp(self):
         data = {
             "countries": [
                 {
@@ -112,21 +148,36 @@ class TestNextbikeAPI(unittest.TestCase):
                 }
             ]
         }
-        api = NextbikeAPI(467)
-        with patch.object(api, "fetch_data", return_value=data):
-            city, bikes, stations = process_nextbike_data(api)
+        class StaticAPI:
+            def fetch_data(self):
+                return data
 
-        self.assertEqual((city.city_id, city.city_name), (467, "Gießen"))
-        self.assertEqual(len(bikes), 1)
-        self.assertEqual((bikes[0].bike_number, bikes[0].station_uid), ("42", 10))
-        self.assertEqual(len(stations), 1)
-        self.assertEqual((stations[0].uid, stations[0].name), (11, "Station"))
-        mock_summary.assert_called_once_with(city, bikes, stations)
+            @staticmethod
+            def extract_places(response):
+                return NextbikeAPI.extract_places(response)
+
+        with redirect_stdout(StringIO()):
+            self.city, self.bikes, self.stations = process_nextbike_data(StaticAPI())
+
+    def test_city_matches_api_payload(self):
+        self.assertEqual((self.city.city_id, self.city.city_name), (467, "Gießen"))
+
+    def test_one_bike_is_created(self):
+        self.assertEqual(len(self.bikes), 1)
+
+    def test_bike_matches_api_payload(self):
+        self.assertEqual((self.bikes[0].bike_number, self.bikes[0].station_uid), ("42", 10))
+
+    def test_one_station_is_created(self):
+        self.assertEqual(len(self.stations), 1)
+
+    def test_station_matches_api_payload(self):
+        self.assertEqual((self.stations[0].uid, self.stations[0].name), (11, "Station"))
 
 
 class TestConsolePrinter(unittest.TestCase):
     def test_print_summary_reports_entry_counts(self):
-        city = MagicMock()
+        city = SimpleNamespace(city_id=467)
         output = StringIO()
 
         with redirect_stdout(output):

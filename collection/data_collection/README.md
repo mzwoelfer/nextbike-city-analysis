@@ -42,18 +42,13 @@ python3 query_nextbike.py --save
 - `--save`: Save data to database 
 
 ## Run tests
-Change directory to `collection/data_collection`:
+From the repository root, run the collection tests with an isolated PostgreSQL database:
 
-- Enable vitual environment: `source Env/bin/activate`
-- run tests: `python3 -m unittest discover .`
+```sh
+docker compose -f collection/docker-compose-test-collection.yaml run --build --rm tests
+```
 
-Run specific tests:
-- `python3 -m unittest tests/test_city_class.py`
-
-#### Run coverage tests
-From `collection/data_collection`, install requirements and run coverage:
-```bash
-python3 -m pip install -r requirements.txt
-python3 -m coverage run --source=database,query_nextbike -m unittest discover -s tests
-python3 -m coverage report --show-missing
+Remove the test containers and database after the run:
+```sh
+docker compose -f collection/docker-compose-test-collection.yaml down --volumes
 ```

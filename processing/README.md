@@ -1,6 +1,6 @@
 # Nextbike Trip Processing
 
-Extracts bike trips from the raw polling data in PostgreSQL, calculates routes via OpenStreetMap, and writes the results back to the database and to compressed GeoJSON files.
+Extracts bike trips from raw polling data in PostgreSQL and calculates routes via OpenStreetMap. The scheduled processor writes to PostgreSQL; file exports are opt-in.
 
 ## How it works
 
@@ -9,11 +9,10 @@ For a given city and date:
 1. Reads raw `bikes` and `stations` records from PostgreSQL
 2. Calculates trips between stations.
 3. Calculates the road-network trip-routes using OSMnx.
-   - Caches calcualted trip-routes in the `public.routes` table.
-   - reuses cached geometry. REduces calls to OSMnx
-4. Writes the results to:
-   - `public.trips`
-   - `{city_id}_trips_{date}.geojson.gz` on the shared `trip_data` volume (for static/GitHub Pages fallback).
+  - Caches calculated trip routes in the `public.routes` table.
+  - Reuses cached geometry to reduce calls to OSMnx.
+4. Writes trips and available route references to `public.trips`. Failed route lookups do not provide route geometry.
+5. With `--export-files`, writes `{city_id}_trips_{date}.geojson.gz` to the requested export folder.
 
 ## Output format
 
@@ -38,7 +37,7 @@ Trips are in a **GeoJSON FeatureCollection** (gzip-compressed):
         "end_time": "2026-05-30T08:27:00",
         "duration": 780,
         "distance": 1240.5,
-        "timestamps": ["2026-05-30T08:14:00", "2026-05-30T08:27:00"]
+        "timezone": "Europe/Berlin"
       }
     }
   ]
@@ -49,7 +48,7 @@ GeoJSON coordinates are `[longitude, latitude]` (x, y order).
 
 ## Production
 
-The processor runs automatically at midnight every day for each city in `CITY_IDS`:
+The processor runs automatically at midnight for each city in `CITY_IDS`. The Compose schedule processes to PostgreSQL and does not enable file export:
 
 ```sh
 # From the project root
@@ -68,7 +67,7 @@ docker run --rm \
   --city-id 467 --date 2026-05-31
 ```
 
-To write the data to files (`.geojson.gz` / `.csv.gz`) for GitHub Pages or local testing, add `--export-files`:
+To export trip GeoJSON for local use, add `--export-files`:
 
 ```sh
 docker run --rm \
@@ -87,8 +86,23 @@ docker compose up -d --build processor
 
 ## Running tests
 
+Run the full suite, including PostgreSQL integration tests, from `processing/`:
+
 ```sh
-cd processing/
+docker compose -f tests/docker-compose.yml run --build --rm tests
+```
+
+Compose starts an isolated PostgreSQL 15 database from the canonical schema and runs the tests in the processing container. Fast unit tests still use mocks for external boundaries; integration tests exercise route caching and trip persistence against real PostgreSQL. The processing source and schema are bind-mounted, so edits are available without rebuilding. Rerun the command to run tests again; it does not watch files or rerun automatically on save.
+
+Stop any remaining test services with:
+
+```sh
+docker compose -f tests/docker-compose.yml down
+```
+
+To run tests with a local Python environment instead:
+
+```sh
 python3 -m venv Env
 source Env/bin/activate
 pip install -r requirements.txt pytest

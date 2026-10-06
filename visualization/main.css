@@ -462,30 +462,132 @@ html, body {
     color: #666;
 }
 
+#trip-export-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#trip-export-controls label {
+    font-size: 13px;
+    color: #555;
+}
+
+#trip-export-month,
+#download-trip-csv {
+    min-height: 38px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 0 12px;
+    font: inherit;
+}
+
+#download-trip-csv {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+#download-trip-csv:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+#trip-export-status {
+    flex-basis: 100%;
+    min-height: 1.25em;
+    font-size: 13px;
+    color: #555;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+#empty-data-state {
+    margin: 32px 0;
+    padding: 24px 5%;
+    border-block: 1px solid var(--border-light);
+    background: var(--bg-light);
+}
+
+#empty-data-state h2,
+#empty-data-state p {
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+#empty-data-state h2 {
+    margin-bottom: 8px;
+    font-size: 20px;
+}
+
+#empty-data-state p {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
 /* ==============================================
    ROUTE TABLE
 =============================================== */
-#route-table-container {
+#table-view-controls {
+    display: flex;
+    width: 90%;
+    max-width: 780px;
+    margin: 0 auto 12px;
+}
+
+#table-view-controls button {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-light);
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+#table-view-controls button:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+#table-view-controls button:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+#table-view-controls button[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+
+#route-table-container,
+#unique-routes-container {
     margin: 0 auto 48px;
     width: 90%;
     max-width: 780px;
     overflow-x: auto;
 }
 
-#route-table {
+#route-table,
+#unique-routes-table {
     border-collapse: collapse;
     width: 100%;
     font-size: 13px;
 }
 
 #route-table th,
-#route-table td {
+#route-table td,
+#unique-routes-table th,
+#unique-routes-table td {
     border: 1px solid var(--border-light);
     text-align: left;
     padding: 9px 12px;
 }
 
-#route-table th {
+#route-table th,
+#unique-routes-table th {
     background: var(--bg-dark);
     color: var(--text-light);
     font-size: 11px;
@@ -504,7 +606,15 @@ html, body {
     background: #f9f9f9;
 }
 
+#unique-routes-table tr:nth-child(even) td {
+    background: #f9f9f9;
+}
+
 #route-table tr:hover td {
+    background: #ffe8d8;
+}
+
+#unique-routes-table tr:hover td {
     background: #ffe8d8;
 }
 
@@ -618,6 +728,7 @@ th[data-order=""]::after     { content: ""; }
     }
 
     #city-selection {
+        position: absolute;
         top: 8px;
         right: 8px;
         padding: 6px 10px;

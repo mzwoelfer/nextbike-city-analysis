@@ -9,13 +9,9 @@ Interactive map. VIzualizes trips for Nextbike data.
 Browser → FastAPI (api.py) → PostgreSQL
                 ↓
          /app (static files: index.html, CSS, JS)
-         /app/data (trip_data volume: .geojson.gz fallback files)
 ```
 
-The frontend detects if the PAI is available:
-
-- **API mode** (production): queries trip and station data from database via `/api/*` endpoints.
-- **Static mode** (GitHub Pages / local dev): loads pre-generated `.geojson.gz` and `.csv.gz` data files in the `data/` directory.
+The visualization uses the live API for trip, station, and bike data. Static-file mode is not supported. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for API schemas and onboarding.
 
 ## API endpoints
 
@@ -23,7 +19,8 @@ The frontend detects if the PAI is available:
 |---|---|
 | `GET /api/available` | List of `{city_id, dates}` with processed data |
 | `GET /api/trips?city_id=X&date=Y` | GeoJSON FeatureCollection of trips for a given city and date |
-| `GET /api/stations?city_id=X&date=Y` | Station bike-count timeline (one row per station per change) |
+| `GET /api/bikes?city_id=X&date=Y` | Time-indexed bike observations for bikes that are unassigned at some point that day |
+| `GET /api/stations?city_id=X&date=Y` | Station bike-count and bike-type timeline (one row per station per change) |
 
 ## Production
 
@@ -44,27 +41,9 @@ python3 -m coverage run --source=api -m unittest discover -s tests
 python3 -m coverage report --show-missing
 ```
 
+The HTTP validation and timezone tests run without PostgreSQL. Endpoint integration tests run only when `DB_NAME=nextbike_api_test`; they create and remove fixture records in that database. Point these tests only at a disposable PostgreSQL database. CI starts an isolated PostgreSQL service for them.
+
 ## Updating the visualization container
 ```sh
 docker compose up -d --no-deps --build visualization
 ```
-
-## Local development (static mode, no Docker)
-
-```sh
-cd visualization/
-python3 -m http.server 8000
-```
-
-Open `http://localhost:8000`. 
-Trip data must be present in `visualization/data/` as `.geojson.gz` files. 
-Generate a manifest so the file listing works without directory listing support:
-```sh
-bash create_manifest.sh
-```
-
-## Deployment on GitHub Pages
-
-GitHub Pages does not support directory listing. Therefore `manifest.json` in `visualization/data/` lists available data files for the frontend to discover.
-
-The manifest is generated automatically in the GitHub Actions workflow that publishes to GitHub Pages.

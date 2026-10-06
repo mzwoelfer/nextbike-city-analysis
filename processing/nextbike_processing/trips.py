@@ -10,7 +10,7 @@ from nextbike_processing.database import (
     insert_new_routes, 
     insert_trips
 )
-from nextbike_processing.utils import save_gzipped_geojson, save_gzipped_csv
+from nextbike_processing.utils import save_gzipped_geojson
 from nextbike_processing.cities import (
     get_city_coordinates_from_database,
     get_city_timezone_from_database,
@@ -145,7 +145,7 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         city_id (int): City to process
         date (str): Date in YYYY-MM-DD format
         folder (str): Export folder path (if export_files=True)
-        export_files (bool): Whether to export .geojson.gz and .csv.gz files
+        export_files (bool): Whether to export a .geojson.gz file
     
     Returns:
         None (all data saved to database)
@@ -298,29 +298,4 @@ def process_and_save_trips(city_id, date, folder, export_files=False):
         geojson
     )
     
-    # Export as CSV for static visualization (GitHub Pages mode)
-    trips_export = trips.copy()
-    trips_export["date"] = date
-    trips_export["timezone"] = str(city_zone)
-    trips_export["start_time"] = trips_export["start_time"].map(
-        lambda ts: _to_city_isoformat(ts, city_zone)
-    )
-    trips_export["end_time"] = trips_export["end_time"].map(
-        lambda ts: _to_city_isoformat(ts, city_zone)
-    )
-    # Convert [lon, lat] coordinates to [lat, lon, timestamp] for CSV storage
-    trips_export["segments"] = trips_export["segments"]
-    
-    trips_export["route_id"] = trips_export.groupby(
-        ["start_latitude", "start_longitude", "end_latitude", "end_longitude"]
-    ).ngroup()
-    csv_cols = [
-        "bike_number", "start_latitude", "start_longitude", "start_time",
-        "end_latitude", "end_longitude", "end_time", "duration", "date",
-        "distance", "segments", "route_id", "timezone"
-    ]
-    save_gzipped_csv(
-        os.path.join(folder, f"{city_id}_trips_{date}.csv.gz"), 
-        trips_export[csv_cols]
-    )
-    print(f"  Exported geojson and csv files")
+    print("  Exported GeoJSON file")

@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import psycopg
+from psycopg.rows import dict_row
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +25,7 @@ def get_connection():
         dbname=os.environ["DB_NAME"],
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASSWORD"],
+        row_factory=dict_row,
     )
 
 
@@ -34,14 +37,17 @@ def available():
                 SELECT t.city_id,
                        COALESCE(c.city_name, t.city_id::text) AS city_name,
                        array_agg(DISTINCT DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC'))::text
-                                 ORDER BY DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC'))::text DESC)
+                                 ORDER BY DATE(t.start_time AT TIME ZONE COALESCE(c.timezone, 'UTC'))::text DESC) AS dates
                 FROM public.trips t
                 LEFT JOIN public.cities c ON t.city_id = c.city_id
                 GROUP BY t.city_id, c.city_name
                 ORDER BY t.city_id
             """)
             rows = cur.fetchall()
-    return [{"city_id": str(row[0]), "city_name": row[1], "dates": row[2]} for row in rows]
+    return [
+        {"city_id": str(row["city_id"]), "city_name": row["city_name"], "dates": row["dates"]}
+        for row in rows
+    ]
 
 
 @app.get("/api/trips")
@@ -55,7 +61,7 @@ def trips(city_id: int, date: str):
                        t.start_time,
                        t.end_time,
                        t.duration_seconds,
-                       r.distance_meters,
+                       r.distance_meters AS distance_meters,
                        r.coordinates,
                        t.route_id,
                        COALESCE(c.timezone, 'UTC') AS city_timezone
@@ -67,20 +73,20 @@ def trips(city_id: int, date: str):
             """, (city_id, date))
             rows = cur.fetchall()
 
-    city_timezone = rows[0][7] if rows else "UTC"
+    city_timezone = rows[0]["city_timezone"] if rows else "UTC"
 
     features = [
         {
             "type": "Feature",
-            "geometry": {"type": "LineString", "coordinates": row[5] or []},
+            "geometry": {"type": "LineString", "coordinates": row["coordinates"] or []},
             "properties": {
-                "bike_number": row[0],
-                "start_time": to_city_iso(row[1], row[7]),
-                "end_time": to_city_iso(row[2], row[7]),
-                "duration": row[3],
-                "distance": row[4] or 0,
-                "route_id": row[6],
-                "timezone": row[7],
+                "bike_number": row["bike_number"],
+                "start_time": to_city_iso(row["start_time"], row["city_timezone"]),
+                "end_time": to_city_iso(row["end_time"], row["city_timezone"]),
+                "duration": row["duration_seconds"],
+                "distance": row["distance_meters"] or 0,
+                "route_id": row["route_id"],
+                "timezone": row["city_timezone"],
             },
         }
         for row in rows
@@ -92,6 +98,67 @@ def trips(city_id: int, date: str):
     }
 
 
+@app.get("/api/bikes")
+def bikes(city_id: int, date: str):
+    if not date:
+        raise HTTPException(status_code=400, detail="date parameter is required")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                WITH city_context AS (
+                    SELECT COALESCE(timezone, 'UTC') AS city_timezone
+                    FROM public.cities
+                    WHERE city_id = %s
+                ),
+                standalone_bike_ids AS (
+                    SELECT DISTINCT b.bike_number
+                    FROM public.bikes b
+                    JOIN city_context cc ON TRUE
+                    WHERE b.city_id = %s
+                      AND DATE(b.last_updated AT TIME ZONE cc.city_timezone) = %s
+                      AND COALESCE(b.station_number, 0) = 0
+                ),
+                bike_observations AS (
+                    SELECT b.bike_number,
+                           b.latitude,
+                           b.longitude,
+                           b.station_number,
+                           COALESCE(b.bike_type, '') AS bike_type,
+                           DATE_TRUNC('minute', b.last_updated AT TIME ZONE cc.city_timezone) AS minute,
+                           b.last_updated,
+                           cc.city_timezone
+                    FROM public.bikes b
+                    JOIN city_context cc ON TRUE
+                    WHERE b.city_id = %s
+                      AND DATE(b.last_updated AT TIME ZONE cc.city_timezone) = %s
+                      AND b.bike_number IN (SELECT bike_number FROM standalone_bike_ids)
+                )
+                SELECT DISTINCT ON (minute, bike_number)
+                       bike_number, latitude, longitude, station_number,
+                       bike_type, minute, city_timezone
+                FROM bike_observations
+                ORDER BY minute, bike_number, last_updated DESC
+            """, (city_id, city_id, date, city_id, date))
+            rows = cur.fetchall()
+
+    city_timezone = rows[0]["city_timezone"] if rows else "UTC"
+    return {
+        "timezone": city_timezone,
+        "bikes": [
+            {
+                "bike_number": row["bike_number"],
+                "latitude": row["latitude"],
+                "longitude": row["longitude"],
+                "station_number": row["station_number"],
+                "bike_type": row["bike_type"],
+                "minute": row["minute"].replace(tzinfo=ZoneInfo(row["city_timezone"])).isoformat(timespec="seconds"),
+                "timezone": row["city_timezone"],
+            }
+            for row in rows
+        ],
+    }
+
+
 @app.get("/api/stations")
 def stations(city_id: int, date: str):
     if not date:
@@ -100,20 +167,20 @@ def stations(city_id: int, date: str):
         with conn.cursor() as cur:
             # Fetch city timezone once; use it for all subsequent date filters
             cur.execute(
-                "SELECT COALESCE(timezone, 'UTC') FROM public.cities WHERE city_id = %s",
+                "SELECT COALESCE(timezone, 'UTC') AS city_timezone FROM public.cities WHERE city_id = %s",
                 (city_id,)
             )
             tz_row = cur.fetchone()
-            city_tz = tz_row[0] if tz_row else 'UTC'
+            city_tz = tz_row["city_timezone"] if tz_row else 'UTC'
 
             # First, find the latest available date for this city (on or before the requested date)
             cur.execute("""
-                SELECT MAX(DATE(last_updated AT TIME ZONE %s))
+                SELECT MAX(DATE(last_updated AT TIME ZONE %s)) AS latest_date
                 FROM public.stations
                 WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) <= %s::date
             """, (city_tz, city_id, city_tz, date))
             result = cur.fetchone()
-            latest_date = result[0] if result[0] else date
+            latest_date = result["latest_date"] if result["latest_date"] else date
             
             cur.execute("""
                 WITH station_data AS (
@@ -135,9 +202,23 @@ def stations(city_id: int, date: str):
                 bike_source AS (
                     SELECT (last_updated AT TIME ZONE %s) AS local_ts,
                            station_number,
-                           bike_number
+                           bike_number,
+                           COALESCE(NULLIF(bike_type, ''), 'unknown') AS bike_type
                     FROM public.bikes
                     WHERE city_id = %s AND DATE(last_updated AT TIME ZONE %s) = %s
+                ),
+                bike_type_data AS (
+                    SELECT minute, station_number,
+                           jsonb_object_agg(bike_type, type_count) AS bike_type_counts
+                    FROM (
+                        SELECT DATE_TRUNC('minute', local_ts) AS minute,
+                               station_number,
+                               bike_type,
+                               COUNT(*) AS type_count
+                        FROM bike_source
+                        GROUP BY DATE_TRUNC('minute', local_ts), station_number, bike_type
+                    ) type_counts
+                    GROUP BY minute, station_number
                 ),
                 bike_data AS (
                     SELECT DATE_TRUNC('minute', local_ts) AS minute,
@@ -160,20 +241,26 @@ def stations(city_id: int, date: str):
                            smc.name, smc.spot, smc.station_number, smc.maintenance,
                            smc.terminal_type, smc.city_id, smc.city_name,
                            COALESCE(bd.bike_count, 0) AS bike_count,
-                           COALESCE(bd.bike_list, '') AS bike_list
+                              COALESCE(bd.bike_list, '') AS bike_list,
+                              COALESCE(btd.bike_type_counts, '{}'::jsonb) AS bike_type_counts
                     FROM station_minute_combinations smc
                     LEFT JOIN bike_data bd
                         ON smc.station_number = bd.station_number AND smc.minute = bd.minute
+                          LEFT JOIN bike_type_data btd
+                           ON smc.station_number = btd.station_number AND smc.minute = btd.minute
                 ),
                 bike_changes AS (
                     SELECT *,
-                           LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count
+                              LAG(bike_count) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_count,
+                              LAG(bike_type_counts) OVER (PARTITION BY station_number ORDER BY minute) AS previous_bike_type_counts
                     FROM station_bike_combined
                 )
                 SELECT minute, id, uid, latitude, longitude, name, spot, station_number,
-                       maintenance, terminal_type, city_id, city_name, bike_count, bike_list
+                          maintenance, terminal_type, city_id, city_name, bike_count, bike_list,
+                          bike_type_counts
                 FROM bike_changes
-                WHERE bike_count IS DISTINCT FROM previous_bike_count
+                      WHERE bike_count IS DISTINCT FROM previous_bike_count
+                         OR bike_type_counts IS DISTINCT FROM previous_bike_type_counts
                 ORDER BY station_number, minute
             """, (
                 city_tz, city_id, city_tz, latest_date,   # station_data
@@ -183,28 +270,34 @@ def stations(city_id: int, date: str):
 
     return [
         {
-            "minute": row[0].replace(tzinfo=ZoneInfo(city_tz)).isoformat(timespec="seconds"),
-            "id": row[1],
-            "uid": row[2],
-            "latitude": row[3],
-            "longitude": row[4],
-            "name": row[5],
-            "spot": row[6],
-            "station_number": row[7],
-            "maintenance": row[8],
-            "terminal_type": row[9],
-            "city_id": row[10],
-            "city_name": row[11],
-            "bike_count": row[12],
-            "bike_list": row[13] or "",
+            "minute": row["minute"].replace(tzinfo=ZoneInfo(city_tz)).isoformat(timespec="seconds"),
+            "id": row["id"],
+            "uid": row["uid"],
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "name": row["name"],
+            "spot": row["spot"],
+            "station_number": row["station_number"],
+            "maintenance": row["maintenance"],
+            "terminal_type": row["terminal_type"],
+            "city_id": row["city_id"],
+            "city_name": row["city_name"],
+            "bike_count": row["bike_count"],
+            "bike_list": row["bike_list"] or "",
+            "bike_type_counts": row["bike_type_counts"] or {},
             "timezone": city_tz,
         }
         for row in rows
     ]
 
 
-# Serve data files (geojson.gz, csv.gz, manifest) - also used for station files
-app.mount("/data", StaticFiles(directory="/app/data"), name="data")
+# Serve optional GeoJSON exports from the shared data directory.
+app_directory = Path(__file__).resolve().parent
+app.mount(
+    "/data",
+    StaticFiles(directory=app_directory / "data", check_dir=False),
+    name="data",
+)
 
 # Serve visualization static files - must be last (catch-all)
-app.mount("/", StaticFiles(directory="/app", html=True), name="static")
+app.mount("/", StaticFiles(directory=app_directory, html=True), name="static")

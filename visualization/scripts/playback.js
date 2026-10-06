@@ -1,6 +1,5 @@
 import state from './state.js';
 import { formatTime } from './utils.js';
-import { updateAllComponents } from './main.js';
 
 export function updatePlayButtonUI() {
     const playButton = document.getElementById('play-button');
@@ -13,11 +12,11 @@ export function updateSlider() {
 }
 
 
-export function togglePlay() {
+export function togglePlay(updateComponents) {
     if (state.isPlaying) {
         stopPlayback();
     } else {
-        startPlayback();
+        startPlayback(updateComponents);
     }
 }
 
@@ -27,9 +26,27 @@ export function stopPlayback() {
     updatePlayButtonUI();
 }
 
-export function startPlayback() {
+function firstAvailableMinute() {
+    const minutes = [
+        ...state.stationData.map((station) => station.minute_city),
+        ...state.bikeData.map((bike) => bike.minute_city),
+        ...state.tripsData.map((trip) => trip.start_minute_city),
+    ].filter(Number.isFinite);
+
+    return minutes.length ? Math.min(...minutes) : null;
+}
+
+export function startPlayback(updateComponents) {
     const playback_interval_milliseconds = 100;
     const maxTime = parseInt(document.getElementById('time-slider').max, 10);
+    const firstMinute = firstAvailableMinute();
+    const shouldJumpToFirstMinute = (
+        firstMinute !== null && state.currentTimeMinutes < firstMinute
+    );
+
+    if (shouldJumpToFirstMinute) {
+        state.currentTimeMinutes = firstMinute;
+    }
 
     state.timer = setInterval(() => {
         if (state.currentTimeMinutes >= maxTime) {
@@ -39,9 +56,13 @@ export function startPlayback() {
 
         state.currentTimeMinutes++;
         updateSlider();
-        updateAllComponents();
+        updateComponents();
     }, playback_interval_milliseconds);
 
     state.isPlaying = true;
     updatePlayButtonUI();
+
+    if (shouldJumpToFirstMinute) {
+        updateComponents();
+    }
 }

@@ -1,9 +1,10 @@
 import state from './state.js';
-import { initializeMap } from './map.js';
-import { loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles } from './data.js';
+import { getMap, initializeMap } from './map.js';
+import { loadBikeData, loadStationData, loadTripsData, checkTripsDataExists, loadFirstAvailableData, loadAvailableFiles, getAvailableMonths, loadTripsForMonth } from './data.js';
+import { buildMonthlyTripsCsv } from './csvExport.js';
 import { togglePlay, updateSlider } from './playback.js';
-import { populateRouteTable, highlightTableRow } from './table.js';
-import { plotStationsOnMap, updateStationMarkers } from './stations.js';
+import { populateRouteTable, populateUniqueRoutesTable, highlightTableRow } from './table.js';
+import { plotStationsOnMap, updateBikeMarkers, updateStationMarkers } from './stations.js';
 import { initializeBackToTop } from './navigation.js';
 import { drawTripsOnMap, highlightTripOnMap } from './trips.js';
 import { buildTripsPerMinute, initChart, updateChartDot, drawDurationHistogram, drawDistanceHistogram, drawHourHistogram } from './chart.js';
@@ -16,6 +17,9 @@ const nextDayButton = document.getElementById('next-day');
 const citySelector = document.getElementById('city-selector');
 const timeSlider = document.getElementById('time-slider');
 const playButton = document.getElementById('play-button');
+const exportMonthSelector = document.getElementById('trip-export-month');
+const exportButton = document.getElementById('download-trip-csv');
+const exportStatus = document.getElementById('trip-export-status');
 
 /**
  * Render the selected trip date label.
@@ -132,6 +136,15 @@ function renderCharts() {
  */
 function renderNoDataState() {
     renderTripDateLabel('No processed data yet');
+    const emptyDataState = document.getElementById('empty-data-state');
+    emptyDataState.hidden = false;
+    document.getElementById('main-layout').hidden = true;
+    document.getElementById('data-section').hidden = true;
+    document.getElementById('table-view-controls').hidden = true;
+    document.getElementById('route-table-container').hidden = true;
+    document.getElementById('unique-routes-container').hidden = true;
+    exportMonthSelector.disabled = true;
+    exportButton.disabled = true;
 }
 
 /**
@@ -147,6 +160,7 @@ export function updateAllComponents() {
     updateThrottle = requestAnimationFrame(() => {
         drawTripsOnMap();
         updateStationMarkers();
+        updateBikeMarkers();
         renderDashboardStats();
     });
 }
@@ -169,7 +183,18 @@ function renderCityOptions() {
     citySelector.innerHTML = "";
 
     console.log('CITIES IN DROPDOWN', Object.keys(state.cities));
-    Object.entries(state.cities).forEach(([cityName, cityId]) => {
+    const cities = Object.entries(state.cities);
+    if (cities.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No cities available';
+        citySelector.appendChild(option);
+        citySelector.disabled = true;
+        return;
+    }
+
+    citySelector.disabled = false;
+    cities.forEach(([cityName, cityId]) => {
         const option = document.createElement('option');
         option.value = cityId;
         option.textContent = cityName;
@@ -180,6 +205,59 @@ function renderCityOptions() {
     });
 }
 
+function renderExportMonths(cityId) {
+    const months = getAvailableMonths(cityId);
+    exportMonthSelector.replaceChildren();
+
+    months.forEach((month) => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = new Intl.DateTimeFormat(undefined, {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }).format(new Date(`${month}-01T00:00:00Z`));
+        exportMonthSelector.appendChild(option);
+    });
+
+    exportButton.disabled = months.length === 0;
+    exportStatus.textContent = '';
+}
+
+async function downloadMonthlyTrips() {
+    const month = exportMonthSelector.value;
+    if (!month) return;
+
+    exportButton.disabled = true;
+    exportStatus.textContent = 'Preparing CSV...';
+
+    try {
+        const { trips } = await loadTripsForMonth(state.city_id, month);
+        if (trips.length === 0) {
+            exportStatus.textContent = 'No trips available for this month.';
+            return;
+        }
+
+        const cityName = citySelector.selectedOptions[0]?.textContent || state.city_id;
+        const csv = buildMonthlyTripsCsv(trips, state.city_id, cityName);
+        const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `nextbike_trips_${state.city_id}_${month}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        exportStatus.textContent = `${trips.length} trips exported.`;
+    } catch (error) {
+        console.error('Error exporting monthly trips:', error);
+        exportStatus.textContent = 'CSV export failed. Check the available trip data and retry.';
+    } finally {
+        exportButton.disabled = getAvailableMonths(state.city_id).length === 0;
+    }
+}
+
 /**
  * Load all visualization data for the selected city.
  * @param {string|number} cityId - Selected city id.
@@ -187,11 +265,31 @@ function renderCityOptions() {
  */
 async function loadCityVisualization(cityId) {
     state.city_id = cityId;
+    state.currentTimeMinutes = 0;
+    state.stationData = [];
+    state.bikeData = [];
+    renderExportMonths(cityId);
     await loadTripsData();
+    const hasRoutedTrips = state.tripsData.some(
+        (trip) => Array.isArray(trip.coordinates) && trip.coordinates.length > 0,
+    );
     initializeMap(state.city_lat, state.city_lng);
-    populateRouteTable();
+    populateRouteTable(highlightTrip);
+    populateUniqueRoutesTable();
 
     await loadStationData();
+    await loadBikeData();
+    if (!hasRoutedTrips) {
+        const station = state.stationData.find(
+            ({ latitude, longitude }) => Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude)),
+        );
+        if (station) {
+            state.city_lat = Number(station.latitude);
+            state.city_lng = Number(station.longitude);
+            getMap().setView([state.city_lat, state.city_lng]);
+        }
+    }
+
     plotStationsOnMap();
     await updateDateNavigationAvailability();
     updateAllComponents();
@@ -277,7 +375,28 @@ function bindDayNavigationControls() {
  */
 function bindPlaybackControls() {
     timeSlider.addEventListener('input', handleTimeSliderInput);
-    playButton.addEventListener('click', () => togglePlay());
+    playButton.addEventListener('click', () => togglePlay(updateAllComponents));
+}
+
+function bindTableViews() {
+    const buttons = document.querySelectorAll('#table-view-controls button');
+    const panels = document.querySelectorAll('[data-table-panel]');
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.tableView;
+            buttons.forEach((otherButton) => {
+                otherButton.setAttribute('aria-pressed', String(otherButton === button));
+            });
+            panels.forEach((panel) => {
+                panel.hidden = panel.dataset.tablePanel !== view;
+            });
+        });
+    });
+}
+
+function bindExportControls() {
+    exportButton.addEventListener('click', downloadMonthlyTrips);
 }
 
 /**
@@ -299,12 +418,15 @@ async function initializeVisualizationApp() {
     bindCitySelectionDropdown();
     bindDayNavigationControls();
     bindPlaybackControls();
+    bindTableViews();
+    bindExportControls();
     initializeBackToTop();
     bindCalendar();
 
     state.availableFiles = await loadAvailableFiles();
     const hasInitialData = await loadFirstAvailableData();
     renderCityOptions();
+    renderExportMonths(state.city_id);
 
     if (hasInitialData) {
         await loadCityVisualization(state.city_id);

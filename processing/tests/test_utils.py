@@ -9,7 +9,6 @@ import pandas as pd
 from nextbike_processing.utils import (
     ensure_directory_exists,
     save_csv,
-    save_gzipped_csv,
     save_gzipped_geojson,
     save_json,
 )
@@ -32,15 +31,6 @@ class TestFileWriters(unittest.TestCase):
             save_csv(path, data)
 
             pd.testing.assert_frame_equal(pd.read_csv(path), data)
-
-    def test_save_gzipped_csv_roundtrip(self):
-        data = pd.DataFrame({"city_id": [467], "bike_count": [12]})
-        with tempfile.TemporaryDirectory() as folder:
-            path = os.path.join(folder, "data.csv.gz")
-            save_gzipped_csv(path, data)
-
-            pd.testing.assert_frame_equal(pd.read_csv(path, compression="gzip"), data)
-
 
 class TestSaveGzippedGeojson(unittest.TestCase):
     def test_roundtrip_empty_feature_collection(self):

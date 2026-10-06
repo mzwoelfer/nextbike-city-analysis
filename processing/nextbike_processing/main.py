@@ -1,6 +1,5 @@
 import argparse
 from nextbike_processing.utils import ensure_directory_exists
-from nextbike_processing.stations import process_and_save_stations
 from nextbike_processing.trips import process_and_save_trips
 
 
@@ -12,10 +11,10 @@ def main(argv=None):
         "--city-id", type=int, required=True, help="City ID to process."
     )
     parser.add_argument(
-        "--export-folder", type=str, default=None, help="Folder to save static files. Required when --export-files is set."
+        "--export-folder", type=str, default=None, help="Folder to save exported files. Required when --export-files is set."
     )
     parser.add_argument(
-        "--export-files", action="store_true", help="Also write .geojson.gz and .csv.gz files to --export-folder."
+        "--export-files", action="store_true", help="Also write a .geojson.gz file to --export-folder."
     )
     parser.add_argument(
         "--date",
@@ -38,7 +37,6 @@ def main(argv=None):
         or len(args.date) != 10
     ):
         raise ValueError("Invalid date format. Please use YYYY-MM-DD format.")
-    process_and_save_stations(args.city_id, str(date), args.export_folder, export_files=args.export_files)
     process_and_save_trips(args.city_id, str(date), args.export_folder, export_files=args.export_files)
 
 
