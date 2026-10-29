@@ -7,7 +7,9 @@
 
 services:
   postgres:
-    image: postgres:15
+    build:
+      context: ./collection
+      dockerfile: CONTAINERFILE.postgres
     container_name: nextbike_postgres
     restart: always
     env_file:
@@ -18,7 +20,6 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./collection/create_bike_and_stations_db.sql:/docker-entrypoint-initdb.d/create_bike_and_stations_db.sql
     ports:
       - "${DB_PORT}:5432"
     healthcheck:
