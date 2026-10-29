@@ -5,14 +5,14 @@
 
 ## Quick Start
 
-Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.docker.com/engine/install/)).
+Prerequisite: Docker with Compose plugin ([installation guide](https://docs.docker.com/engine/install/)).
 
 1. Clone the repository and enter it:
    ```sh
    git clone https://github.com/zwoefler/nextbike-city-analysis.git
    cd nextbike-city-analysis
    ```
-2. Create local configuration and set a private database password and the city IDs to collect:
+2. Create `.env`, then set `DB_PASSWORD` and `CITY_IDS`:
    ```sh
    cp .env.example .env
    ```
