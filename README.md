@@ -5,25 +5,34 @@
 
 ## Quick Start
 
-Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.docker.com/engine/install/)).
+Prerequisite: Docker with Compose plugin ([installation guide](https://docs.docker.com/engine/install/)).
 
 1. Clone the repository and enter it:
    ```sh
    git clone https://github.com/zwoefler/nextbike-city-analysis.git
    cd nextbike-city-analysis
    ```
-2. Create local configuration and set a private database password and the city IDs to collect:
+2. Create `.env`, then set `DB_PASSWORD` and `CITY_IDS`:
    ```sh
    cp .env.example .env
    ```
-   Find city IDs in [`city_ids_2026_10_04.md`](city_ids_2026_10_04.md). Configuration details are in [deployment and data contract](docs/deployment-and-data-contract.md).
+   Find city IDs in [`city_ids_2026_10_04.md`](city_ids_2026_10_04.md). Data flow and API: [deployment and data contract](docs/deployment-and-data-contract.md).
 3. Build and start the services:
    ```sh
    docker compose up -d --build
    ```
 4. Open `http://localhost:8080` (or the configured `VISUALIZATION_PORT`). The collector polls once per minute. Scheduled trip processing runs at midnight; for immediate or historical processing, follow [manual processing](docs/manual-processing.md).
 
-The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Optional trip GeoJSON exports can be written with `--export-files`; the visualization reads processed data from the database-backed API.
+Services: PostgreSQL, collector, processor (midnight), FastAPI visualization.
+
+## Development
+
+- Live reload for the visualization: `docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --build`.
+
+## Deployment
+
+- Deploy behind a TLS proxy.
+- PostgreSQL is not published. Access it with `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"`.
 
 ## Stop / destroy
 

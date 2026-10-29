@@ -299,5 +299,5 @@ app.mount(
     name="data",
 )
 
-# Serve visualization static files - must be last (catch-all)
-app.mount("/", StaticFiles(directory=app_directory, html=True), name="static")
+# Serve only static/ so source files next to it are never exposed. Must be last (catch-all).
+app.mount("/", StaticFiles(directory=app_directory / "static", html=True), name="static")

@@ -8,7 +8,7 @@ Interactive map. VIzualizes trips for Nextbike data.
 ```
 Browser → FastAPI (api.py) → PostgreSQL
                 ↓
-         /app (static files: index.html, CSS, JS)
+         /app/static (index.html, CSS, JS)
 ```
 
 The visualization uses the live API for trip, station, and bike data. Static-file mode is not supported. See the [deployment and data contract](../docs/deployment-and-data-contract.md) for API schemas and onboarding.
