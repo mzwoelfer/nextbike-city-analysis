@@ -23,21 +23,17 @@ Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.
    ```
 4. Open `http://localhost:8080` (or the configured `VISUALIZATION_PORT`). The collector polls once per minute. Scheduled trip processing runs at midnight; for immediate or historical processing, follow [manual processing](docs/manual-processing.md).
 
-The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Optional trip GeoJSON exports can be written with `--export-files`; the visualization reads processed data from the database-backed API.
+Services: PostgreSQL, collector, processor (midnight), FastAPI visualization.
 
-The images contain their own code and the database schema; the repository checkout is only needed to build them. For development, `docker-compose.override.yaml` is applied automatically and mounts the visualization sources with live reload. Run `docker compose -f docker-compose.yaml up -d --build` to ignore it.
+## Development
 
-## Deploying behind a TLS proxy
+- `docker compose up -d --build` also applies `docker-compose.override.yaml` (visualization live reload).
 
-The visualization serves plain HTTP on port 8080 and has no authentication. For any public deployment, terminate TLS in a reverse proxy (Caddy, nginx, Traefik) and forward to port 8080. A minimal Caddyfile:
+## Deployment
 
-```
-bikes.example.com {
-    reverse_proxy localhost:8080
-}
-```
-
-PostgreSQL is reachable only inside the Compose network and is not published on the host. For admin access, run `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"`. Do not add a `ports` mapping for it.
+- Use `docker compose -f docker-compose.yaml up -d --build`.
+- Deploy behind a TLS proxy.
+- PostgreSQL is not published. Access it with `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"`.
 
 ## Stop / destroy
 
