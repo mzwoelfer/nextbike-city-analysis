@@ -27,11 +27,10 @@ Services: PostgreSQL, collector, processor (midnight), FastAPI visualization.
 
 ## Development
 
-- `docker compose up -d --build` also applies `docker-compose.override.yaml` (visualization live reload).
+- Live reload for the visualization: `docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --build`.
 
 ## Deployment
 
-- Use `docker compose -f docker-compose.yaml up -d --build`.
 - Deploy behind a TLS proxy.
 - PostgreSQL is not published. Access it with `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"`.
 
