@@ -25,6 +25,20 @@ Prerequisite: Docker with the Compose plugin ([installation guide](https://docs.
 
 The stack contains PostgreSQL, the collector, the scheduled processor, and the FastAPI visualization. The processor stores trips and cached OSM routes in PostgreSQL. Optional trip GeoJSON exports can be written with `--export-files`; the visualization reads processed data from the database-backed API.
 
+The images contain their own code and the database schema; the repository checkout is only needed to build them. For development, `docker-compose.override.yaml` is applied automatically and mounts the visualization sources with live reload. Run `docker compose -f docker-compose.yaml up -d --build` to ignore it.
+
+## Deploying behind a TLS proxy
+
+The visualization serves plain HTTP on port 8080 and has no authentication. For any public deployment, terminate TLS in a reverse proxy (Caddy, nginx, Traefik) and forward to port 8080. A minimal Caddyfile:
+
+```
+bikes.example.com {
+    reverse_proxy localhost:8080
+}
+```
+
+PostgreSQL is reachable only inside the Compose network and is not published on the host. For admin access, run `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"`. Do not add a `ports` mapping for it.
+
 ## Stop / destroy
 
 ```sh

@@ -12,7 +12,7 @@
 
 4. Open `http://localhost:8080`, or the configured `VISUALIZATION_PORT`. The collector polls every 60 seconds. The processor handles the previous day at midnight, so an initially empty visualization is expected until trips have been processed. Use [manual processing](manual-processing.md) to process a date immediately or export trip GeoJSON.
 
-The stack runs PostgreSQL, a collector, a midnight processor, and the FastAPI visualization. Keep `.env` private. The default database port is `5432`; the visualization port defaults to `8080`.
+The stack runs PostgreSQL, a collector, a midnight processor, and the FastAPI visualization. Keep `.env` private. PostgreSQL is reachable only inside the Compose network; use `docker compose exec postgres psql -U "$DB_USER" -d "$DB_NAME"` for admin access, and keep `DB_PORT=5432` in `.env`. The visualization port defaults to `8080`. Put a TLS reverse proxy in front for public deployments; see the README.
 
 To check which city dates are ready, request `http://localhost:8080/api/available`. An empty list means no trip data has been processed yet. `docker compose down` stops services but keeps database and export volumes; `docker compose down -v` deletes those volumes.
 
