@@ -1,0 +1,8 @@
+# Development only: applied automatically by `docker compose up`.
+# Production: docker compose -f docker-compose.yaml up -d
+services:
+  visualization:
+    volumes:
+      - ./visualization/api.py:/app/api.py:ro
+      - ./visualization/static:/app/static:ro
+    command: uvicorn api:app --host 0.0.0.0 --port 8080 --reload
