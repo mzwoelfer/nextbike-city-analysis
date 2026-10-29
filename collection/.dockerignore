@@ -1,0 +1,5 @@
+Env/
+data_collection/Env/
+data_collection/tests/
+**/__pycache__/
+**/*.pyc
