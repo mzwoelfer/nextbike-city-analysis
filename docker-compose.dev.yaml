@@ -1,5 +1,4 @@
-# Development only: applied automatically by `docker compose up`.
-# Production: docker compose -f docker-compose.yaml up -d
+# Development only: docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --build
 services:
   visualization:
     volumes:
